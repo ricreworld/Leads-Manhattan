@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Live early-warning feed of new businesses, restaurants, and buildouts in Manhattan, built on free NYC and NY State open data.">
+<title>SIGNAL — Manhattan Business Intelligence for Waste Sales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161a;
+    --panel:#1a2026;
+    --panel-2:#20262d;
+    --border:#2b333b;
+    --text:#e7eaed;
+    --text-dim:#8d98a3;
+    --accent:#ff6a39;
+    --accent-dim:#c9532c;
+    --live:#39d98a;
+    --manual:#ffc24b;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  ::selection{background:var(--accent);color:#12161a;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 28px;}
+
+  /* ---------- header ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(18,22,26,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;max-width:1100px;margin:0 auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:10px;height:10px;background:var(--accent);
+    box-shadow:0 0 0 3px rgba(255,106,57,0.18);
+  }
+  .brand-text{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:19px;letter-spacing:0.04em;text-transform:uppercase;}
+  .brand-text span{color:var(--text-dim);font-weight:600;}
+  .clock{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--live);animation:pulse 2s infinite;}
+  @media (prefers-reduced-motion:reduce){.dot{animation:none;}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
+
+  /* ---------- hero ---------- */
+  .hero{padding:88px 0 70px;border-bottom:1px solid var(--border);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);
+    letter-spacing:0.12em;text-transform:uppercase;margin-bottom:18px;display:block;
+  }
+  h1{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:clamp(38px,6vw,64px);line-height:1.02;letter-spacing:0.005em;
+    max-width:15ch;text-transform:uppercase;
+  }
+  h1 em{font-style:normal;color:var(--accent);}
+  .hero-sub{margin-top:22px;max-width:56ch;color:var(--text-dim);font-size:17px;}
+  .hero-actions{margin-top:32px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;
+    padding:12px 18px;border-radius:var(--radius);cursor:pointer;
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+    text-decoration:none;transition:border-color .15s ease;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#14100c;font-weight:600;}
+  .btn.primary:hover{background:#ff7d52;}
+
+  .hero-stats{
+    margin-top:56px;display:grid;grid-template-columns:repeat(3,1fr);
+    border-top:1px solid var(--border);
+  }
+  .hero-stat{padding:20px 0 0;border-right:1px solid var(--border);}
+  .hero-stat:last-child{border-right:none;}
+  .hero-stat .num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:34px;color:var(--accent);}
+  .hero-stat .label{font-size:12.5px;color:var(--text-dim);margin-top:4px;font-family:'IBM Plex Mono',monospace;padding-right:12px;}
+  @media (max-width:640px){
+    .hero-stats{grid-template-columns:1fr;}
+    .hero-stat{border-right:none;border-bottom:1px solid var(--border);padding-bottom:16px;}
+    .hero-stat:last-child{border-bottom:none;}
+  }
+
+  /* ---------- section shell ---------- */
+  section{padding:76px 0;border-bottom:1px solid var(--border);}
+  .section-head{margin-bottom:44px;max-width:70ch;}
+  .section-head .eyebrow{margin-bottom:12px;}
+  h2{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(28px,4vw,40px);text-transform:uppercase;}
+  .section-head p{color:var(--text-dim);margin-top:14px;font-size:15.5px;max-width:60ch;}
+
+  /* ---------- stamp badge ---------- */
+  .stamp{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;
+    letter-spacing:0.09em;text-transform:uppercase;padding:3px 9px;
+    border:1.5px solid currentColor;border-radius:2px;transform:rotate(-2deg);
+    white-space:nowrap;
+  }
+  .stamp.live{color:var(--live);}
+  .stamp.manual{color:var(--manual);}
+
+  /* ---------- ladder ---------- */
+  .ladder{border-top:1px solid var(--border);}
+  .rung{
+    display:grid;grid-template-columns:56px 1fr auto auto;gap:20px;
+    align-items:center;padding:22px 0;border-bottom:1px solid var(--border);
+  }
+  .rung .idx{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;color:var(--text-dim);}
+  .rung .body h3{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:16.5px;margin-bottom:5px;}
+  .rung .body p{color:var(--text-dim);font-size:13.8px;max-width:56ch;}
+  .rung .lead{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--accent);text-align:right;white-space:nowrap;}
+  .rung .lead span{display:block;color:var(--text-dim);font-size:10.5px;margin-top:2px;}
+  @media (max-width:720px){
+    .rung{grid-template-columns:36px 1fr;grid-template-areas:"idx body" ". stamp" ". lead";row-gap:8px;}
+    .rung .idx{grid-area:idx;font-size:20px;}
+    .rung .body{grid-area:body;}
+    .rung .stamp{grid-area:stamp;justify-self:start;}
+    .rung .lead{grid-area:lead;text-align:left;}
+  }
+
+  /* ---------- live feed ---------- */
+  .tabs{display:flex;gap:2px;border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;width:fit-content;max-width:100%;overflow-x:auto;}
+  .tab{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:11px 16px;
+    background:var(--panel);color:var(--text-dim);cursor:pointer;border:none;
+    border-right:1px solid var(--border);white-space:nowrap;
+  }
+  .tab:last-child{border-right:none;}
+  .tab.active{background:var(--accent);color:#14100c;font-weight:600;}
+  .tab:hover:not(.active){color:var(--text);}
+
+  .feed-panel{border:1px solid var(--border);border-top:none;background:var(--panel);}
+  .feed-meta{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    padding:16px 20px;border-bottom:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);
+  }
+  .feed-meta .src-link{color:var(--accent);text-decoration:none;}
+  .feed-tools{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:14px 20px;border-bottom:1px solid var(--border);background:var(--panel-2);
+  }
+  .search-box{
+    flex:1;min-width:200px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;
+    padding:9px 12px;background:var(--bg);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text);
+  }
+  .search-box::placeholder{color:var(--text-dim);}
+  .tool-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:9px 14px;
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    border-radius:var(--radius);cursor:pointer;white-space:nowrap;
+  }
+  .tool-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .feed-list{max-height:520px;overflow-y:auto;}
+  .lead-row{
+    display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;
+    padding:16px 20px;border-bottom:1px solid var(--border);
+  }
+  .lead-row:last-child{border-bottom:none;}
+  .lead-row .who{font-weight:600;font-size:14.5px;}
+  .lead-row .where{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .lead-row .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-top:4px;}
+  .lead-row .when{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);text-align:right;white-space:nowrap;}
+  .copy-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:7px 12px;
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    border-radius:var(--radius);cursor:pointer;white-space:nowrap;
+  }
+  .copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .copy-btn.copied{border-color:var(--live);color:var(--live);}
+  @media (max-width:720px){
+    .lead-row{grid-template-columns:1fr;}
+    .lead-row .when{text-align:left;}
+  }
+  .feed-status{padding:40px 20px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.7;}
+  .feed-status.error{color:var(--accent);}
+
+  /* ---------- feasibility table ---------- */
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
+    letter-spacing:0.06em;color:var(--text-dim);padding:12px 14px;border-bottom:1px solid var(--border);
+  }
+  td{padding:16px 14px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top;}
+  td.name{font-weight:600;}
+  td .sub{color:var(--text-dim);font-size:12.5px;margin-top:3px;}
+  tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);background:var(--panel);border-radius:var(--radius);}
+
+  /* ---------- verdict ---------- */
+  .verdict{
+    background:var(--panel);border:1px solid var(--border);padding:36px;border-radius:var(--radius);
+    display:grid;grid-template-columns:120px 1fr;gap:28px;align-items:start;
+  }
+  .verdict .mark{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:52px;color:var(--live);line-height:1;}
+  .verdict h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;text-transform:uppercase;margin-bottom:10px;}
+  .verdict p{color:var(--text-dim);font-size:15px;max-width:64ch;}
+  .verdict p + p{margin-top:12px;}
+  @media (max-width:640px){.verdict{grid-template-columns:1fr;}}
+
+  footer{padding:40px 0;}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);}
+  footer a{color:var(--accent);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">SIGNAL <span>/ Manhattan</span></div>
+    </div>
+    <div class="clock"><span class="dot"></span><span id="clock">--:--:--</span></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Sales intelligence, zero cost</span>
+    <h1>Every new business throws something out <em>before</em> it throws a party.</h1>
+    <p class="hero-sub">A liquor license posted, a building permit approved, a first health inspection filed. Each one is a paper trail a new Manhattan business leaves behind, weeks or months before opening day. This page pulls those trails live, straight from NYC and New York State open data, so you can call before the ribbon gets cut.</p>
+    <div class="hero-actions">
+      <a href="#feed" class="btn primary">Jump to live signals</a>
+      <a href="#verdict" class="btn">Is this real? Skip to the verdict</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">3</div><div class="label">Live public feeds, no key required</div></div>
+      <div class="hero-stat"><div class="num">$0</div><div class="label">Cost to run this, forever</div></div>
+      <div class="hero-stat"><div class="num">30–180</div><div class="label">Days of lead time before opening</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="ladder">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The signal ladder</span>
+      <h2>Six moments before a door opens</h2>
+      <p>Ranked from earliest warning to too-late. The ones marked LIVE are wired into the feed below right now. The ones marked MANUAL are real, free, and worth checking by hand, but nobody publishes a clean API for them.</p>
+    </div>
+
+    <div class="ladder">
+      <div class="rung">
+        <div class="idx">01</div>
+        <div class="body">
+          <h3>Community board liquor notice</h3>
+          <p>NY law requires 30 days' written notice to the local community board before filing an on-premise liquor license application. It's public record, discussed at CB meetings, and almost nobody outside the neighborhood reads it.</p>
+        </div>
+        <div class="stamp manual">Manual watch</div>
+        <div class="lead">60–120 days out<span>CB1/CB2/CB4/CB5 minutes</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">02</div>
+        <div class="body">
+          <h3>Construction / buildout permit approved</h3>
+          <p>DOB approves a permit before a single wall gets built out. A general construction permit at a retail address is one of the strongest early tells that a space is being fitted for a new tenant. This feed pulls from DOB NOW, the system where nearly all new permits land today.</p>
+        </div>
+        <div class="stamp live">Live below</div>
+        <div class="lead">45–180 days out<span>DOB NOW Approved Permits</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">03</div>
+        <div class="body">
+          <h3>Liquor license application posted</h3>
+          <p>The State Liquor Authority publishes active licenses daily, including temporary operating permits, which is how many new spots open their doors while the full license is pending. A fresh filing at a Manhattan address means a bar, restaurant, or retail liquor operation is actively moving toward opening.</p>
+        </div>
+        <div class="stamp live">Live below</div>
+        <div class="lead">30–90 days out<span>NYS Liquor Authority</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">04</div>
+        <div class="body">
+          <h3>Signage permit filed</h3>
+          <p>Exterior signage needs a DOB sign permit. It usually lands close to the finish line, but it's a hard confirmation that the buildout is nearly done.</p>
+        </div>
+        <div class="stamp manual">Manual watch</div>
+        <div class="lead">14–30 days out<span>DOB NOW sign filings</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">05</div>
+        <div class="body">
+          <h3>First health inspection filed, not yet conducted</h3>
+          <p>DOHMH flags a brand-new food establishment with a placeholder inspection date before the actual visit happens. It means the health permit is in hand and the doors are close.</p>
+        </div>
+        <div class="stamp live">Live below</div>
+        <div class="lead">7–30 days out<span>DOHMH Restaurant Inspections</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">06</div>
+        <div class="body">
+          <h3>Grand opening</h3>
+          <p>By now every waste hauler in the borough has the address. This is the call you're trying to avoid making.</p>
+        </div>
+        <div class="stamp manual" style="color:var(--text-dim);border-color:var(--text-dim);">Too late</div>
+        <div class="lead">Day zero<span>Everyone knows</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="feed">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Live, right now</span>
+      <h2>Manhattan signal feed</h2>
+      <p>Pulled on page load directly from NYC Open Data and New York State's open data portal. No login, no API key, no cost. Copy a single lead, or export the whole list as a CSV ready for Salesforce import.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="sla" role="tab" aria-selected="true">Liquor licenses</button>
+      <button class="tab" data-tab="dob" role="tab" aria-selected="false">Buildout permits</button>
+      <button class="tab" data-tab="doh" role="tab" aria-selected="false">New restaurants</button>
+    </div>
+    <div class="feed-panel">
+      <div class="feed-meta">
+        <span id="feed-desc"></span>
+        <a class="src-link" id="feed-src" href="#" target="_blank" rel="noopener">View raw dataset →</a>
+      </div>
+      <div class="feed-tools">
+        <input type="search" class="search-box" id="feed-search" placeholder="Filter by name, street, ZIP…" aria-label="Filter leads">
+        <button class="tool-btn" id="btn-csv">Export CSV</button>
+        <button class="tool-btn" id="btn-refresh">Refresh</button>
+      </div>
+      <div class="feed-list" id="feed-list">
+        <div class="feed-status">Loading live records…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="feasibility">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Full picture</span>
+      <h2>Every source, ranked honestly</h2>
+      <p>What's wired up above, what's worth a weekly manual check, and what needs a paid tool to do well.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Source</th><th>Signal</th><th>Free & automatable?</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">DOB NOW Approved Permits<div class="sub">NYC Open Data, Socrata API, updated daily</div></td>
+            <td>Buildout / construction permit approved</td>
+            <td>Yes — live above</td>
+            <td>Retail, restaurant, office fit-outs, new buildings</td>
+          </tr>
+          <tr>
+            <td class="name">NYS Liquor Authority<div class="sub">data.ny.gov, daily active license list</div></td>
+            <td>New license or temporary permit issued</td>
+            <td>Yes — live above</td>
+            <td>Bars, restaurants, retail alcohol</td>
+          </tr>
+          <tr>
+            <td class="name">DOHMH Restaurant Inspections<div class="sub">NYC Open Data, Socrata API</div></td>
+            <td>First inspection pending flag</td>
+            <td>Yes — live above</td>
+            <td>Any food service opening imminently</td>
+          </tr>
+          <tr>
+            <td class="name">DOB Permit Issuance (legacy BIS)<div class="sub">NYC Open Data — older system, still updated</div></td>
+            <td>Permits still processed in the old system</td>
+            <td>Yes — used as automatic backup above</td>
+            <td>Catching the shrinking share of BIS-only permits</td>
+          </tr>
+          <tr>
+            <td class="name">Community board agendas<div class="sub">Manhattan CB websites, PDF minutes</div></td>
+            <td>30-day advance liquor notice</td>
+            <td>Free, manual only — no clean API</td>
+            <td>Earliest possible lead, worth 10 min a week</td>
+          </tr>
+          <tr>
+            <td class="name">NY Dept of State corporation search<div class="sub">dos.ny.gov business entity search</div></td>
+            <td>New LLC formed at a commercial address</td>
+            <td>Free, manual lookup only</td>
+            <td>Confirming who's actually behind a permit</td>
+          </tr>
+          <tr>
+            <td class="name">CoStar / LoopNet<div class="sub">Free tier is limited</div></td>
+            <td>Lease signed, space marked "leased"</td>
+            <td>Partial — free tier is thin</td>
+            <td>Catching a deal before construction starts</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="verdict">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">The honest answer</span>
+      <h2>Can you actually build this?</h2>
+    </div>
+    <div class="verdict">
+      <div class="mark">YES</div>
+      <div>
+        <h3>This is a real, buildable tool — and you're looking at a working version of it</h3>
+        <p>The three live feeds above are genuine public APIs with no cost and no login. What you're looking at right now already does the core job: it surfaces Manhattan addresses that are actively becoming something, before that something opens its doors.</p>
+        <p>The honest limitation is coverage, not cost. The earliest signal on the ladder, community board notice, has no API; it lives in PDFs on volunteer-run websites. That one stays a five-minute manual habit, not a feed. Everything else here runs unattended.</p>
+        <p>Realistic path: use this page for a few weeks and get a feel for the noise level in the permit feed, since general construction permits include renovations that aren't new tenants. Once you know what a good lead looks like, the next step is a lightweight script that runs weekly, filters harder, and drops results straight into a Google Sheet or your Salesforce import queue.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Built for Manhattan waste, recycling & secure destruction sales. Data: NYC Open Data & data.ny.gov.</div>
+    <div><a href="https://opendata.cityofnewyork.us" target="_blank" rel="noopener">opendata.cityofnewyork.us</a> · <a href="https://data.ny.gov" target="_blank" rel="noopener">data.ny.gov</a></div>
+  </div>
+</footer>
+
+<script>
+// =====================================================
+//  SIGNAL / Manhattan — live open-data lead feed
+//  All endpoints are free public Socrata APIs.
+//  IMPORTANT: query strings are built raw on purpose.
+//  URLSearchParams encodes the $ in $where/$order and
+//  Socrata silently ignores encoded params.
+// =====================================================
+
+// ---------- clock ----------
+function tickClock(){
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+}
+tickClock();
+setInterval(tickClock,1000);
+
+// ---------- helpers ----------
+function pickKey(obj, candidates){
+  const keys = Object.keys(obj || {});
+  for(const c of candidates){
+    const hit = keys.find(k => k.toLowerCase().includes(c));
+    if(hit) return hit;
+  }
+  return null;
+}
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmtDate(v){
+  if(!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+async function getJSON(url){
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+function copyToClipboard(text, btn){
+  if(!navigator.clipboard){ return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+  });
+}
+// session cache, guarded so the page still works if storage is blocked
+const mem = {};
+function cacheGet(k){
+  try{ return JSON.parse(sessionStorage.getItem('sig_'+k)); }catch(e){ return mem[k] || null; }
+}
+function cacheSet(k, v){
+  mem[k] = v;
+  try{ sessionStorage.setItem('sig_'+k, JSON.stringify(v)); }catch(e){}
+}
+
+// ---------- rendering ----------
+const feedList = document.getElementById('feed-list');
+const feedDesc = document.getElementById('feed-desc');
+const feedSrc = document.getElementById('feed-src');
+const searchBox = document.getElementById('feed-search');
+let currentTab = 'sla';
+let currentRows = [];
+
+function renderRows(rows){
+  const q = (searchBox.value || '').trim().toLowerCase();
+  const visible = q
+    ? rows.filter(r => (r.who+' '+r.where+' '+(r.tag||'')).toLowerCase().includes(q))
+    : rows;
+  if(!visible.length){
+    feedList.innerHTML = '<div class="feed-status">' + (rows.length
+      ? 'No leads match that filter.'
+      : 'No matching records returned right now. City data feeds occasionally lag — try Refresh in a minute.') + '</div>';
+    return;
+  }
+  feedList.innerHTML = '';
+  visible.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'lead-row';
+    row.innerHTML = `
+      <div>
+        <div class="who">${esc(r.who)}</div>
+        <div class="where">${esc(r.where)}</div>
+        ${r.tag ? `<div class="tag">${esc(r.tag)}</div>` : ''}
+      </div>
+      <div class="when">${esc(r.when)}</div>
+      <button class="copy-btn">Copy lead</button>
+    `;
+    row.querySelector('.copy-btn').addEventListener('click', (e) => {
+      copyToClipboard(`${r.who}\t${r.where}\t${r.tag || ''}\t${r.when}`, e.target);
+    });
+    feedList.appendChild(row);
+  });
+}
+function showStatus(msg, isError){
+  feedList.innerHTML = `<div class="feed-status${isError ? ' error' : ''}">${msg}</div>`;
+}
+
+// ---------- feed loaders ----------
+// Each loader returns an array of {who, where, tag, when}.
+// Field names are detected from a live probe record where the
+// schema isn't guaranteed, so a renamed column degrades
+// gracefully instead of breaking the page.
+
+// DOB NOW: Build – Approved Permits (primary, where new permits land today)
+// Falls back to the legacy BIS Permit Issuance dataset if DOB NOW fails.
+async function loadDOB(){
+  try{
+    const probe = await getJSON('https://data.cityofnewyork.us/resource/rbx6-tga4.json?$limit=1');
+    const s = probe[0] || {};
+    const boroK = pickKey(s,['borough','boro']);
+    const dateK = pickKey(s,['approved_date','issued_date','issuance']) || pickKey(s,['date']);
+    const nameK = pickKey(s,['applicant_business','owner_business','business_name','owner_name','applicant']);
+    const houseK = pickKey(s,['house']);
+    const streetK = pickKey(s,['street_name','street']);
+    const workK = pickKey(s,['work_type','job_description','permit_type']);
+    const jobK = pickKey(s,['job_filing_number','job_number','job__']);
+
+    let url = 'https://data.cityofnewyork.us/resource/rbx6-tga4.json?$limit=40';
+    if(boroK) url += `&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
+    if(dateK) url += `&$order=${dateK} DESC`;
+    const data = await getJSON(url);
+    if(!data.length) throw new Error('empty');
+    return data.map(d => ({
+      who: (nameK && d[nameK]) || 'Permit approved — business name not listed',
+      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan',
+      tag: [workK && d[workK], jobK && d[jobK] ? 'Filing '+d[jobK] : ''].filter(Boolean).join(' · '),
+      when: dateK ? fmtDate(d[dateK]) : '—'
+    }));
+  }catch(err){
+    // legacy BIS fallback
+    const where = encodeURIComponent("upper(borough)='MANHATTAN' AND job_type IN('A1','A2','A3','NB')");
+    const url = `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?$where=${where}&$order=issuance_date DESC&$limit=40`;
+    const data = await getJSON(url);
+    const s = data[0] || {};
+    const houseK = pickKey(s,['house']);
+    const streetK = pickKey(s,['street_name']);
+    const bizK = pickKey(s,['permittee_s_business_name','owner_s_business_name','business_name']);
+    const typeK = pickKey(s,['job_type']);
+    const dateK = pickKey(s,['issuance_date']);
+    return data.map(d => ({
+      who: (bizK && d[bizK]) || 'Permit filed — business name not listed',
+      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan (legacy BIS)',
+      tag: typeK ? 'Job type: '+d[typeK] : '',
+      when: dateK ? fmtDate(d[dateK]) : '—'
+    }));
+  }
+}
+
+// DOHMH: restaurants with a permit but no inspection yet (1900-01-01 placeholder)
+async function loadDOH(){
+  const where = encodeURIComponent("upper(boro)='MANHATTAN' AND inspection_date='1900-01-01T00:00:00.000'");
+  const url = `https://data.cityofnewyork.us/resource/43nn-pn8j.json?$where=${where}&$limit=300`;
+  const data = await getJSON(url);
+  if(!data.length) throw new Error('empty');
+  const s = data[0];
+  const camisK = pickKey(s,['camis']) || 'camis';
+  const dbaK = pickKey(s,['dba']) || 'dba';
+  const buildingK = pickKey(s,['building']);
+  const streetK = pickKey(s,['street']);
+  const zipK = pickKey(s,['zip']);
+  const cuisineK = pickKey(s,['cuisine']);
+  const seen = new Set();
+  const rows = [];
+  for(const d of data){
+    const id = d[camisK];
+    if(seen.has(id)) continue;
+    seen.add(id);
+    rows.push({
+      who: d[dbaK] || 'Unnamed establishment',
+      where: [buildingK && d[buildingK], streetK && d[streetK], zipK && d[zipK]].filter(Boolean).join(' ') + ', Manhattan',
+      tag: (cuisineK && d[cuisineK]) ? d[cuisineK]+' · not yet inspected' : 'Not yet inspected — brand new',
+      when: 'Permit filed'
+    });
+    if(rows.length >= 40) break;
+  }
+  return rows;
+}
+
+// NYS SLA: current active licenses (9s3h-dpkz), fallback to daily list (wg8y-fzsj)
+async function loadSLAFrom(datasetId){
+  const base = `https://data.ny.gov/resource/${datasetId}.json`;
+  const probe = await getJSON(base+'?$limit=1');
+  const s = probe[0] || {};
+  const countyK = pickKey(s,['county']);
+  const zipK = pickKey(s,['zip']);
+  const dateK = pickKey(s,['original','effective_date','license_issued','issue_date','license_date','current','date']);
+  const nameK = pickKey(s,['doing_business','dba','trade_name','premises_name','premise_name','license_name','name']);
+  const addrK = pickKey(s,['address','premises','premise']);
+  const typeK = pickKey(s,['license_type_name','license_class','license_type','type']);
+
+  let where = '';
+  if(countyK) where = `upper(${countyK})='NEW YORK'`;
+  else if(zipK) where = `(${zipK} like '100%' OR ${zipK} like '101%' OR ${zipK} like '102%')`;
+
+  let url = base+'?$limit=40';
+  if(where) url += `&$where=${encodeURIComponent(where)}`;
+  if(dateK) url += `&$order=${dateK} DESC`;
+
+  const data = await getJSON(url);
+  if(!data.length) throw new Error('empty');
+  return data.map(d => ({
+    who: (nameK && d[nameK]) || 'Licensee name not listed in this field set',
+    where: (addrK && d[addrK]) ? d[addrK]+', Manhattan' : 'Address field not identified',
+    tag: (typeK && d[typeK]) ? String(d[typeK]) : '',
+    when: (dateK && d[dateK]) ? fmtDate(d[dateK]) : '—'
+  }));
+}
+async function loadSLA(){
+  try{ return await loadSLAFrom('9s3h-dpkz'); }
+  catch(err){ return await loadSLAFrom('wg8y-fzsj'); }
+}
+
+// ---------- tab config ----------
+const configs = {
+  sla: {
+    desc: 'New York State Liquor Authority — current active licenses, filtered to New York County (Manhattan), newest first.',
+    src: 'https://data.ny.gov/Economic-Development/Current-Liquor-Authority-Active-Licenses/9s3h-dpkz',
+    load: loadSLA
+  },
+  dob: {
+    desc: 'NYC Department of Buildings — DOB NOW approved permits in Manhattan, newest first. Falls back to the legacy BIS dataset automatically.',
+    src: 'https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4',
+    load: loadDOB
+  },
+  doh: {
+    desc: 'NYC Health Department — restaurants with a permit on file but no inspection conducted yet.',
+    src: 'https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j',
+    load: loadDOH
+  }
+};
+
+async function activateTab(name, forceReload){
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => {
+    const active = t.dataset.tab === name;
+    t.classList.toggle('active', active);
+    t.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  feedDesc.textContent = configs[name].desc;
+  feedSrc.href = configs[name].src;
+
+  const cached = forceReload ? null : cacheGet(name);
+  if(cached){
+    currentRows = cached;
+    renderRows(currentRows);
+    return;
+  }
+  showStatus('Loading live records…');
+  try{
+    currentRows = await configs[name].load();
+    cacheSet(name, currentRows);
+    renderRows(currentRows);
+  }catch(err){
+    currentRows = [];
+    showStatus('Live feed didn\'t respond. These public endpoints occasionally rate-limit anonymous requests — hit Refresh in a minute, or open the raw dataset link above.', true);
+  }
+}
+
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => activateTab(t.dataset.tab)));
+searchBox.addEventListener('input', () => renderRows(currentRows));
+document.getElementById('btn-refresh').addEventListener('click', () => activateTab(currentTab, true));
+
+// ---------- CSV export ----------
+document.getElementById('btn-csv').addEventListener('click', () => {
+  if(!currentRows.length) return;
+  const head = ['Business/Name','Address','Detail','Date','Source'];
+  const csvCell = v => '"'+String(v ?? '').replace(/"/g,'""')+'"';
+  const lines = [head.map(csvCell).join(',')];
+  currentRows.forEach(r => {
+    lines.push([r.who, r.where, r.tag || '', r.when, currentTab.toUpperCase()].map(csvCell).join(','));
+  });
+  const blob = new Blob([lines.join('\r\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `signal-manhattan-${currentTab}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+});
+
+// initial load
+activateTab('sla');
+</script>
+</body>
+</html>
