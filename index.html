@@ -530,9 +530,17 @@ function fmtDate(v){
   return isNaN(d) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 async function getJSON(url){
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  return res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  // cache-bust so the browser can never quietly reuse a stale answer
+  const bustedUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  try{
+    const res = await fetch(bustedUrl, {signal: controller.signal, cache: 'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 function copyToClipboard(text, btn){
   if(!navigator.clipboard){ return; }
@@ -857,28 +865,37 @@ const scanLabel = document.getElementById('scan-label');
 const scanResult = document.getElementById('scan-result');
 
 scanBtn.addEventListener('click', async () => {
+  if(scanBtn.disabled) return;
   scanBtn.disabled = true;
   scanBtn.classList.add('scanning');
   scanLabel.textContent = 'Scanning Manhattan…';
   scanResult.textContent = '';
-  const names = ['altco','sla','dob','doh'];
-  const counts = {};
-  for(const name of names){
-    try{
-      const rows = await configs[name].load();
-      cacheSet(name, rows);
-      counts[name] = rows.length;
-    }catch(e){
-      counts[name] = 0;
+  try{
+    const names = ['altco','sla','dob','doh'];
+    const counts = {};
+    for(const name of names){
+      try{
+        const rows = await configs[name].load();
+        cacheSet(name, rows);
+        counts[name] = rows.length;
+      }catch(e){
+        console.warn('Scan failed for', name, e);
+        counts[name] = 0;
+      }
     }
+    const total = Object.values(counts).reduce((a,b) => a+b, 0);
+    const stamp = new Date().toLocaleTimeString('en-US',{hour12:false});
+    scanResult.innerHTML = `<strong>${total} live leads found</strong> — ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants <span style="color:var(--text-dim)">(scanned at ${stamp})</span>`;
+    // refresh whatever tab is currently showing with the just-fetched data
+    activateTab(currentTab, false);
+  } catch(err){
+    console.error('Scan all failed', err);
+    scanResult.innerHTML = 'Scan hit an unexpected error. Try again in a moment.';
+  } finally {
+    scanBtn.disabled = false;
+    scanBtn.classList.remove('scanning');
+    scanLabel.textContent = 'Scan all signals now';
   }
-  const total = Object.values(counts).reduce((a,b) => a+b, 0);
-  scanResult.innerHTML = `<strong>${total} live leads found</strong> — ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants`;
-  scanBtn.disabled = false;
-  scanBtn.classList.remove('scanning');
-  scanLabel.textContent = 'Scan all signals now';
-  // refresh whatever tab is currently showing with the just-fetched data
-  activateTab(currentTab, false);
 });
 
 // initial load
