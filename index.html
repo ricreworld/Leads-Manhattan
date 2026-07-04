@@ -136,6 +136,35 @@
     .rung .lead{grid-area:lead;text-align:left;}
   }
 
+  /* ---------- scan bar ---------- */
+  .scan-bar{
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .scan-btn{
+    display:flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;
+    padding:14px 22px;border-radius:var(--radius);cursor:pointer;
+    border:1.5px solid var(--accent);background:var(--accent);color:#14100c;
+    text-transform:uppercase;letter-spacing:0.04em;
+  }
+  .scan-btn:hover{background:#ff7d52;}
+  .scan-btn:disabled{opacity:0.6;cursor:wait;}
+  .scan-icon{display:inline-block;font-size:16px;}
+  .scan-btn.scanning .scan-icon{animation:spin 1s linear infinite;}
+  @media (prefers-reduced-motion:reduce){.scan-btn.scanning .scan-icon{animation:none;}}
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  .scan-result{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);}
+  .scan-result strong{color:var(--live);}
+  .new-pill{
+    font-size:9px;background:var(--live);color:#0c1712;padding:2px 6px;
+    border-radius:2px;margin-left:6px;letter-spacing:0.05em;vertical-align:2px;
+  }
+  .tab-experimental{
+    font-size:9px;color:var(--manual);border:1px solid var(--manual);padding:2px 6px;
+    border-radius:2px;margin-left:6px;text-transform:uppercase;letter-spacing:0.05em;
+  }
+
   /* ---------- live feed ---------- */
   .tabs{display:flex;gap:2px;border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;width:fit-content;max-width:100%;overflow-x:auto;}
   .tab{
@@ -246,9 +275,9 @@
       <a href="#verdict" class="btn">Is this real? Skip to the verdict</a>
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="num">3</div><div class="label">Live public feeds, no key required</div></div>
+      <div class="hero-stat"><div class="num">4</div><div class="label">Live public feeds, no key required</div></div>
       <div class="hero-stat"><div class="num">$0</div><div class="label">Cost to run this, forever</div></div>
-      <div class="hero-stat"><div class="num">30–180</div><div class="label">Days of lead time before opening</div></div>
+      <div class="hero-stat"><div class="num">30–240</div><div class="label">Days of lead time before opening</div></div>
     </div>
   </div>
 </section>
@@ -275,8 +304,18 @@
       <div class="rung">
         <div class="idx">02</div>
         <div class="body">
-          <h3>Construction / buildout permit approved</h3>
-          <p>DOB approves a permit before a single wall gets built out. A general construction permit at a retail address is one of the strongest early tells that a space is being fitted for a new tenant. This feed pulls from DOB NOW, the system where nearly all new permits land today.</p>
+          <h3>Alt-CO filing submitted, before approval</h3>
+          <p>DOB NOW classifies any filing that changes a building's use, occupancy, or egress as an Alt-CO. That classification means someone is legally converting a space into a different kind of business, and it shows up the moment the filing is submitted, months before a permit is even approved.</p>
+        </div>
+        <div class="stamp live">Live below</div>
+        <div class="lead">90–240 days out<span>DOB NOW Job Filings</span></div>
+      </div>
+
+      <div class="rung">
+        <div class="idx">02b</div>
+        <div class="body">
+          <h3>Construction permit approved</h3>
+          <p>DOB approves the permit before a single wall gets built out. This is the confirmation step after the Alt-CO filing above, and it's also where general construction permits for simpler renovations show up.</p>
         </div>
         <div class="stamp live">Live below</div>
         <div class="lead">45–180 days out<span>DOB NOW Approved Permits</span></div>
@@ -333,9 +372,18 @@
       <p>Pulled on page load directly from NYC Open Data and New York State's open data portal. No login, no API key, no cost. Copy a single lead, or export the whole list as a CSV ready for Salesforce import.</p>
     </div>
 
+    <div class="scan-bar">
+      <button class="scan-btn" id="btn-scan-all">
+        <span class="scan-icon">◎</span>
+        <span id="scan-label">Scan all signals now</span>
+      </button>
+      <div class="scan-result" id="scan-result"></div>
+    </div>
+
     <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="sla" role="tab" aria-selected="true">Liquor licenses</button>
-      <button class="tab" data-tab="dob" role="tab" aria-selected="false">Buildout permits</button>
+      <button class="tab active" data-tab="altco" role="tab" aria-selected="true">Buildout filings <span class="new-pill">new</span></button>
+      <button class="tab" data-tab="sla" role="tab" aria-selected="false">Liquor licenses</button>
+      <button class="tab" data-tab="dob" role="tab" aria-selected="false">Approved permits</button>
       <button class="tab" data-tab="doh" role="tab" aria-selected="false">New restaurants</button>
     </div>
     <div class="feed-panel">
@@ -346,7 +394,7 @@
       <div class="feed-tools">
         <input type="search" class="search-box" id="feed-search" placeholder="Filter by name, street, ZIP…" aria-label="Filter leads">
         <button class="tool-btn" id="btn-csv">Export CSV</button>
-        <button class="tool-btn" id="btn-refresh">Refresh</button>
+        <button class="tool-btn" id="btn-refresh">Refresh this tab</button>
       </div>
       <div class="feed-list" id="feed-list">
         <div class="feed-status">Loading live records…</div>
@@ -368,6 +416,12 @@
           <tr><th>Source</th><th>Signal</th><th>Free & automatable?</th><th>Best for</th></tr>
         </thead>
         <tbody>
+          <tr>
+            <td class="name">DOB NOW Job Application Filings<div class="sub">NYC Open Data, dataset w9ak-ipjd — experimental</div></td>
+            <td>Alt-CO filing submitted (change of use/occupancy), before approval</td>
+            <td>Yes — live above, schema partly unconfirmed</td>
+            <td>Earliest confirmed sign a space is becoming a different business</td>
+          </tr>
           <tr>
             <td class="name">DOB NOW Approved Permits<div class="sub">NYC Open Data, Socrata API, updated daily</div></td>
             <td>Buildout / construction permit approved</td>
@@ -622,6 +676,72 @@ async function loadDOH(){
   return rows;
 }
 
+// DOB NOW: Job Application Filings (w9ak-ipjd) — the Alt-CO signal.
+// This is the earliest and least noisy signal on the ladder: a filing that
+// legally changes a building's use, occupancy, or egress. IMPORTANT: the
+// exact column that carries this classification could not be fully confirmed
+// against the live schema, so this loader probes the dataset and searches
+// several candidate field names / value patterns before falling back to an
+// unfiltered "all Manhattan filings" view. Cross-references each filing's
+// job_filing_number against the Approved Permits dataset to show whether a
+// permit has been issued yet.
+async function loadALTCO(){
+  const base = 'https://data.cityofnewyork.us/resource/w9ak-ipjd.json';
+  const probe = await getJSON(base+'?$limit=1');
+  const s = probe[0] || {};
+  const boroK = pickKey(s,['borough']) || 'borough';
+  const jobK = pickKey(s,['job_filing_number']) || 'job_filing_number';
+  const statusK = pickKey(s,['filing_status']);
+  const houseK = pickKey(s,['house_no','house']);
+  const streetK = pickKey(s,['street_name']);
+  const ownerK = pickKey(s,['owner_s_business_name','owner_business']);
+  const dateK = pickKey(s,['latest_action_date','filing_date','current_status_date','action_date']);
+  const typeK = pickKey(s,['job_type','classification','alt_co','building_type']);
+
+  let url = `${base}?$limit=60&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
+  if(dateK) url += `&$order=${dateK} DESC`;
+  const data = await getJSON(url);
+  if(!data.length) throw new Error('empty');
+
+  // try to isolate Alt-CO style records if a usable type/classification field exists
+  let rows = data;
+  let typeDetected = false;
+  if(typeK){
+    const altcoRows = data.filter(d => {
+      const v = String(d[typeK] || '').toLowerCase();
+      return v.includes('alt') && (v.includes('co') || v.includes('occupancy') || v.includes('change'));
+    });
+    if(altcoRows.length){ rows = altcoRows; typeDetected = true; }
+  }
+
+  // cross-reference against Approved Permits by job filing number
+  const jobNumbers = rows.map(d => d[jobK]).filter(Boolean).slice(0,60);
+  let permitMap = {};
+  if(jobNumbers.length){
+    try{
+      const inList = jobNumbers.map(n => `'${String(n).replace(/'/g,"''")}'`).join(',');
+      const permitUrl = `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?$where=${encodeURIComponent(`job__ IN(${inList})`)}&$limit=200`;
+      const permits = await getJSON(permitUrl).catch(() => []);
+      permits.forEach(p => { if(p.job__) permitMap[p.job__] = p; });
+    }catch(e){ /* cross-reference is best-effort, feed still works without it */ }
+  }
+
+  return rows.slice(0,40).map(d => {
+    const jobNum = d[jobK];
+    const hasPermit = jobNum && permitMap[jobNum];
+    return {
+      who: (ownerK && d[ownerK]) || 'Filing submitted — owner name not listed',
+      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan',
+      tag: [
+        typeDetected ? 'Alt-CO: change of use/occupancy' : (typeK && d[typeK] ? String(d[typeK]) : 'Job filing'),
+        statusK && d[statusK] ? d[statusK] : null,
+        hasPermit ? 'Permit already approved' : 'No permit yet — earliest stage'
+      ].filter(Boolean).join(' · '),
+      when: dateK && d[dateK] ? fmtDate(d[dateK]) : (jobNum ? `Filing ${jobNum}` : '—')
+    };
+  });
+}
+
 // NYS SLA: current active licenses (9s3h-dpkz), fallback to daily list (wg8y-fzsj)
 async function loadSLAFrom(datasetId){
   const base = `https://data.ny.gov/resource/${datasetId}.json`;
@@ -658,6 +778,11 @@ async function loadSLA(){
 
 // ---------- tab config ----------
 const configs = {
+  altco: {
+    desc: 'DOB NOW Job Application Filings — Alt-CO change-of-use filings in Manhattan, cross-checked against approved permits. Experimental: schema partly unconfirmed, verify before relying on it.',
+    src: 'https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Job-Application-Filings/w9ak-ipjd',
+    load: loadALTCO
+  },
   sla: {
     desc: 'New York State Liquor Authority — current active licenses, filtered to New York County (Manhattan), newest first.',
     src: 'https://data.ny.gov/Economic-Development/Current-Liquor-Authority-Active-Licenses/9s3h-dpkz',
@@ -726,8 +851,38 @@ document.getElementById('btn-csv').addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
+// ---------- scan all signals ----------
+const scanBtn = document.getElementById('btn-scan-all');
+const scanLabel = document.getElementById('scan-label');
+const scanResult = document.getElementById('scan-result');
+
+scanBtn.addEventListener('click', async () => {
+  scanBtn.disabled = true;
+  scanBtn.classList.add('scanning');
+  scanLabel.textContent = 'Scanning Manhattan…';
+  scanResult.textContent = '';
+  const names = ['altco','sla','dob','doh'];
+  const counts = {};
+  for(const name of names){
+    try{
+      const rows = await configs[name].load();
+      cacheSet(name, rows);
+      counts[name] = rows.length;
+    }catch(e){
+      counts[name] = 0;
+    }
+  }
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  scanResult.innerHTML = `<strong>${total} live leads found</strong> — ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants`;
+  scanBtn.disabled = false;
+  scanBtn.classList.remove('scanning');
+  scanLabel.textContent = 'Scan all signals now';
+  // refresh whatever tab is currently showing with the just-fetched data
+  activateTab(currentTab, false);
+});
+
 // initial load
-activateTab('sla');
+activateTab('altco');
 </script>
 </body>
 </html>
