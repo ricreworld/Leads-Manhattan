@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#12161a;
@@ -224,6 +227,41 @@
   .feed-status{padding:40px 20px;text-align:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.7;}
   .feed-status.error{color:var(--accent);}
 
+  /* ---------- map ---------- */
+  .map-legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);}
+  .map-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  #map{
+    height:520px;width:100%;border:1px solid var(--border);border-radius:var(--radius);
+    background:var(--panel);
+  }
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--text);border-radius:var(--radius);}
+  .leaflet-popup-tip{background:var(--panel);}
+  .popup-who{font-weight:600;font-size:13.5px;margin-bottom:4px;}
+  .popup-where{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);margin-bottom:4px;}
+  .popup-tag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);margin-bottom:8px;}
+  .popup-copy{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;
+    background:transparent;border:1px solid var(--border);color:var(--text);
+    border-radius:var(--radius);cursor:pointer;
+  }
+  .map-note{margin-top:12px;font-size:12.5px;color:var(--text-dim);}
+
+  /* ---------- charts ---------- */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media (max-width:800px){.chart-grid{grid-template-columns:1fr;}}
+  .chart-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;
+  }
+  .chart-card h3{
+    font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;
+    text-transform:uppercase;margin-bottom:4px;
+  }
+  .chart-card .chart-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px;}
+  .chart-card canvas{max-height:260px;}
+  .chart-empty{color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:30px 0;text-align:center;}
+
   /* ---------- feasibility table ---------- */
   table{width:100%;border-collapse:collapse;margin-top:8px;}
   th{
@@ -403,6 +441,46 @@
   </div>
 </section>
 
+<section id="map-section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">See it, not just read it</span>
+      <h2>Live map of every lead</h2>
+      <p>Every pin comes from the same live scan above, plotted the moment coordinates are available in the city or state data. Click a pin to see the lead and copy it straight to Salesforce.</p>
+    </div>
+    <div class="map-legend">
+      <span><span class="legend-dot" style="background:#ff6a39"></span>Buildout filings</span>
+      <span><span class="legend-dot" style="background:#8b5cf6"></span>Liquor licenses</span>
+      <span><span class="legend-dot" style="background:#39d98a"></span>Approved permits</span>
+      <span><span class="legend-dot" style="background:#4a9eff"></span>New restaurants</span>
+    </div>
+    <div id="map"></div>
+    <div class="map-note" id="map-note">Run a scan above, then pins will appear here for every lead that includes map coordinates. Not every source publishes coordinates, so the map will usually show fewer pins than the full lead count.</div>
+  </div>
+</section>
+
+<section id="trends-section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Patterns over time</span>
+      <h2>Where and when it's heating up</h2>
+      <p>The left chart is a snapshot of your last scan, by ZIP code. The right chart builds itself the more you use this page, it remembers every scan you've run on this device and tracks whether total lead volume is climbing.</p>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Leads by ZIP, this scan</h3>
+        <div class="chart-sub">Top areas right now, across all four feeds combined</div>
+        <canvas id="chart-zip"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Scan history on this device</h3>
+        <div class="chart-sub">Total leads found, each time you've pressed Scan here</div>
+        <canvas id="chart-history"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="feasibility">
   <div class="wrap">
     <div class="section-head">
@@ -521,6 +599,23 @@ function pickKey(obj, candidates){
   }
   return null;
 }
+// Detects lat/lng columns from a sample record and extracts valid coordinates
+// from a data row. Returns null if missing or clearly outside the NYC area,
+// so a bad geocode never puts a pin in the ocean or another state.
+function findCoordKeys(sample){
+  return {
+    latK: pickKey(sample,['latitude','lat']),
+    lngK: pickKey(sample,['longitude','lng','long'])
+  };
+}
+function extractCoords(row, latK, lngK){
+  if(!latK || !lngK) return null;
+  const lat = parseFloat(row[latK]);
+  const lng = parseFloat(row[lngK]);
+  if(!isFinite(lat) || !isFinite(lng)) return null;
+  if(lat < 40.4 || lat > 40.95 || lng < -74.3 || lng > -73.65) return null;
+  return {lat, lng};
+}
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -553,6 +648,9 @@ function copyToClipboard(text, btn){
 }
 // session cache, guarded so the page still works if storage is blocked
 const mem = {};
+const leadsBySource = {altco:[], sla:[], dob:[], doh:[]};
+const sourceColor = {altco:'#ff6a39', sla:'#8b5cf6', dob:'#39d98a', doh:'#4a9eff'};
+const sourceLabel = {altco:'Buildout filing', sla:'Liquor license', dob:'Approved permit', doh:'New restaurant'};
 function cacheGet(k){
   try{ return JSON.parse(sessionStorage.getItem('sig_'+k)); }catch(e){ return mem[k] || null; }
 }
@@ -622,6 +720,7 @@ async function loadDOB(){
     const streetK = pickKey(s,['street_name','street']);
     const workK = pickKey(s,['work_type','job_description','permit_type']);
     const jobK = pickKey(s,['job_filing_number','job_number','job__']);
+    const {latK, lngK} = findCoordKeys(s);
 
     let url = 'https://data.cityofnewyork.us/resource/rbx6-tga4.json?$limit=40';
     if(boroK) url += `&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
@@ -632,7 +731,8 @@ async function loadDOB(){
       who: (nameK && d[nameK]) || 'Permit approved — business name not listed',
       where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan',
       tag: [workK && d[workK], jobK && d[jobK] ? 'Filing '+d[jobK] : ''].filter(Boolean).join(' · '),
-      when: dateK ? fmtDate(d[dateK]) : '—'
+      when: dateK ? fmtDate(d[dateK]) : '—',
+      coords: extractCoords(d, latK, lngK)
     }));
   }catch(err){
     // legacy BIS fallback
@@ -645,11 +745,13 @@ async function loadDOB(){
     const bizK = pickKey(s,['permittee_s_business_name','owner_s_business_name','business_name']);
     const typeK = pickKey(s,['job_type']);
     const dateK = pickKey(s,['issuance_date']);
+    const {latK, lngK} = findCoordKeys(s);
     return data.map(d => ({
       who: (bizK && d[bizK]) || 'Permit filed — business name not listed',
       where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan (legacy BIS)',
       tag: typeK ? 'Job type: '+d[typeK] : '',
-      when: dateK ? fmtDate(d[dateK]) : '—'
+      when: dateK ? fmtDate(d[dateK]) : '—',
+      coords: extractCoords(d, latK, lngK)
     }));
   }
 }
@@ -667,6 +769,7 @@ async function loadDOH(){
   const streetK = pickKey(s,['street']);
   const zipK = pickKey(s,['zip']);
   const cuisineK = pickKey(s,['cuisine']);
+  const {latK, lngK} = findCoordKeys(s);
   const seen = new Set();
   const rows = [];
   for(const d of data){
@@ -677,7 +780,8 @@ async function loadDOH(){
       who: d[dbaK] || 'Unnamed establishment',
       where: [buildingK && d[buildingK], streetK && d[streetK], zipK && d[zipK]].filter(Boolean).join(' ') + ', Manhattan',
       tag: (cuisineK && d[cuisineK]) ? d[cuisineK]+' · not yet inspected' : 'Not yet inspected — brand new',
-      when: 'Permit filed'
+      when: 'Permit filed',
+      coords: extractCoords(d, latK, lngK)
     });
     if(rows.length >= 40) break;
   }
@@ -705,6 +809,7 @@ async function loadALTCO(){
   const ownerK = pickKey(s,['owner_s_business_name','owner_business']);
   const dateK = pickKey(s,['latest_action_date','filing_date','current_status_date','action_date']);
   const typeK = pickKey(s,['job_type','classification','alt_co','building_type']);
+  const {latK, lngK} = findCoordKeys(s);
 
   let url = `${base}?$limit=60&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
   if(dateK) url += `&$order=${dateK} DESC`;
@@ -745,7 +850,8 @@ async function loadALTCO(){
         statusK && d[statusK] ? d[statusK] : null,
         hasPermit ? 'Permit already approved' : 'No permit yet — earliest stage'
       ].filter(Boolean).join(' · '),
-      when: dateK && d[dateK] ? fmtDate(d[dateK]) : (jobNum ? `Filing ${jobNum}` : '—')
+      when: dateK && d[dateK] ? fmtDate(d[dateK]) : (jobNum ? `Filing ${jobNum}` : '—'),
+      coords: extractCoords(d, latK, lngK)
     };
   });
 }
@@ -761,6 +867,7 @@ async function loadSLAFrom(datasetId){
   const nameK = pickKey(s,['doing_business','dba','trade_name','premises_name','premise_name','license_name','name']);
   const addrK = pickKey(s,['address','premises','premise']);
   const typeK = pickKey(s,['license_type_name','license_class','license_type','type']);
+  const {latK, lngK} = findCoordKeys(s);
 
   let where = '';
   if(countyK) where = `upper(${countyK})='NEW YORK'`;
@@ -776,7 +883,8 @@ async function loadSLAFrom(datasetId){
     who: (nameK && d[nameK]) || 'Licensee name not listed in this field set',
     where: (addrK && d[addrK]) ? d[addrK]+', Manhattan' : 'Address field not identified',
     tag: (typeK && d[typeK]) ? String(d[typeK]) : '',
-    when: (dateK && d[dateK]) ? fmtDate(d[dateK]) : '—'
+    when: (dateK && d[dateK]) ? fmtDate(d[dateK]) : '—',
+    coords: extractCoords(d, latK, lngK)
   }));
 }
 async function loadSLA(){
@@ -785,6 +893,158 @@ async function loadSLA(){
 }
 
 // ---------- tab config ----------
+// ---------- live map ----------
+let leafletMap = null;
+let markerLayer = null;
+function initMapIfNeeded(){
+  if(leafletMap || typeof L === 'undefined') return;
+  leafletMap = L.map('map', {scrollWheelZoom:false}).setView([40.7580, -73.9855], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(leafletMap);
+  markerLayer = L.layerGroup().addTo(leafletMap);
+}
+function renderMap(){
+  if(typeof L === 'undefined') return; // Leaflet failed to load, map section just stays empty
+  initMapIfNeeded();
+  markerLayer.clearLayers();
+  let pinCount = 0;
+  Object.keys(leadsBySource).forEach(src => {
+    (leadsBySource[src] || []).forEach(lead => {
+      if(!lead.coords) return;
+      pinCount++;
+      const marker = L.circleMarker([lead.coords.lat, lead.coords.lng], {
+        radius: 7,
+        color: sourceColor[src],
+        fillColor: sourceColor[src],
+        fillOpacity: 0.85,
+        weight: 1.5
+      });
+      const popupId = 'pop_'+Math.random().toString(36).slice(2);
+      marker.bindPopup(`
+        <div class="popup-who">${esc(lead.who)}</div>
+        <div class="popup-where">${esc(lead.where)}</div>
+        <div class="popup-tag">${esc(sourceLabel[src])}${lead.tag ? ' · '+esc(lead.tag) : ''}</div>
+        <button class="popup-copy" id="${popupId}">Copy lead</button>
+      `);
+      marker.on('popupopen', () => {
+        const btn = document.getElementById(popupId);
+        if(btn) btn.addEventListener('click', () => {
+          copyToClipboard(`${lead.who}\t${lead.where}\t${lead.tag||''}\t${lead.when}`, btn);
+        });
+      });
+      marker.addTo(markerLayer);
+    });
+  });
+  const noteEl = document.getElementById('map-note');
+  if(noteEl){
+    noteEl.textContent = pinCount
+      ? `Showing ${pinCount} mapped leads out of your last scan. Some leads don't include coordinates and won't have a pin.`
+      : `Run a scan above, then pins will appear here for every lead that includes map coordinates. Not every source publishes coordinates, so the map will usually show fewer pins than the full lead count.`;
+  }
+}
+
+// ---------- ZIP snapshot chart ----------
+let zipChart = null;
+function renderZipChart(){
+  const canvas = document.getElementById('chart-zip');
+  if(!canvas || typeof Chart === 'undefined') return;
+  const zipCounts = {};
+  Object.values(leadsBySource).flat().forEach(lead => {
+    const m = (lead.where || '').match(/\b(10\d{3})\b/);
+    if(!m) return;
+    zipCounts[m[1]] = (zipCounts[m[1]] || 0) + 1;
+  });
+  const entries = Object.entries(zipCounts).sort((a,b) => b[1]-a[1]).slice(0,8);
+  if(!entries.length){
+    canvas.style.display = 'none';
+    let empty = canvas.parentElement.querySelector('.chart-empty');
+    if(!empty){
+      empty = document.createElement('div');
+      empty.className = 'chart-empty';
+      empty.textContent = 'Run a scan above to see which ZIP codes have the most activity.';
+      canvas.parentElement.appendChild(empty);
+    }
+    return;
+  }
+  canvas.style.display = 'block';
+  const empty = canvas.parentElement.querySelector('.chart-empty');
+  if(empty) empty.remove();
+
+  const labels = entries.map(e => e[0]);
+  const values = entries.map(e => e[1]);
+  if(zipChart){ zipChart.data.labels = labels; zipChart.data.datasets[0].data = values; zipChart.update(); return; }
+  zipChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: '#ff6a39', borderRadius: 3 }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8d98a3', font: { family: 'IBM Plex Mono' } }, grid: { display: false } },
+        y: { ticks: { color: '#8d98a3', font: { family: 'IBM Plex Mono' }, precision: 0 }, grid: { color: '#2b333b' } }
+      }
+    }
+  });
+}
+
+// ---------- scan history chart (persists across sessions via localStorage) ----------
+let historyChart = null;
+function loadScanHistory(){
+  try{ return JSON.parse(localStorage.getItem('sig_scan_history')) || []; }
+  catch(e){ return []; }
+}
+function saveScanHistoryEntry(total){
+  try{
+    const hist = loadScanHistory();
+    hist.push({ t: Date.now(), total });
+    while(hist.length > 30) hist.shift();
+    localStorage.setItem('sig_scan_history', JSON.stringify(hist));
+  }catch(e){ /* localStorage unavailable, history just won't persist */ }
+}
+function renderHistoryChart(){
+  const canvas = document.getElementById('chart-history');
+  if(!canvas || typeof Chart === 'undefined') return;
+  const hist = loadScanHistory();
+  if(!hist.length){
+    canvas.style.display = 'none';
+    let empty = canvas.parentElement.querySelector('.chart-empty');
+    if(!empty){
+      empty = document.createElement('div');
+      empty.className = 'chart-empty';
+      empty.textContent = 'Press "Scan all signals now" a few times over the coming days or weeks, and this fills in on its own.';
+      canvas.parentElement.appendChild(empty);
+    }
+    return;
+  }
+  canvas.style.display = 'block';
+  const empty = canvas.parentElement.querySelector('.chart-empty');
+  if(empty) empty.remove();
+
+  const labels = hist.map(h => new Date(h.t).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  const values = hist.map(h => h.total);
+  if(historyChart){ historyChart.data.labels = labels; historyChart.data.datasets[0].data = values; historyChart.update(); return; }
+  historyChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [{ data: values, borderColor: '#39d98a', backgroundColor: 'rgba(57,217,138,0.12)', fill: true, tension: 0.3, pointRadius: 3 }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8d98a3', font: { family: 'IBM Plex Mono' } }, grid: { display: false } },
+        y: { ticks: { color: '#8d98a3', font: { family: 'IBM Plex Mono' }, precision: 0 }, grid: { color: '#2b333b' } }
+      }
+    }
+  });
+}
+
+function updateMapAndCharts(){
+  renderMap();
+  renderZipChart();
+  renderHistoryChart();
+}
+
 const configs = {
   altco: {
     desc: 'DOB NOW Job Application Filings — Alt-CO change-of-use filings in Manhattan, cross-checked against approved permits. Experimental: schema partly unconfirmed, verify before relying on it.',
@@ -822,6 +1082,8 @@ async function activateTab(name, forceReload){
   if(cached){
     currentRows = cached;
     renderRows(currentRows);
+    leadsBySource[name] = cached;
+    updateMapAndCharts();
     return;
   }
   showStatus('Loading live records…');
@@ -829,6 +1091,8 @@ async function activateTab(name, forceReload){
     currentRows = await configs[name].load();
     cacheSet(name, currentRows);
     renderRows(currentRows);
+    leadsBySource[name] = currentRows;
+    updateMapAndCharts();
   }catch(err){
     currentRows = [];
     showStatus('Live feed didn\'t respond. These public endpoints occasionally rate-limit anonymous requests — hit Refresh in a minute, or open the raw dataset link above.', true);
@@ -878,12 +1142,14 @@ scanBtn.addEventListener('click', async () => {
         const rows = await configs[name].load();
         cacheSet(name, rows);
         counts[name] = rows.length;
+        leadsBySource[name] = rows;
       }catch(e){
         console.warn('Scan failed for', name, e);
         counts[name] = 0;
       }
     }
     const total = Object.values(counts).reduce((a,b) => a+b, 0);
+    saveScanHistoryEntry(total);
     const stamp = new Date().toLocaleTimeString('en-US',{hour12:false});
     scanResult.innerHTML = `<strong>${total} live leads found</strong> — ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants <span style="color:var(--text-dim)">(scanned at ${stamp})</span>`;
     // refresh whatever tab is currently showing with the just-fetched data
