@@ -6,13 +6,15 @@ Every new business leaves a paper trail before opening day. A liquor license get
 
 ## What it pulls, live
 
-The page fetches three public data feeds on load. No API key, no login, no cost.
+The page fetches four public data feeds. No API key, no login, no cost. A "Scan all signals now" button at the top of the feed section pulls fresh data from all four at once and reports how many leads it found in each; each tab also has its own smaller Refresh button if you just want to recheck one.
 
-1. NYS Liquor Authority current active licenses (data.ny.gov, dataset 9s3h-dpkz), filtered to New York County, newest first. A fresh license or temporary operating permit means a bar or restaurant is weeks from opening. If this dataset is unavailable the page falls back to the daily active license list (wg8y-fzsj) automatically.
+1. **DOB NOW Job Application Filings** (NYC Open Data, dataset w9ak-ipjd) — the earliest and strongest signal. DOB NOW classifies any filing that changes a building's use, occupancy, or egress as an "Alt-CO." That means someone is legally converting a space into a different kind of business, and it appears the moment the filing is submitted, months before a permit is even approved. This is marked experimental in the app: I could confirm the dataset and most of its fields, but not the exact column that holds the Alt-CO classification, so the page detects it adaptively and falls back to showing all Manhattan filings if it can't find a clean match. Verify this tab against the raw dataset link before relying on it for real calls.
 
-2. DOB NOW approved permits (NYC Open Data, dataset rbx6-tga4), filtered to Manhattan, newest first. A general construction permit at a commercial address is one of the earliest tells that a space is being fitted out for a new tenant. If DOB NOW fails, the page falls back to the legacy BIS permit dataset (ipu4-2q9a) automatically.
+2. NYS Liquor Authority current active licenses (data.ny.gov, dataset 9s3h-dpkz), filtered to New York County, newest first. A fresh license or temporary operating permit means a bar or restaurant is weeks from opening. If this dataset is unavailable the page falls back to the daily active license list (wg8y-fzsj) automatically.
 
-3. DOHMH restaurant inspections (NYC Open Data, dataset 43nn-pn8j), filtered to Manhattan establishments whose inspection date is the 1900-01-01 placeholder. That placeholder is literally how the city flags a brand-new restaurant that has a permit but has not been inspected yet. These are the closest to opening.
+3. DOB NOW approved permits (NYC Open Data, dataset rbx6-tga4), filtered to Manhattan, newest first. This is the confirmation step after an Alt-CO filing, and also where simpler renovation permits show up. If DOB NOW fails, the page falls back to the legacy BIS permit dataset (ipu4-2q9a) automatically.
+
+4. DOHMH restaurant inspections (NYC Open Data, dataset 43nn-pn8j), filtered to Manhattan establishments whose inspection date is the 1900-01-01 placeholder. That placeholder is literally how the city flags a brand-new restaurant that has a permit but has not been inspected yet. These are the closest to opening.
 
 Each lead has a copy button (tab-separated, pastes clean into a spreadsheet row) and every feed has an Export CSV button for bulk import into Salesforce.
 
