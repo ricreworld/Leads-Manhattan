@@ -226,7 +226,10 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const stamp=()=>new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false});
 const todayISO=()=>new Date().toISOString().slice(0,10);
 function daysAgo(d){if(!d)return null;const t=Date.parse(d);if(!isFinite(t))return null;return Math.floor((Date.now()-t)/864e5)}
-function haversine(a,b,c,d){if(![a,b,c,d].every(isFinite))return null;const R=3958.8,r=x=>x*Math.PI/180,dlat=r(c-a),dlon=r(d-b),h=Math.sin(dlat/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dlon/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))}
+// coords must be plausible Northeast-US degrees — ArcGIS layers sometimes carry
+// Web-Mercator meters in the same fields, which would produce absurd distances
+const geoOK=(lat,lon)=>isFinite(lat)&&isFinite(lon)&&lat>23&&lat<51&&lon>-91&&lon<-59;
+function haversine(a,b,c,d){if(!geoOK(a,b)||!geoOK(c,d))return null;const R=3958.8,r=x=>x*Math.PI/180,dlat=r(c-a),dlon=r(d-b),h=Math.sin(dlat/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dlon/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))}
 function fmtDate(d){if(!d)return"";const t=Date.parse(d);return isFinite(t)?new Date(t).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):esc(d)}
 
 /* ---------------- persistent rep state (localStorage) ---------------- */
@@ -275,7 +278,7 @@ function nearestOf(keys,it){
   let best=null;
   for(const k of keys){
     const f=FAC[k];
-    const mi=(it&&isFinite(it.lat)&&isFinite(it.lon))?haversine(it.lat,it.lon,f.lat,f.lon):null;
+    const mi=it?haversine(it.lat,it.lon,f.lat,f.lon):null;
     if(!best||(mi!=null&&(best.mi==null||mi<best.mi)))best={k,f,mi};
   }
   return best;
@@ -389,7 +392,7 @@ ny:{
      match:it=>!!it.tags.recall,watch:[]},
     {key:"zwtl",h2:"Waste-to-energy on Long Island — the zero-waste-to-landfill pitch",rescan:false,
      body:'The CPG, cosmetics, and supplements cluster (Nutri/Bountiful, Nature’s Plus, Alconox, Kiss Beauty, Bio Botanica) all carry public sustainability commitments. ReDirect360 turns their non-haz streams into energy, carbon credits, and ESG documentation — Hempstead alone generates 80 MW. A 30-minute haul radius means unit economics no out-of-region competitor can match.',
-     match:null,
+     match:it=>!!it.tags.zwtl,
      watch:[
        {name:"Nutri / Bountiful",note:"Public sustainability commitments — ReDirect360: non-haz streams to energy at Hempstead (80 MW).",tag:"ZWTL"},
        {name:"Nature's Plus",note:"Supplements cluster — ZWTL pitch, ESG documentation, short haul.",tag:"ZWTL"},
@@ -416,7 +419,7 @@ nnj:{
   sections:[
     {key:"njdep",h2:"NJDEP contaminated sites — the KCS watch for Bergen through Morris",rescan:true,
      body:'The Known Contaminated Sites database is North Jersey’s richest signal: groundwater plumes, active remediations, PFAS-impacted sites. Paperwork-stage entries are filtered out — what’s listed here has physical material moving or about to move. AFFF-driven groundwater remediation is the recurring pattern; ReDrop handles the contaminated water, and spent carbon routes back into the network for destruction.',
-     match:it=>it.srcId==="njkcs",watch:[]},
+     match:it=>/NJDEP/i.test(it.source||""),watch:[]},
     {key:"pfas",h2:"PFAS disposal in New Jersey — no minimum, no threshold",rescan:true,
      body:'Same standing watch as every territory: AFFF holders, utilities swapping media, manufacturers with ban deadlines. No quantity minimum, no PPB threshold — the ReAssure numbers (&gt;1,100°C, 99%+, 17M-ton capacity) carry the call.',
      match:it=>!!it.tags.pfas,
@@ -473,7 +476,7 @@ snj:{
        {name:"Police destructions — law-enforcement standing target",note:"Camden runs police destructions before noon. Standing target, not just a feed.",tag:"Secure"}]},
     {key:"njdep",h2:"NJDEP KCS — the South Jersey site list",rescan:true,
      body:'Same filter discipline as the live feed: paperwork-stage sites are hidden, active remediations with physical material surface. Contaminated soil with petroleum or PFAS is a fit even when it’s non-hazardous — landfill-banned is the signal.',
-     match:it=>it.srcId==="njkcs",watch:[]},
+     match:it=>/NJDEP/i.test(it.source||""),watch:[]},
     {key:"bids",h2:"Environmental bids in South Jersey — remediation RFPs and landfill closures",bids:true,
      body:BIDS_SHARED+' Landfill closure bids and drinking-water remediation contracts are this territory’s recurring pattern.'},
     {key:"routing",h2:"Where it routes — Camden, Union, and adjacent PA capacity",routing:true,
@@ -512,7 +515,7 @@ ct:{
        {name:"Industrial hazwaste generators",note:"Personal care and industrial streams go straight into SECONN.",tag:"Industrial"}]},
     {key:"deep",h2:"CT DEEP site leads — the contaminated-site registry",rescan:true,
      body:'Same discipline as the other territories: active listings with physical material surface, paperwork-stage entries are filtered. Petroleum and PFAS soil are the recurring fits.',
-     match:it=>it.srcId==="ctsites"||it.srcId==="ctspills",watch:[]},
+     match:it=>/CT DEEP/i.test(it.source||""),watch:[]},
     {key:"bids",h2:"Environmental bids in Connecticut — remediation RFPs and invasive contracts",bids:true,
      body:BIDS_SHARED+' State DEEP remediation RFPs and invasive species management contracts are this territory’s recurring pattern.'},
     {key:"routing",h2:"Where it routes — SECONN and Bristol",routing:true,
@@ -573,6 +576,35 @@ const SNJ_CITIES=/CAMDEN|TRENTON|VINELAND|MILLVILLE|BRIDGETON|CHERRY HILL|PENNSA
 /* ---------------- recall classification ---------------- */
 const DESTROY_SIGNALS=/contaminat|listeria|salmonella|e\.?\s?coli|foreign material|glass|metal|mold|adulterat|super.?potent|sub.?potent|impurit|undeclared|failed dissolution|microbial|yeast|penicillin|cgmp|sterility|nitrosamine/i;
 const LABEL_ONLY=/^\s*(incorrect|wrong|missing)?\s*(label|labeling|carton|package insert)/i;
+
+/* ---------------- board hygiene rules (carried from the overnight scanner) ---------------- */
+// Raw sewage / wastewater: Reworld doesn't service it — never hits the board.
+const SEWAGE=/raw sewage|sewage|sanitary waste|septic|wastewater treatment plant|\bwwtp\b|publicly owned treatment|\bpotw\b|biosolid|sludge from sewage|municipal wastewater/i;
+// Retail / real-estate operators that can't be real volume (used on blank-status generators).
+const SMALL_OPERATOR=/\bcleaners?\b|dry clean|laundr|\brealty\b|real estate|\bproperties\b|\bcollision\b|auto body|body shop|\bnail\b|\bsalon\b|\bdeli\b|\brestaurant\b|barber|\bspa\b/i;
+// Invasive plant biomass must be hauled & destroyed (can't compost knotweed/phragmites).
+const INVASIVE_RX=/japanese knotweed|knotweed|reynoutria|fallopia|polygonum cuspidatum|phragmites|common reed|water chestnut|trapa natans|mile-a-minute|persicaria perfoliata|tree-of-heaven|tree of heaven|ailanthus|purple loosestrife|lythrum|oriental bittersweet|asiatic bittersweet|celastrus|mugwort|multiflora rose|porcelain berry|japanese stiltgrass|stiltgrass|invasive species|invasive plant|invasive vegetation/i;
+// Waste-stream classifier (streams.js taxonomy) — backfills signal tags on any lead.
+function streamTags(txt){
+  const t=(txt||"").toLowerCase();
+  if(INVASIVE_RX.test(t))return{invasive:1,physical:1};
+  if(/pfas|pfoa|pfos|afff|perfluor|firefighting foam/.test(t))return{pfas:1,liquid:1};
+  if(/contaminated soil|\bsoil\b|demolition|asbestos|excavat|dredge|\bidw\b|remediation waste/.test(t))return{soil:1};
+  if(/fuel oil|petroleum|oily|oil lagoon|diesel|gasoline|used oil/.test(t))return{liquid:1};
+  if(/recall|expired|adulterat|undeclared|listeria|salmonella|consumer product|foreign material/.test(t))return{recall:1};
+  if(/pharma|\bdrug\b|narcotic|controlled substance|\botc\b|tablet|capsule|secure destruction|cgmp/.test(t))return{pharma:1};
+  if(/solvent|acid|caustic|chemical bulk|reagent|laborator|lab pack|corrosive|ignitable|reactive/.test(t))return{rcra:1};
+  if(/rcra|hazardous.?waste|generator|violation/.test(t))return{rcra:1};
+  return{};
+}
+function enrichTags(it){
+  it.tags=it.tags||{};
+  if(!Object.keys(it.tags).some(k=>it.tags[k]&&k!=="physical"&&k!=="registryOnly")){
+    Object.assign(it.tags,streamTags((it.name||"")+" "+(it.cls||"")+" "+(it.desc||"")));
+  }
+  if(INVASIVE_RX.test((it.name||"")+" "+(it.desc||""))){it.tags.invasive=1;it.tags.physical=1}
+  return it;
+}
 function qtyHeuristic(q){
   if(!q||!String(q).trim())return{unknown:true,big:false};
   const s=String(q).toLowerCase();
@@ -651,25 +683,34 @@ function njkcsSource(counties){
     return items.slice(0,120);
   }};
 }
+/* Generator feed, LQG-filtered. The ECHO violators feed (p_qiv) is intentionally
+   NOT used — no size code, floods the board with dry cleaners / realty LLCs. */
 async function echoFetch(st,countyRx){
-  const j=await jget(`https://echodata.epa.gov/echo/rcra_rest_services.get_facilities?output=JSON&p_st=${st}&p_act=Y&p_qiv=Y&responseset=200`);
+  const j=await jget(`https://echodata.epa.gov/echo/rcra_rest_services.get_facilities?output=JSON&p_st=${st}&p_act=Y&responseset=1000`);
   let fac=(j.Results&&j.Results.Facilities)||[];
   const qid=j.Results&&j.Results.QueryID;
   if((!fac||!fac.length)&&qid){
-    const jq=await jget(`https://echodata.epa.gov/echo/rcra_rest_services.get_qid?output=JSON&qid=${qid}`);
+    const jq=await jget(`https://echodata.epa.gov/echo/rcra_rest_services.get_qid?output=JSON&qid=${qid}&responseset=800&pageno=1`);
     fac=(jq.Results&&jq.Results.Facilities)||[];
   }
-  const items=[];let n=0;
+  const items=[],seen=new Set();let n=0;
   fac.forEach(f=>{
     const cty=f.RCRACounty||f.CountyName||"";
     if(countyRx&&!countyRx.test(cty))return;
-    const name=f.RCRAName||f.FacName||"Facility";if(n>=30)return;n++;
-    items.push({srcId:"echo",source:"EPA ECHO",name,
+    const name=f.RCRAName||f.FacName||"Facility";
+    const uni=((f.RCRAUniverse||f.UniverseRecord||f.HreportUniverseRecord||f.RCRAGenStatus||f.GeneratorStatus||f.FedGeneratorStatus||f.RCRAFederalGeneratorStatus||f.FacFederalGeneratorStatus||"")+"").toUpperCase();
+    const isLQG=/LQG|LARGE QUANTITY/.test(uni);
+    const isSmall=/SQG|VSQG|CESQG|SMALL QUANTITY|VERY SMALL/.test(uni);
+    if(isSmall)return;                            // confirmed small → drop
+    if(!isLQG&&SMALL_OPERATOR.test(name))return;  // blank + retail/RE → drop
+    const dk=(name+"|"+(f.RCRACity||f.FacCity||"")).toUpperCase();
+    if(seen.has(dk)||n>=40)return;seen.add(dk);n++;
+    items.push({srcId:"echo",source:"EPA RCRA",name,
       location:`${f.RCRACity||f.FacCity||""}, ${cty||st}`,
       lat:parseFloat(f.FacLat||f.RCRALat)||null,lon:parseFloat(f.FacLong||f.RCRALong)||null,
-      desc:"Cited hazardous-waste handler — compliance pain, needs proper routing. Qualify: what streams, what volumes, who handles disposal today.",
+      desc:(isLQG?"LARGE QUANTITY GENERATOR — 1+ ton hazardous waste per month. ":"RCRA-registered hazardous waste generator. ")+"Routing/brokering prospect. Qualify streams, volume, current vendor, contract renewal.",
       url:(f.RegistryID||f.RegistryId)?`https://echo.epa.gov/detailed-facility-report?fid=${f.RegistryID||f.RegistryId}`:"https://echo.epa.gov/",
-      tags:{rcra:1,registryOnly:1}});
+      tags:{rcra:1,registryOnly:1,lqg:isLQG?1:0}});
   });
   return items;
 }
@@ -683,7 +724,7 @@ ny:[
     const j=await jget(`https://data.ny.gov/resource/u44d-k5fk.json?$where=${where}&$order=spill_date DESC&$limit=400`);
     const items=[];
     (Array.isArray(j)?j:[]).forEach(x=>{
-      const mat=x.material_name||"",pf=/pfas|pfoa|pfos|afff|foam/i.test(mat);
+      const mat=x.material_name||"",pf=/pfas|pfoa|pfos|afff|\bfoam\b/i.test(mat);
       const qn=parseFloat(x.quantity||"0");
       if(!pf&&(!isFinite(qn)||qn<60))return;
       items.push({srcId:"spills",source:"NY Spill DB",name:x.facility_name||x.locality||"Spill site",
@@ -757,7 +798,7 @@ ct:[
       const name=(x.discharger||x.representing||x.townrelease||"CT spill site").toString().trim();
       const dt=(x.releasedatetime||"").slice(0,10);
       const dk=(name+"|"+dt).toUpperCase();if(seen.has(dk))return;seen.add(dk);
-      const sub=(x.releasesubstance||"").toString(),pf=/pfas|pfoa|pfos|afff|foam|perfluor/i.test(sub);
+      const sub=(x.releasesubstance||"").toString(),pf=/pfas|pfoa|pfos|afff|\bfoam\b|perfluor/i.test(sub);
       const qty=[x.quangallons&&x.quangallons+" gal",x.quanlbs&&x.quanlbs+" lbs",x.quandrums&&x.quandrums+" drums"].filter(Boolean).join(", ");
       items.push({srcId:"ctspills",source:"CT DEEP Spill",name,location:(x.townrelease||"")+" (CT)",date:dt,
         desc:(sub||"Reported release")+(qty?" · "+qty:" · quantity not listed, call to confirm"),
@@ -827,12 +868,15 @@ async function runScan(terr,force){
     }
     renderScanBar(terr);
   }));
-  // recency discipline: dated records >90 days with no active signal drop off the board
+  // board hygiene: sewage never hits the board; recency discipline: dated records
+  // >90 days with no active signal drop off
   const fresh=collected.filter(it=>{
+    if(SEWAGE.test((it.name||"")+" "+(it.desc||"")))return false;
     const d=daysAgo(it.date);
     if(d!=null&&d>90&&!it.tags.pfas&&!it.tags.registryOnly)return false;
     return true;
   });
+  fresh.forEach(enrichTags);
   fresh.forEach(it=>{it.score=scoreLead(terr,it);it.tier=tierOf(it.score)});
   LEADS[terr]=fresh;
   DB.cache[terr]={when:new Date().toISOString(),items:fresh.slice(0,200)};saveDB();
@@ -847,8 +891,69 @@ function restoreCache(terr){
   }
 }
 
-/* ---------------- overnight bids (leads.json) ---------------- */
-let OVERNIGHT=null;
+/* ---------------- overnight scan (leads.json) ----------------
+   Reaches the sources the browser can't (CORS): NYC DOB, FDNY, Title V, TRI,
+   CBS, bankruptcies, CPSC, SEC EDGAR ZWTL, and the bid boards.
+   Accepts BOTH schemas:
+   - new: { territories: { ny|nnj|snj|ct|ma: { leads:[], bids:[] } } }
+   - old: { ny:{short,long,comply,events}, nj:{...}, zwtl:[] }  (nj → nnj)   */
+let OVERNIGHT=null;          // normalized: { terr: { leads:[], bids:[] } }
+let OVERNIGHT_STAMP="";
+function onKey(r){return "on|"+(r.source||"")+"|"+(r.name||"")+"|"+(r.date||"")}
+function onToItem(terr,r){
+  const it={srcId:"on-"+(r.source||"scan").toLowerCase().replace(/[^a-z0-9]+/g,""),
+    source:r.source||"Overnight scan",name:r.name||"Lead",location:r.location||"",
+    date:r.date||"",desc:r.desc||"",cls:r.cls||"",url:r.url||"",
+    lat:r.lat!=null?r.lat:null,lon:r.lon!=null?r.lon:null,
+    volUnknown:!!r.volUnknown,overnight:true,tags:{}};
+  if(r.pfas)it.tags.pfas=1;
+  if(r.zwtl||r.stream==="ZWTL Conversion")it.tags.zwtl=1;
+  if(r.bid||r.stream==="Government Bid")it.tags.bid=1;
+  if(r.invasive)it.tags.invasive=it.tags.physical=1;
+  if(r.registry||/EPA RCRA|EPA TRI|Title V|NYSDEC CBS|NYSDEC$|NJDEP KCS|CT DEEP Sites|MassDEP/.test(r.source||""))it.tags.registryOnly=1;
+  if(/EPA RCRA|EPA TRI|Title V/.test(r.source||""))it.tags.rcra=1;
+  if(/FDA|FSIS|CPSC/.test(r.source||"")){it.tags.recall=1;if(r.hot){it.tags.recallHot=1}}
+  if(/FDA drug/i.test(r.source||""))it.tags.pharma=1;
+  if(r.hot&&!it.tags.registryOnly)it.tags.physical=1;
+  enrichTags(it);
+  it.score=scoreLead(terr,it);it.tier=tierOf(it.score);
+  return it;
+}
+function normalizeOvernight(d){
+  const norm={};["ny","nnj","snj","ct","ma"].forEach(t=>norm[t]={leads:[],bids:[]});
+  if(d.territories){
+    Object.keys(d.territories).forEach(t=>{
+      if(!norm[t])return;
+      (d.territories[t].leads||[]).forEach(r=>{if(!SEWAGE.test((r.name||"")+" "+(r.desc||"")))norm[t].leads.push(onToItem(t,r))});
+      (d.territories[t].bids||[]).forEach(r=>norm[t].bids.push(onToItem(t,r)));
+    });
+  }else{
+    // old two-territory schema: ny → ny, nj → nnj (old NJ tab covered the north counties)
+    const map=[["ny","ny"],["nj","nnj"]];
+    map.forEach(([from,to])=>{
+      const src=d[from]||{};
+      ["short","long","comply","events"].forEach(sec=>{
+        (src[sec]||[]).forEach(r=>{
+          if(SEWAGE.test((r.name||"")+" "+(r.desc||"")))return;
+          if(r.stream==="Government Bid"){norm[to].bids.push(onToItem(to,r));return}
+          norm[to].leads.push(onToItem(to,r));
+        });
+      });
+    });
+    (d.zwtl||[]).forEach(r=>{["ny","nnj"].forEach(t=>norm[t].leads.push(onToItem(t,{...r,zwtl:true})))});
+  }
+  return norm;
+}
+function overnightLeads(terr){return (OVERNIGHT&&OVERNIGHT[terr]&&OVERNIGHT[terr].leads)||[]}
+/* merged view: live scan results + overnight, deduped (live wins) */
+function allLeads(terr){
+  const live=LEADS[terr]||[],seen=new Set(live.map(x=>((x.name||"")+"|"+(x.date||"")).toUpperCase()));
+  const extra=overnightLeads(terr).filter(x=>{
+    const k=((x.name||"")+"|"+(x.date||"")).toUpperCase();
+    if(seen.has(k))return false;seen.add(k);return true;
+  });
+  return live.concat(extra);
+}
 
 /* ---------------- filters ---------------- */
 const FILTER={q:"",signal:"",days:0,sort:"hot"};
@@ -963,13 +1068,15 @@ function renderScanBar(terr){
     if(st.status==="fail")return `<span class="src-fail">${esc(s.label)} scan failed — results may be incomplete. <a href="#" data-retry="${esc(terr)}">Retry.</a></span>`;
     return `<span>${esc(s.label)} ${esc(st.when)} <span class="ok">✓</span></span>`;
   });
-  parts.push(`<span class="busy">Environmental bids — overnight scan</span>`);
+  parts.push(OVERNIGHT_STAMP
+    ?`<span>Overnight scan ${esc(OVERNIGHT_STAMP)} <span class="ok">✓</span></span>`
+    :`<span class="busy">Environmental bids — overnight scan</span>`);
   el.innerHTML=`<span>Last scan:</span> ${parts.join(" · ")} <a href="#" class="refresh" data-refresh="${esc(terr)}">Refresh now</a>`;
 }
 
 function renderFeeds(terr){
   const T=TERR[terr];
-  const items=(LEADS[terr]||[]).filter(passFilter);
+  const items=allLeads(terr).filter(passFilter);
   const hotEl=$("#feed-"+terr+"-hottest");
   if(hotEl){
     const top=sortItems(items,terr).slice(0,12);
@@ -992,15 +1099,9 @@ function renderFeeds(terr){
 function renderBids(terr){
   const el=$("#feed-"+terr+"-bids");if(!el)return;
   const bids=(OVERNIGHT&&OVERNIGHT[terr]&&OVERNIGHT[terr].bids)||[];
-  if(bids.length){
-    el.innerHTML=bids.map(b=>{
-      b.tags=b.tags||{bid:1};b.terr=terr;
-      b.score=b.score||scoreLead(terr,b);b.tier=tierOf(b.score);
-      return leadCard(terr,b);
-    }).join("");
-  }else{
-    el.innerHTML=`<div class="empty-quiet">No bids in the last overnight scan.</div>`;
-  }
+  el.innerHTML=bids.length
+    ?bids.map(b=>leadCard(terr,b)).join("")
+    :`<div class="empty-quiet">No bids in the last overnight scan.</div>`;
 }
 
 function buildPanel(terr){
@@ -1081,9 +1182,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.title=TERR.ny.metaTitle;
   runScan("ny");
 
-  // overnight bids file (optional; produced by the overnight scan job)
+  // overnight scan file (produced by scan.js via the GitHub Action)
   fetch("leads.json?t="+Date.now()).then(r=>r.ok?r.json():null).then(d=>{
-    if(d){OVERNIGHT=d;Object.keys(TERR).forEach(renderBids)}
+    if(!d)return;
+    OVERNIGHT=normalizeOvernight(d);
+    if(d.generated)OVERNIGHT_STAMP=new Date(d.generated).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+    Object.keys(TERR).forEach(t=>{renderScanBar(t);renderFeeds(t)});
   }).catch(()=>{});
 
   // theme toggle
@@ -1101,6 +1205,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     $("#panel-"+terr).classList.add("active");
     document.title=TERR[terr].metaTitle;
     rebuildFilters();
+    renderFeeds(terr);   // show cached + overnight immediately; the scan re-renders when done
     window.scrollTo({top:0});
     runScan(terr);
   }));
