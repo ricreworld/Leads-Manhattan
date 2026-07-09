@@ -140,6 +140,15 @@ The catalog covers only sources **not already** in scan.js / index.html.
 - **Access/format:** advertisement pages are public HTML on panynj.gov (Akamai — needs browser-like UA headers). Bonfire portal is Cloudflare-walled, **not scanner-friendly**; it's the human bidding path (free vendor registration)
 - **Fetch:** `paBidsScan()` in scan.js — scrapes all three boards nightly, keyword-filters, routes NY-side ads → NY tab, NJ-side ads → North Jersey tab, unhinted → both
 
+### ✅ Authority counterparts for the other territories (added 2026-07-09)
+Same blind spot as PANYNJ — quasi-public authorities that never post to NJSTART/CTsource/COMMBUYS. All wired via `authorityBidsScan()` in scan.js (shared parser with the PANYNJ scan):
+- **DRPA / PATCO** (→ South Jersey): https://www.drpa.org/procurement/current-purchases-and-bids.asp — bi-state NJ/PA authority, Camden HQ; bridges + PATCO transit contracts (RFP numbers like DRPA-09-2026, PATCO-01-2026)
+- **South Jersey Ports** (→ South Jersey): https://southjerseyport.com/bids/ — Camden, Paulsboro, Salem marine terminals; drainage, terminal repair, debris contracts
+- **SJTA** (→ South Jersey): https://www.sjta.com/sjta/bids_intro.asp — Atlantic City Intl Airport + AC Expressway; submissions via Bid Express (free registration)
+- **CT Airport Authority** (→ Connecticut): https://ctairports.org/economic-development/procurement/ — Bradley Intl + 5 GA airports; live board showed a sanitary-sewer replacement and an airline waste triturator project; documents on ctairports.procureware.com
+- **Massport** (→ Massachusetts): https://www.massport.com/business-with-massport/goods-and-services/rfps/ + capital bids at https://www.massport.com/logan-airport/opportunities/capital-bids/ — Logan, Worcester, Hanscom, Port of Boston; submissions via Bid Express (free registration)
+- Deferred, noted for later: **MBTA** (own board, occasional soil/demolition), **CT Port Authority** (small volume), **Delaware River & Bay Authority** (Cape May; NJ/DE bi-state)
+
 ## Recommended wiring order
 
 | Priority | Source | Where it goes | Blocker |
@@ -152,6 +161,7 @@ The catalog covers only sources **not already** in scan.js / index.html.
 | 6 | RCRA HWIP nightly CSV | scan.js overnight, all tabs | none |
 | 7 | iMapInvasives via GBIF | scan.js overnight, NY (then CT/MA) | none |
 | ✔ wired | PANYNJ Solicitations Advertised | scan.js overnight, NY + North Jersey bids | none — verify parse on first live run |
+| ✔ wired | DRPA, SJ Ports, SJTA, CT Airport Auth, Massport | scan.js overnight — South Jersey / CT / MA bids | none — verify parse on first live run |
 | 8 | e-Manifest API | scan.js overnight | EH&S generates RCRAInfo API credentials |
 | 9 | UST Finder ArcGIS | one-time MA/CT backfill script | none |
 | — | MassDEP + NJDEP AFFF programs | watchlist cards + BD pursuit | none (not feeds) |

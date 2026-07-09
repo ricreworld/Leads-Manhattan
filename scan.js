@@ -661,6 +661,49 @@ async function ctUstScan(){
   }catch(e){ out.errors.push("CT UST: "+e.message); }
 }
 
+/* ---------------- authority bid boards (PANYNJ + counterparts) ---------------- */
+// Quasi-public authorities are exempt from the state portals the tool already scrapes
+// (NYSCR, NJSTART, CTsource, COMMBUYS) — their refuse/remediation contracts appear
+// only on their own boards. Shared tolerant parser: anchors first, stripped lines as fallback.
+
+// Streams an authority would bid out that route to a Reworld line
+const BOARD_KEY=/refuse|garbage|trash|recycl|waste|dispos|remediat|environment|hazard|pfas|asbestos|contaminat|sludge|demoli|abatement|scrap|debris|deic|glycol|triturat|sanitary sewer|soil/i;
+// Several authority sites (Akamai on panynj.gov, WAFs elsewhere) 403 the default library UA
+const BOARD_HDRS={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language":"en-US,en;q=0.9"};
+async function fetchBoard(u){
+  let lastErr;
+  for(let a=0;a<3;a++){
+    try{ const r=await fetch(u,{headers:BOARD_HDRS}); if(!r.ok)throw new Error(u.split("/")[2]+" HTTP "+r.status); return await r.text(); }
+    catch(e){ lastErr=e; if(a<2)await new Promise(res=>setTimeout(res,1500*(a+1))); }
+  }
+  throw lastErr;
+}
+function parseBoard(html, pageUrl){
+  // Pass 1: anchors — solicitations link to a PDF ad or detail page
+  const items=[];
+  const aRe=/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let m;
+  while((m=aRe.exec(html))){
+    const txt=unent(m[2].replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
+    if(txt.length<25||!BOARD_KEY.test(txt))continue;
+    let href=m[1]; try{ href=href.startsWith("http")?href:new URL(href,pageUrl).href; }catch(e){ href=pageUrl; }
+    const after=unent(html.slice(aRe.lastIndex,aRe.lastIndex+400).split(/<a\b/i)[0].replace(/<[^>]+>/g," ")).replace(/\s+/g," ");
+    const due=(after.match(/(?:due|opening|receipt|closing)[^0-9]{0,40}(\d{1,2}\/\d{1,2}\/\d{2,4})/i)||[])[1]||(after.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"";
+    const num=(txt.match(/#\s*([A-Z]{0,6}[-\d]{4,12})\b/)||after.match(/(?:#|No\.?|Number)\s*:?\s*([A-Z]{0,6}[-\d]{4,12})\b/i)||[])[1]||"";
+    items.push({txt,href,due,num});
+  }
+  // Pass 2 fallback: stripped-text lines, in case the board isn't anchor-per-solicitation
+  if(!items.length){
+    const lines=unent(html.replace(/<(script|style)[\s\S]*?<\/\1>/gi," ").replace(/<[^>]+>/g,"\n")).split(/\n+/).map(s=>s.replace(/\s+/g," ").trim());
+    for(const ln of lines){
+      if(ln.length<30||ln.length>220||!BOARD_KEY.test(ln))continue;
+      if(/cookie|privacy|copyright|newsletter|subscribe/i.test(ln))continue;
+      items.push({txt:ln,href:pageUrl,due:(ln.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"",num:(ln.match(/#\s*([A-Z]{0,6}[-\d]{4,12})\b/)||[])[1]||""});
+    }
+  }
+  return items;
+}
+
 // Port Authority of NY & NJ — Solicitations Advertised boards (JFK/LGA/EWR/ports).
 // This is where "Refuse Removal, Disposal and Recycling Service For John F. Kennedy
 // International Airport - Two (2) Year Contract" and its siblings are posted.
@@ -673,45 +716,12 @@ async function paBidsScan(){
     ["/port-authority/en/business-opportunities/solicitations-advertisements/Construction.html","Construction"],
     ["/port-authority/en/business-opportunities/solicitations-advertisements/professional-services.html","Professional Services"]
   ];
-  const KEY=/refuse|garbage|trash|recycl|waste|dispos|remediat|environment|hazard|pfas|asbestos|contaminat|sludge|demoli|abatement|scrap|debris/i;
   const NJ_HINT=/newark|elizabeth|jersey city|hoboken|bayonne|teterboro|\bewr\b|port newark|goethals|bayway|new jersey|\bnj\b/i;
   const NY_HINT=/\bjfk\b|kennedy|\blga\b|laguardia|stewart|manhattan|world trade|\bwtc\b|brooklyn|staten island|queens|bathgate|new york|\bny\b/i;
-  // panynj.gov sits behind Akamai — the default library UA gets 403, so send browser-like headers
-  const HDRS={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language":"en-US,en;q=0.9"};
-  const fetchPage=async u=>{
-    let lastErr;
-    for(let a=0;a<3;a++){
-      try{ const r=await fetch(u,{headers:HDRS}); if(!r.ok)throw new Error(u.split("/")[2]+" HTTP "+r.status); return await r.text(); }
-      catch(e){ lastErr=e; if(a<2)await new Promise(res=>setTimeout(res,1500*(a+1))); }
-    }
-    throw lastErr;
-  };
   const seen=new Set(); let total=0, failed=0;
   for(const [path,board] of PAGES){
     try{
-      const html=await fetchPage(BASE+path);
-      // Pass 1: anchors — advertised solicitations link to a PDF ad or detail page
-      const items=[];
-      const aRe=/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-      let m;
-      while((m=aRe.exec(html))){
-        const txt=unent(m[2].replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
-        if(txt.length<25||!KEY.test(txt))continue;
-        let href=m[1]; try{ href=href.startsWith("http")?href:new URL(href,BASE+path).href; }catch(e){ href=BASE+path; }
-        const after=unent(html.slice(aRe.lastIndex,aRe.lastIndex+400).split(/<a\b/i)[0].replace(/<[^>]+>/g," ")).replace(/\s+/g," ");
-        const due=(after.match(/(?:due|opening|receipt|closing)[^0-9]{0,40}(\d{1,2}\/\d{1,2}\/\d{2,4})/i)||[])[1]||(after.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"";
-        const num=(txt.match(/#\s*(\d{5,8})\b/)||after.match(/(?:#|No\.?|Number)\s*:?\s*(\d{5,8})\b/i)||[])[1]||"";
-        items.push({txt,href,due,num});
-      }
-      // Pass 2 fallback: stripped-text lines, in case the board isn't anchor-per-solicitation
-      if(!items.length){
-        const lines=unent(html.replace(/<(script|style)[\s\S]*?<\/\1>/gi," ").replace(/<[^>]+>/g,"\n")).split(/\n+/).map(s=>s.replace(/\s+/g," ").trim());
-        for(const ln of lines){
-          if(ln.length<30||ln.length>220||!KEY.test(ln))continue;
-          if(/cookie|privacy|copyright|newsletter|subscribe/i.test(ln))continue;
-          items.push({txt:ln,href:BASE+path,due:(ln.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"",num:(ln.match(/#\s*(\d{5,8})\b/)||[])[1]||""});
-        }
-      }
+      const items=parseBoard(await fetchBoard(BASE+path), BASE+path);
       let n=0;
       for(const it of items){
         if(total>=25)break;
@@ -732,8 +742,41 @@ async function paBidsScan(){
   if(failed===PAGES.length)out.errors.push("PANYNJ: all three boards unreachable — if errors are HTTP 403, Akamai is rejecting the runner; manual fallback is https://panynj.bonfirehub.com/portal/?tab=openOpportunities");
 }
 
+// PANYNJ counterparts for the other territories — same shared parser, fixed routing.
+async function authorityBidsScan(){
+  const BOARDS=[
+    // South Jersey: Camden-based bi-state authority (bridges + PATCO transit)
+    {url:"https://www.drpa.org/procurement/current-purchases-and-bids.asp",src:"DRPA / PATCO",terrs:["snj"],loc:"DRPA — Camden bridges & PATCO",note:"Bi-state authority (NJ/PA), absent from NJSTART."},
+    // South Jersey: marine terminals at Camden, Paulsboro, Salem
+    {url:"https://southjerseyport.com/bids/",src:"South Jersey Ports",terrs:["snj"],loc:"SJPC — Camden/Paulsboro/Salem terminals",note:"Port corporation board, absent from NJSTART."},
+    // South Jersey: Atlantic City Intl Airport + AC Expressway
+    {url:"https://www.sjta.com/sjta/bids_intro.asp",src:"SJTA",terrs:["snj"],loc:"Atlantic City Airport & Expressway",note:"Submissions run through Bid Express (free registration)."},
+    // Connecticut: Bradley Intl + the five state GA airports
+    {url:"https://ctairports.org/economic-development/procurement/",src:"CT Airport Authority",terrs:["ct"],loc:"Bradley Intl + CT GA airports",note:"Quasi-public authority, posts on its own board (ProcureWare for documents), not CTsource."},
+    // Massachusetts: Logan, Worcester, Hanscom, Port of Boston — two boards
+    {url:"https://www.massport.com/business-with-massport/goods-and-services/rfps/",src:"Massport",terrs:["ma"],loc:"Logan / Worcester / Port of Boston",note:"Independent authority, not on COMMBUYS. Submissions via Bid Express (free registration)."},
+    {url:"https://www.massport.com/logan-airport/opportunities/capital-bids/",src:"Massport Capital",terrs:["ma"],loc:"Massport construction projects",note:"Capital/construction board. Submissions via Bid Express (free registration)."}
+  ];
+  await Promise.all(BOARDS.map(async b=>{
+    try{
+      const items=parseBoard(await fetchBoard(b.url), b.url);
+      const seen=new Set(); let n=0;
+      for(const it of items){
+        if(n>=10)break;
+        const dk=it.txt.toUpperCase().slice(0,80);
+        if(seen.has(dk))continue;
+        seen.add(dk); n++;
+        const rec={source:b.src,name:it.txt.slice(0,110),location:b.loc,date:it.due,cls:"Authority solicitation",bid:true,url:it.href,
+          desc:(b.src+" solicitation"+(it.num?" #"+it.num:"")+" — "+b.note).slice(0,230)};
+        b.terrs.forEach(t=>pushBid(t,{...rec}));
+      }
+      if(!n)out.errors.push(b.src+": board fetched, 0 refuse/environmental matches this pass");
+    }catch(e){ out.errors.push(b.src+": "+e.message); }
+  }));
+}
+
 (async ()=>{
-  await Promise.all([fdaScans(), fsisScan(), cpscScan(), spillScan(), remediationScans(), complyScans(), eventsScans(), zwtlScan(), bidScans(), hpaiScan(), samScan(), ctsourceScan(), commbuysScan(), invasiveScan(), ctUstScan(), paBidsScan()]);
+  await Promise.all([fdaScans(), fsisScan(), cpscScan(), spillScan(), remediationScans(), complyScans(), eventsScans(), zwtlScan(), bidScans(), hpaiScan(), samScan(), ctsourceScan(), commbuysScan(), invasiveScan(), ctUstScan(), paBidsScan(), authorityBidsScan()]);
   const sortHot=(a,b)=>((b.hot?1:0)-(a.hot?1:0))||String(b.date||"").localeCompare(String(a.date||""));
   TERRS.forEach(t=>{ out.territories[t].leads.sort(sortHot); });
   fs.writeFileSync("leads.json", JSON.stringify(out));
