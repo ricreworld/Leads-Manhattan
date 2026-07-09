@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ricreworld.github.io/Reworld-leads/sitemap.xml

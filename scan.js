@@ -53,6 +53,7 @@ function classifyStream(txt){
 const TERRS = ["ny","nnj","snj","ct","ma"];
 const out = { generated: new Date().toISOString(), territories: {}, errors: [] };
 TERRS.forEach(t => out.territories[t] = { leads: [], bids: [] });
+const unent = v => String(v==null?"":v).replace(/&amp;/g,"&").replace(/&#0?39;/g,"'").replace(/&quot;/g,'"').replace(/&lt;/g,"<").replace(/&gt;/g,">");
 const excl = n => EXCLUDED.some(e => (n||"").toUpperCase().includes(e));
 
 // push helper: stamps stream + drops sewage before anything lands on the board
@@ -150,11 +151,13 @@ async function fsisScan(){
     const arr = Array.isArray(j)?j:(j.results||[]);
     arr.slice(0,200).forEach(x=>{
       const states=(x.field_states||"")+"";
-      const name=x.field_establishment||x.field_title||"FSIS recall";
+      let name=x.field_establishment||x.field_title||"FSIS recall";
+      if(Array.isArray(name))name=name[0]||unent(x.field_title||"")||"FSIS recall";
+      name=unent(name);
       if(excl(name))return;
       const reason=(x.field_recall_reason||"")+" "+(x.field_title||"");
       const hot=DESTROY.test(reason);
-      const base={source:"USDA FSIS",name,date:(x.field_recall_date||"").slice(0,10),cls:x.field_recall_classification||"",hot,url:"https://www.fsis.usda.gov/recalls",desc:(x.field_title||"").slice(0,200)};
+      const base={source:"USDA FSIS",name,date:(x.field_recall_date||"").slice(0,10),cls:x.field_recall_classification||"",hot,url:"https://www.fsis.usda.gov/recalls",desc:unent(x.field_title||"").slice(0,200)};
       if(/New York/i.test(states))pushLead("ny",{...base,location:"NY distribution"});
       if(/New Jersey/i.test(states)){pushLead("nnj",{...base,location:"NJ distribution"});pushLead("snj",{...base,location:"NJ distribution"});}
       if(/Connecticut/i.test(states))pushLead("ct",{...base,location:"CT distribution"});
@@ -166,7 +169,7 @@ async function cpscScan(){
   try{
     const since=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
     const j = await get(`https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallDateStart=${since}`);
-    (Array.isArray(j)?j:[]).slice(0,30).forEach(x=>{
+    (Array.isArray(j)?j:[]).slice(0,10).forEach(x=>{
       const name=(x.Manufacturers&&x.Manufacturers[0]&&x.Manufacturers[0].Name)||(x.Products&&x.Products[0]&&x.Products[0].Name)||"CPSC recall";
       if(excl(name))return;
       const hazard=(x.Hazards&&x.Hazards[0]&&x.Hazards[0].Name)||"";
@@ -190,7 +193,7 @@ async function spillScan(){
       if(!pfas&&(!isFinite(qn)||qn<60))return;
       if(excl(x.facility_name))return;
       const hasQty=!!(x.quantity&&parseFloat(x.quantity)>0);
-      pushLead("ny",{source:"NY Spill DB",name:x.facility_name||x.locality||"Spill site",location:`${x.locality||""}, ${x.county} Co.`,date:(x.spill_date||"").slice(0,10),hot:SPILL.test(mat),pfas,volUnknown:!hasQty,desc:`${mat} — ${hasQty?(x.quantity+" "+(x.units||"")):"quantity not reported, call to confirm scale"}. ${x.contributing_factor||""}`});
+      pushLead("ny",{source:"NY Spill DB",name:x.facility_name||x.locality||"Spill site",url:"https://data.ny.gov/Energy-Environment/Spill-Incidents/u44d-k5fk",location:`${x.locality||""}, ${x.county} Co.`,date:(x.spill_date||"").slice(0,10),hot:SPILL.test(mat),pfas,volUnknown:!hasQty,desc:`${mat} — ${hasQty?(x.quantity+" "+(x.units||"")):"quantity not reported, call to confirm scale"}. ${x.contributing_factor||""}`});
     });
   }catch(e){ out.errors.push("NY spills: "+e.message); }
 }
@@ -206,7 +209,7 @@ async function remediationScans(){
       if(excl(name)||seen.has(name))return; seen.add(name);
       const blob=JSON.stringify(x);
       const pfas=/pfas|pfoa|pfos|perfluor/i.test(blob)||likelyAFFF(name);
-      pushLead("ny",{source:"NYSDEC",name,location:`${x.address1||x.address||""}, ${x.locality||""} (${x.county} Co.)`,cls:"Class 02 — active",pfas,hot:pfas,registry:true,lat:parseFloat(x.latitude)||null,lon:parseFloat(x.longitude)||null,desc:(x.program_type||"State remediation")+(pfas?" — PFAS/AFFF flagged, verify":"")});
+      pushLead("ny",{source:"NYSDEC",name,url:"https://data.ny.gov/Energy-Environment/Environmental-Remediation-Sites/c6ci-rzpg",location:`${x.address1||x.address||""}, ${x.locality||""} (${x.county} Co.)`,cls:"Class 02 — active",pfas,hot:pfas,registry:true,lat:parseFloat(x.latitude)||null,lon:parseFloat(x.longitude)||null,desc:(x.program_type||"State remediation")+(pfas?" — PFAS/AFFF flagged, verify":"")});
     });
   }catch(e){ out.errors.push("NYSDEC: "+e.message); }
   // NJDEP KCS — north and south splits
@@ -221,7 +224,7 @@ async function remediationScans(){
         if(excl(name)||n>=60)return; n++;
         const blob=JSON.stringify(a);
         const pfas=/pfas|pfoa|pfos|perfluor/i.test(blob)||likelyAFFF(name);
-        pushLead(terr,{source:"NJDEP KCS",name,location:`${a.ADDRESS||""}, ${a.MUNICIPALITY||""} (${a.COUNTY||""} Co.)`,pfas,hot:pfas,registry:true,lat:parseFloat(a.LATITUDE||a.Y)||null,lon:parseFloat(a.LONGITUDE||a.X)||null,desc:(a.STATUS||"Known contaminated site")+(pfas?" — PFAS/AFFF flagged, verify":"")});
+        pushLead(terr,{source:"NJDEP KCS",name,url:"https://www.nj.gov/dep/srp/kcsnj/",location:`${a.ADDRESS||""}, ${a.MUNICIPALITY||""} (${a.COUNTY||""} Co.)`,pfas,hot:pfas,registry:true,lat:parseFloat(a.LATITUDE||a.Y)||null,lon:parseFloat(a.LONGITUDE||a.X)||null,desc:(a.STATUS||"Known contaminated site")+(pfas?" — PFAS/AFFF flagged, verify":"")});
       });
     }catch(e){ out.errors.push("NJDEP KCS "+terr+": "+e.message); }
   }
@@ -243,7 +246,7 @@ async function remediationScans(){
       if(n>=60)return; n++;
       const blob=JSON.stringify(a);
       const pfas=/pfas|pfoa|pfos|perfluor|afff/i.test(blob)||likelyAFFF(name);
-      pushLead(terr,{source:"NJDEP IEC",name,location:`${a.ADDRESS||a.STREET||""}, ${muni} (${cty} Co.)`,cls:"Immediate Environmental Concern",hot:true,pfas,lat:parseFloat(a.LATITUDE||a.LAT||a.Y)||null,lon:parseFloat(a.LONGITUDE||a.LONG||a.X)||null,desc:"PRIORITY remediation — immediate environmental concern. Urgent contaminated-soil and remediation-waste cleanout."+(pfas?" PFAS/AFFF flagged, verify.":"")+" Call responsible party or LSRP early."});
+      pushLead(terr,{source:"NJDEP IEC",name,url:"https://www.nj.gov/dep/srp/kcsnj/",location:`${a.ADDRESS||a.STREET||""}, ${muni} (${cty} Co.)`,cls:"Immediate Environmental Concern",hot:true,pfas,lat:parseFloat(a.LATITUDE||a.LAT||a.Y)||null,lon:parseFloat(a.LONGITUDE||a.LONG||a.X)||null,desc:"PRIORITY remediation — immediate environmental concern. Urgent contaminated-soil and remediation-waste cleanout."+(pfas?" PFAS/AFFF flagged, verify.":"")+" Call responsible party or LSRP early."});
     });
   }catch(e){ out.errors.push("NJ IEC: "+e.message); }
   // CT DEEP open remediation cases
@@ -257,7 +260,7 @@ async function remediationScans(){
       const dk=(name+"|"+(x.official_town||"")).toUpperCase(); if(seen.has(dk)||n>=80)return; seen.add(dk); n++;
       const prog=x.case_program||"";
       const pfas=/pfas|pfoa|pfos|perfluor|afff/i.test(name+" "+prog)||likelyAFFF(name);
-      pushLead("ct",{source:"CT DEEP Sites",name,location:((x.case_address||"").replace(/,?\s*US$/,""))+" ("+(x.official_town||"")+", CT)",cls:prog.slice(0,30),pfas,hot:pfas,registry:true,lat:parseFloat(x.site_id_latitude)||null,lon:parseFloat(x.site_id_longitude)||null,desc:prog+" · "+(x.case_status||"Open")+(pfas?" — PFAS/AFFF, verify":"")});
+      pushLead("ct",{source:"CT DEEP Sites",name,url:"https://data.ct.gov/Environment-and-Natural-Resources/Contaminated-or-Potentially-Contaminated-Sites-Lis/xcxg-6jqp",location:((x.case_address||"").replace(/,?\s*US$/,""))+" ("+(x.official_town||"")+", CT)",cls:prog.slice(0,30),pfas,hot:pfas,registry:true,lat:parseFloat(x.site_id_latitude)||null,lon:parseFloat(x.site_id_longitude)||null,desc:prog+" · "+(x.case_status||"Open")+(pfas?" — PFAS/AFFF, verify":"")});
     });
   }catch(e){ out.errors.push("CT DEEP: "+e.message); }
   // MassDEP C21e
@@ -277,7 +280,7 @@ async function remediationScans(){
           const blob=JSON.stringify(a).toLowerCase();
           const pfas=/pfas|pfoa|pfos|perfluor|afff/.test(blob)||likelyAFFF(name);
           const g=f.geometry||{};
-          pushLead("ma",{source:"MassDEP 21E",name,location:(a.ADDRESS||a.Address||"")+", "+town+" (MA)",pfas,hot:pfas,registry:true,lat:g.y||null,lon:g.x||null,desc:(a.STATUS||a.Status||"MGL c.21E tier-classified site")+(pfas?" — PFAS-flagged":"")});
+          pushLead("ma",{source:"MassDEP 21E",name,url:"https://eeaonline.eea.state.ma.us/portal#!/search/wastesite",location:(a.ADDRESS||a.Address||"")+", "+town+" (MA)",pfas,hot:pfas,registry:true,lat:g.y||null,lon:g.x||null,desc:(a.STATUS||a.Status||"MGL c.21E tier-classified site")+(pfas?" — PFAS-flagged":"")});
         });
         done=true;
       }catch(e){ lastErr=e; }
@@ -328,7 +331,7 @@ async function complyScans(){
         if(counties&&!counties.some(c=>cty.includes(c)))return;
         const name=f.facility_name||f.FACILITY_NAME||"";
         if(!name||excl(name)||n>=25)return; n++;
-        pushLead(terr,{source:"EPA TRI",name,location:`${f.city_name||f.CITY_NAME||""}, ${cty||st}`,cls:"TRI reporter",registry:true,desc:"Already generating and paying for industrial waste disposal — ZWTL conversion conversation."});
+        pushLead(terr,{source:"EPA TRI",name,url:"https://enviro.epa.gov/envirofacts/tri/search",location:`${f.city_name||f.CITY_NAME||""}, ${cty||st}`,cls:"TRI reporter",registry:true,desc:"Already generating and paying for industrial waste disposal — ZWTL conversion conversation."});
       });
     }catch(e){ out.errors.push("TRI "+terr+": "+e.message); }
   }
@@ -343,7 +346,7 @@ async function complyScans(){
       if(!name||excl(name))return;
       const dk=name.toUpperCase(); if(seen.has(dk))return; seen.add(dk);
       if(n>=30)return; n++;
-      pushLead("ny",{source:"NYSDEC Title V",name,location:`${x.facility_city||x.city||""}, ${cty} Co.`,cls:"Title V air permit",registry:true,desc:"Emits regulated hazardous air pollutants under Title V — heavy industrial, generates profiled/RCRA waste. Routing + ZWTL target. Qualify streams, volume, current vendor."});
+      pushLead("ny",{source:"NYSDEC Title V",name,url:"https://data.ny.gov/Energy-Environment/Title-V-Emissions-Inventory-Beginning-2010/4ry5-tfin",location:`${x.facility_city||x.city||""}, ${cty} Co.`,cls:"Title V air permit",registry:true,desc:"Emits regulated hazardous air pollutants under Title V — heavy industrial, generates profiled/RCRA waste. Routing + ZWTL target. Qualify streams, volume, current vendor."});
     });
   }catch(e){ out.errors.push("Title V: "+e.message); }
 }
@@ -359,7 +362,7 @@ async function eventsScans(){
       if(!/DEMOLITION|\bDM\b/.test(wt)||n>=20)return;
       const oname=[x.owner_business_name,x.applicant_business_name].find(v=>v&&!/not applicable|n\/a/i.test(v))||`${x.house_no||""} ${x.street_name||""}`.trim()||"Demolition site";
       n++;
-      pushLead("ny",{source:"NYC DOB",name:oname,location:`${x.house_no||""} ${x.street_name||""}, ${x.borough||""}`,date:(x.issued_date||"").slice(0,10),cls:"Demolition permit",hot:true,desc:"Full demolition permitted — contaminated soil, asbestos abatement waste, and industrial cleanout streams incoming."});
+      pushLead("ny",{source:"NYC DOB",name:oname,url:"https://data.cityofnewyork.us/Housing-Development/DOB-Permit-Issuance/rbx6-tga4",location:`${x.house_no||""} ${x.street_name||""}, ${x.borough||""}`,date:(x.issued_date||"").slice(0,10),cls:"Demolition permit",hot:true,desc:"Full demolition permitted — contaminated soil, asbestos abatement waste, and industrial cleanout streams incoming."});
     });
   }catch(e){ out.errors.push("NYC DOB: "+e.message); }
   try{
@@ -371,7 +374,7 @@ async function eventsScans(){
       if(!/^1/.test(x.incident_type||"")&&!/FIRE/i.test(it))return;
       if(!/WAREHOUSE|STORAGE|MANUFACT|MERCANTILE|BUSINESS|INDUSTR|FOOD|LABORATOR/.test(pu)||n>=15)return;
       n++;
-      pushLead("ny",{source:"FDNY",name:pu.slice(0,60),location:`${x.borough_desc||x.borough||""}`,date:(x.incident_date_time||"").slice(0,10),cls:"Commercial fire",hot:true,desc:(it||"Structure fire")+" at commercial property — fire/smoke/water-damaged inventory needs certified destruction for insurance."});
+      pushLead("ny",{source:"FDNY",name:pu.slice(0,60),url:"https://data.cityofnewyork.us/Public-Safety/Incidents-Responded-to-by-Fire-Companies/tm6d-hbzd",location:`${x.borough_desc||x.borough||""}`,date:(x.incident_date_time||"").slice(0,10),cls:"Commercial fire",hot:true,desc:(it||"Structure fire")+" at commercial property — fire/smoke/water-damaged inventory needs certified destruction for insurance."});
     });
   }catch(e){ out.errors.push("FDNY: "+e.message); }
   try{
@@ -383,17 +386,20 @@ async function eventsScans(){
       const name=x.facility_name||x.site_name||x.name||"";
       if(!name||seen.has(name)||n>=20)return;
       seen.add(name);n++;
-      pushLead("ny",{source:"NYSDEC CBS",name,location:`${x.locality||x.city||""}, ${x.county} Co.`,cls:"Chemical bulk storage",registry:true,desc:"Registered chemical bulk storage facility — standing profiled-waste and RCRA routing prospect."});
+      pushLead("ny",{source:"NYSDEC CBS",name,url:"https://data.ny.gov/Energy-Environment/Chemical-Bulk-Storage-CBS-Facilities/pteg-c78n",location:`${x.locality||x.city||""}, ${x.county} Co.`,cls:"Chemical bulk storage",registry:true,desc:"Registered chemical bulk storage facility — standing profiled-waste and RCRA routing prospect."});
     });
   }catch(e){ out.errors.push("NYSDEC CBS: "+e.message); }
   for(const [terr,courts,loc] of [["ny","nysb+nyeb","SDNY/EDNY"],["nnj","njb","D.N.J."],["snj","njb","D.N.J."],["ct","ctb","D. Conn."],["ma","mab","D. Mass."]]){
     try{
       const j = await get(`https://www.courtlistener.com/api/rest/v4/search/?type=r&q=chapter&court=${courts}&order_by=dateFiled+desc`);
       let n=0;
+      const BIZ=/\b(LLC|L\.L\.C|INC|CORP|CO\.|LTD|LP|LLP|COMPANY|ENTERPRISES?|GROUP|HOLDINGS?|INDUSTR|MANUFACTUR|FOODS?|PHARMA|LABS?|LABORATOR|DISTRIBUT|LOGISTICS|SUPPLY|PRODUCTS?|BRANDS?|RETAIL|STORES?|MARKET)\b/i;
       ((j&&j.results)||[]).forEach(x=>{
         const name=x.caseName||x.case_name||"";
-        if(!name||n>=12)return; n++;
-        pushLead(terr,{source:"Bankruptcy Ct",name:name.slice(0,80),location:loc,date:(x.dateFiled||x.date_filed||"").slice(0,10),cls:"Filing",desc:"Recent bankruptcy filing — if distributor/retailer/manufacturer, liquidated inventory may need certified brand-protection destruction. Verify entity type."});
+        if(!name||n>=12)return;
+        if(!BIZ.test(name))return;   // personal consumer filings are not prospects
+        n++;
+        pushLead(terr,{source:"Bankruptcy Ct",name:name.slice(0,80),url:"https://www.courtlistener.com/?type=r&q=chapter&order_by=dateFiled+desc",location:loc,date:(x.dateFiled||x.date_filed||"").slice(0,10),cls:"Filing",desc:"Recent bankruptcy filing — if distributor/retailer/manufacturer, liquidated inventory may need certified brand-protection destruction. Verify entity type."});
       });
     }catch(e){ out.errors.push("Bankruptcy "+terr+": "+e.message); }
   }
@@ -468,8 +474,266 @@ async function bidScans(){
   }catch(e){ out.errors.push("NJSTART bids: "+e.message); }
 }
 
+
+/* ---------------- NEW SOURCES (docs/SOURCES.md wiring, 2026-07-09) ---------------- */
+
+// APHIS HPAI detections — poultry flocks + mammals/livestock. Depopulation/disposal events.
+async function hpaiScan(){
+  const PAGES=[
+    ["https://www.aphis.usda.gov/livestock-poultry-disease/avian/avian-influenza/hpai-detections/commercial-backyard-flocks","flocks"],
+    ["https://www.aphis.usda.gov/livestock-poultry-disease/avian/avian-influenza/hpai-detections/mammals","mammals/livestock"]
+  ];
+  const STATES=[["New York",["ny"]],["New Jersey",["nnj","snj"]],["Connecticut",["ct"]],["Massachusetts",["ma"]]];
+  for(const [pageUrl,kind] of PAGES){
+    try{
+      let rows=[],got="";
+      // known published CSVs first, then any CSV linked from the page, then the page text itself
+      const CSV_CANDIDATES=[
+        "https://www.aphis.usda.gov/sites/default/files/commercial-backyard-flocks.csv",
+        "https://www.aphis.usda.gov/sites/default/files/hpai-mammals.csv",
+        "https://www.aphis.usda.gov/sites/default/files/hpai-livestock-detections.csv"
+      ];
+      for(const cu of CSV_CANDIDATES){
+        if(got)break;
+        try{const csv=await getText(cu);if(csv&&csv.includes(",")&&csv.length>200){rows=csv.split(/\r?\n/);got=cu}}catch(e){}
+      }
+      const html=got?"":await getText(pageUrl);
+      if(!got){
+        const csvHref=(html.match(/href="([^"]+\.csv[^"]*)"/i)||[])[1];
+        if(csvHref){
+          const csvUrl=csvHref.startsWith("http")?csvHref:new URL(csvHref,pageUrl).href;
+          const csv=await getText(csvUrl);rows=csv.split(/\r?\n/);got=csvUrl;
+        }else{
+          rows=html.replace(/<[^>]+>/g,"|").split(/\n|\|{2,}/);
+        }
+      }
+      let anyStateRows=0;
+      for(const row of rows){if(/New York|New Jersey|Connecticut|Massachusetts|Ohio|Iowa|California|Texas|Wisconsin|Minnesota/.test(row))anyStateRows++;}
+      const since=Date.now()-60*864e5;
+      let n=0;
+      for(const row of rows){
+        for(const [stName,terrs] of STATES){
+          if(!row.includes(stName))continue;
+          const dm=row.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})|(\d{4}-\d{2}-\d{2})/);
+          const dt=dm?new Date(dm[0]):null;
+          if(dt&&isFinite(+dt)&&+dt<since)continue;
+          if(n>=20)break;
+          n++;
+          const county=(row.match(new RegExp(stName+"[^a-zA-Z]*([A-Za-z .]{3,30}?)\\s*(County|Co\\.|,)","i"))||[])[1]||"";
+          for(const t of terrs)pushLead(t,{source:"APHIS HPAI",name:("HPAI detection — "+(county?county+" County, ":"")+stName).slice(0,80),
+            location:(county?county+" County, ":"")+stName,date:dt&&isFinite(+dt)?dt.toISOString().slice(0,10):"",
+            cls:"HPAI "+kind,hot:true,aphis:true,url:pageUrl,
+            desc:"Confirmed HPAI detection ("+kind+") — depopulation and carcass/litter disposal event. APHIS-regulated material: route per facility APHIS rules (never Babylon). Row: "+row.replace(/\s+/g," ").trim().slice(0,140)});
+        }
+      }
+      if(!n)out.errors.push("APHIS HPAI "+kind+": fetched "+(got?("CSV "+got.split("/").pop()):"page")+", "+(anyStateRows?("no NY/NJ/CT/MA detections in the last 60 days ("+anyStateRows+" rows in other states — real absence, not an error)"):"no state rows recognized — format changed"));
+    }catch(e){ out.errors.push("APHIS HPAI "+kind+": "+e.message); }
+  }
+}
+
+// SAM.gov federal opportunities — needs free API key as Actions secret SAM_API_KEY (rotate every 90 days).
+async function samScan(){
+  const key=process.env.SAM_API_KEY;
+  if(!key){ out.errors.push("SAM.gov: SAM_API_KEY not set — create a free key at sam.gov (Account Details) and add it as a repo Actions secret"); return; }
+  const fmt=d=>{const p=n=>String(n).padStart(2,"0");return p(d.getMonth()+1)+"/"+p(d.getDate())+"/"+d.getFullYear()};
+  const to=new Date(),from=new Date(Date.now()-30*864e5);
+  const CFG=[["NY",["ny"]],["NJ",["nnj","snj"]],["CT",["ct"]],["MA",["ma"]]];
+  for(const [st,terrs] of CFG){
+    try{
+      const u=`https://api.sam.gov/opportunities/v2/search?api_key=${encodeURIComponent(key)}&postedFrom=${encodeURIComponent(fmt(from))}&postedTo=${encodeURIComponent(fmt(to))}&state=${st}&ncode=562910&limit=40`;
+      const j=await get(u);
+      let n=0;
+      ((j&&j.opportunitiesData)||[]).forEach(o=>{
+        if(n>=15)return;n++;
+        const rec={source:"SAM.gov",name:(o.title||"Federal solicitation").slice(0,90),
+          location:((o.placeOfPerformance&&o.placeOfPerformance.city&&o.placeOfPerformance.city.name)||"")+", "+st,
+          date:(o.postedDate||"").slice(0,10),cls:(o.type||"Solicitation").slice(0,30),bid:true,
+          url:o.uiLink||("https://sam.gov/opp/"+(o.noticeId||"")),
+          desc:("Federal environmental remediation opportunity ("+(o.solicitationNumber||o.noticeId||"")+") — "+(o.fullParentPathName||"")).slice(0,220)};
+        terrs.forEach(t=>pushBid(t,{...rec}));
+      });
+    }catch(e){ out.errors.push("SAM.gov "+st+": "+e.message); }
+  }
+}
+
+// CTsource / Proactis WebProcure public bid board (CT state solicitations).
+async function ctsourceScan(){
+  try{
+    const html=await getText("https://webprocure.proactiscloud.com/wp-web-public/");
+    const text=html.replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
+    if(text.trim().length<1500){ out.errors.push("CTsource: WebProcure board looks JS-rendered — needs a headless/API route; investigate network calls"); return; }
+    const chunks=text.split(/(?=Solicitation|RFP|Invitation to Bid|ITB|RFQ)/i).slice(0,200);
+    let n=0;
+    for(const c of chunks){
+      if(n>=20)break;
+      if(!/environmental|hazardous|remediation|contaminat|waste|pfas|asbestos|landfill|recycl|water treatment/i.test(c))continue;
+      n++;
+      pushBid("ct",{source:"CTsource",name:c.trim().slice(0,90),location:"State of Connecticut",cls:"Environmental",bid:true,
+        url:"https://webprocure.proactiscloud.com/wp-web-public/",
+        desc:c.trim().slice(0,200)+" — public board, no account needed to view."});
+    }
+    if(!n)out.errors.push("CTsource: board fetched, 0 environmental matches this pass");
+  }catch(e){ out.errors.push("CTsource: "+e.message); }
+}
+
+// COMMBUYS public bid search (MA state + municipal). Same BuySpeed/bso family as NJSTART.
+async function commbuysScan(){
+  try{
+    const html=await getText("https://www.commbuys.com/bso/view/search/external/advancedSearchBid.xhtml?openBids=true");
+    const text=html.replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
+    const rowRe=/(BD-\d{2}-[A-Z0-9-]+)\s+(.{10,160}?)\s+(\d{2}\/\d{2}\/\d{4})/g;
+    let m,n=0;
+    while((m=rowRe.exec(text))&&n<20){
+      const desc=(m[2]||"").trim();
+      if(!/environmental|hazardous|remediation|contaminat|waste|pfas|asbestos|landfill|recycl|water/i.test(desc))continue;
+      n++;
+      pushBid("ma",{source:"COMMBUYS",name:desc.slice(0,90),location:"Massachusetts",date:m[3],cls:"Environmental",bid:true,
+        url:"https://www.commbuys.com/bso/view/search/external/advancedSearchBid.xhtml?openBids=true",
+        desc:"Solicitation "+m[1]+" — "+desc.slice(0,160)+". Public listing; documents free on COMMBUYS."});
+    }
+    if(!n)out.errors.push("COMMBUYS: page fetched, 0 environmental bid rows matched — verify row regex against live HTML");
+  }catch(e){ out.errors.push("COMMBUYS: "+e.message); }
+}
+
+// NY iMapInvasives occurrences via GBIF (no login; Darwin Core publication path).
+async function invasiveScan(){
+  try{
+    const ds=await get("https://api.gbif.org/v1/dataset/search?q=iMapInvasives&limit=5");
+    const hit=((ds&&ds.results)||[]).find(d=>/imap\s?invasives/i.test(d.title||""));
+    const yr=new Date().getFullYear();
+    let j;
+    if(hit){
+      j=await get(`https://api.gbif.org/v1/occurrence/search?datasetKey=${hit.key}&stateProvince=New%20York&year=${yr-1},${yr}&limit=120`);
+    }else{
+      // fallback: query priority species directly (any GBIF publisher, NY, last 2 years)
+      const SPECIES=["Reynoutria japonica","Trapa natans","Persicaria perfoliata","Ailanthus altissima","Celastrus orbiculatus"];
+      const merged=[];
+      for(const sp of SPECIES){
+        try{
+          const r=await get(`https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(sp)}&stateProvince=New%20York&country=US&year=${yr-1},${yr}&limit=40`);
+          merged.push(...((r&&r.results)||[]));
+        }catch(e){}
+      }
+      j={results:merged};
+    }
+    const seen=new Set();let n=0;
+    ((j&&j.results)||[]).forEach(o=>{
+      const sp=o.vernacularName||o.species||o.scientificName||"";
+      if(!INVASIVE.test(sp))return;
+      const loc=[o.county,o.locality].filter(Boolean).join(", ");
+      const dk=(sp+"|"+(o.county||"")).toUpperCase();
+      if(seen.has(dk)||n>=15)return;seen.add(dk);n++;
+      pushLead("ny",{source:"iMapInvasives (GBIF)",name:(sp+" — "+(o.county||"NY")).slice(0,80),
+        location:loc||"New York",date:(o.eventDate||"").slice(0,10),cls:"Invasive detection",
+        lat:o.decimalLatitude||null,lon:o.decimalLongitude||null,
+        url:"https://www.nyimapinvasives.org/",
+        desc:"Recorded invasive occurrence — eradication/management work generates regulated plant biomass."});
+    });
+    if(!n)out.errors.push("iMapInvasives: "+(hit?("dataset "+hit.key):"species fallback")+" queried, 0 recent NY priority-species occurrences matched");
+  }catch(e){ out.errors.push("iMapInvasives: "+e.message); }
+}
+
+// Connecticut UST/LUST registry (Socrata) — petroleum tank sites → contaminated soil / oily debris.
+async function ctUstScan(){
+  try{
+    const j=await get("https://data.ct.gov/resource/utni-rddb.json?$limit=300");
+    if(!Array.isArray(j))throw new Error("bad response");
+    const pick=(o,cands)=>{for(const c of cands){for(const k of Object.keys(o)){const lk=k.toLowerCase();if(lk.includes(c)&&!lk.includes("id")&&!lk.includes("number"))return o[k]}}return""};
+    const seen=new Set();let n=0;
+    j.forEach(x=>{
+      let name=pick(x,["facility_name","site_name","owner_name","name"]);
+      const fid=pick(x,["facility_id","site_id","id"]);
+      if(!name||/^[\d-]+$/.test(String(name).trim()))name="";
+      const town=pick(x,["town","city","municipality"]);
+      const addr=pick(x,["address","street","location"]);
+      if(!name)name=[addr,town].filter(Boolean).join(", ")||("UST facility "+(fid||""));
+      if(excl(name))return;
+      const status=(pick(x,["tank_status","status"])+"").toLowerCase();
+      if(/removed|closed|permanently/i.test(status))return;   // keep active/temporarily-closed tanks
+      const dk=(name+"|"+town).toUpperCase();
+      if(seen.has(dk)||n>=40)return;seen.add(dk);n++;
+      pushLead("ct",{source:"CT UST Registry",name:String(name).slice(0,90),
+        location:[addr,town].filter(Boolean).join(", ")+" (CT)",cls:"Underground storage tank",registry:true,
+        url:"https://data.ct.gov/Environment-and-Natural-Resources/Underground-Storage-Tanks-USTs-Facility-and-Tank-D/utni-rddb",
+        desc:"Registered UST facility"+(status?" ("+status+")":"")+" — petroleum tank site: closure/removal, oily debris, and contaminated-soil prospect."});
+    });
+    if(!n)out.errors.push("CT UST: dataset fetched, 0 rows passed filters — verify field names");
+  }catch(e){ out.errors.push("CT UST: "+e.message); }
+}
+
+// Port Authority of NY & NJ — Solicitations Advertised boards (JFK/LGA/EWR/ports).
+// This is where "Refuse Removal, Disposal and Recycling Service For John F. Kennedy
+// International Airport - Two (2) Year Contract" and its siblings are posted.
+// Bids themselves run through the PA's Bonfire portal (panynj.bonfirehub.com), which is
+// Cloudflare-walled — the advertised-solicitations pages on panynj.gov are the scrape target.
+async function paBidsScan(){
+  const BASE="https://www.panynj.gov";
+  const PAGES=[
+    ["/port-authority/en/business-opportunities/solicitations-advertisements/goods-services.html","Goods & Services"],
+    ["/port-authority/en/business-opportunities/solicitations-advertisements/Construction.html","Construction"],
+    ["/port-authority/en/business-opportunities/solicitations-advertisements/professional-services.html","Professional Services"]
+  ];
+  const KEY=/refuse|garbage|trash|recycl|waste|dispos|remediat|environment|hazard|pfas|asbestos|contaminat|sludge|demoli|abatement|scrap|debris/i;
+  const NJ_HINT=/newark|elizabeth|jersey city|hoboken|bayonne|teterboro|\bewr\b|port newark|goethals|bayway|new jersey|\bnj\b/i;
+  const NY_HINT=/\bjfk\b|kennedy|\blga\b|laguardia|stewart|manhattan|world trade|\bwtc\b|brooklyn|staten island|queens|bathgate|new york|\bny\b/i;
+  // panynj.gov sits behind Akamai — the default library UA gets 403, so send browser-like headers
+  const HDRS={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language":"en-US,en;q=0.9"};
+  const fetchPage=async u=>{
+    let lastErr;
+    for(let a=0;a<3;a++){
+      try{ const r=await fetch(u,{headers:HDRS}); if(!r.ok)throw new Error(u.split("/")[2]+" HTTP "+r.status); return await r.text(); }
+      catch(e){ lastErr=e; if(a<2)await new Promise(res=>setTimeout(res,1500*(a+1))); }
+    }
+    throw lastErr;
+  };
+  const seen=new Set(); let total=0, failed=0;
+  for(const [path,board] of PAGES){
+    try{
+      const html=await fetchPage(BASE+path);
+      // Pass 1: anchors — advertised solicitations link to a PDF ad or detail page
+      const items=[];
+      const aRe=/<a\b[^>]*href="([^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+      let m;
+      while((m=aRe.exec(html))){
+        const txt=unent(m[2].replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
+        if(txt.length<25||!KEY.test(txt))continue;
+        let href=m[1]; try{ href=href.startsWith("http")?href:new URL(href,BASE+path).href; }catch(e){ href=BASE+path; }
+        const after=unent(html.slice(aRe.lastIndex,aRe.lastIndex+400).split(/<a\b/i)[0].replace(/<[^>]+>/g," ")).replace(/\s+/g," ");
+        const due=(after.match(/(?:due|opening|receipt|closing)[^0-9]{0,40}(\d{1,2}\/\d{1,2}\/\d{2,4})/i)||[])[1]||(after.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"";
+        const num=(txt.match(/#\s*(\d{5,8})\b/)||after.match(/(?:#|No\.?|Number)\s*:?\s*(\d{5,8})\b/i)||[])[1]||"";
+        items.push({txt,href,due,num});
+      }
+      // Pass 2 fallback: stripped-text lines, in case the board isn't anchor-per-solicitation
+      if(!items.length){
+        const lines=unent(html.replace(/<(script|style)[\s\S]*?<\/\1>/gi," ").replace(/<[^>]+>/g,"\n")).split(/\n+/).map(s=>s.replace(/\s+/g," ").trim());
+        for(const ln of lines){
+          if(ln.length<30||ln.length>220||!KEY.test(ln))continue;
+          if(/cookie|privacy|copyright|newsletter|subscribe/i.test(ln))continue;
+          items.push({txt:ln,href:BASE+path,due:(ln.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)||[])[1]||"",num:(ln.match(/#\s*(\d{5,8})\b/)||[])[1]||""});
+        }
+      }
+      let n=0;
+      for(const it of items){
+        if(total>=25)break;
+        const dk=it.txt.toUpperCase().slice(0,80);
+        if(seen.has(dk))continue;
+        seen.add(dk); total++; n++;
+        const nj=NJ_HINT.test(it.txt), ny=NY_HINT.test(it.txt);
+        const terrs=nj&&!ny?["nnj"]:ny&&!nj?["ny"]:["ny","nnj"];   // bi-state agency: unhinted ads show on both boards
+        const rec={source:"Port Authority NY & NJ",name:it.txt.slice(0,110),
+          location:nj&&!ny?"PA facilities — NJ side":ny&&!nj?"PA facilities — NY side":"Port Authority (bi-state)",
+          date:it.due,cls:board,bid:true,url:it.href,
+          desc:("PANYNJ advertised solicitation"+(it.num?" #"+it.num:"")+" — "+board+" board. Listing is public; bidding runs through the PA Bonfire portal (panynj.bonfirehub.com), free vendor registration.").slice(0,230)};
+        terrs.forEach(t=>pushBid(t,{...rec}));
+      }
+      if(!n)out.errors.push("PANYNJ "+board+": page fetched, 0 refuse/environmental matches this pass");
+    }catch(e){ failed++; out.errors.push("PANYNJ "+board+": "+e.message); }
+  }
+  if(failed===PAGES.length)out.errors.push("PANYNJ: all three boards unreachable — if errors are HTTP 403, Akamai is rejecting the runner; manual fallback is https://panynj.bonfirehub.com/portal/?tab=openOpportunities");
+}
+
 (async ()=>{
-  await Promise.all([fdaScans(), fsisScan(), cpscScan(), spillScan(), remediationScans(), complyScans(), eventsScans(), zwtlScan(), bidScans()]);
+  await Promise.all([fdaScans(), fsisScan(), cpscScan(), spillScan(), remediationScans(), complyScans(), eventsScans(), zwtlScan(), bidScans(), hpaiScan(), samScan(), ctsourceScan(), commbuysScan(), invasiveScan(), ctUstScan(), paBidsScan()]);
   const sortHot=(a,b)=>((b.hot?1:0)-(a.hot?1:0))||String(b.date||"").localeCompare(String(a.date||""));
   TERRS.forEach(t=>{ out.territories[t].leads.sort(sortHot); });
   fs.writeFileSync("leads.json", JSON.stringify(out));
