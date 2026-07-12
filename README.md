@@ -6,15 +6,19 @@ Every new business leaves a paper trail before opening day. A liquor license get
 
 ## What it pulls, live
 
-The page fetches four public data feeds. No API key, no login, no cost. A "Scan all signals now" button at the top of the feed section pulls fresh data from all four at once and reports how many leads it found in each; each tab also has its own smaller Refresh button if you just want to recheck one.
+The page fetches six public data feeds. No API key, no login, no cost. A "Scan all signals now" button at the top of the feed section pulls fresh data from all six at once and reports how many leads it found in each; each tab also has its own smaller Refresh button if you just want to recheck one.
 
-1. **DOB NOW Job Application Filings** (NYC Open Data, dataset w9ak-ipjd), the earliest and strongest signal. DOB NOW classifies any filing that changes a building's use, occupancy, or egress as an "Alteration CO" (Alt-CO, formerly Alt 1). That means someone is legally converting a space into a different kind of business, and it appears the moment the filing is submitted, months before a permit is even approved. The page filters on the exact job_type value "Alteration CO". If the city ever renames that value, the page asks the dataset for its current list of job types, adopts the one that looks like Alt-CO, and tells you it did so in a yellow notice. If it can't find one at all it shows an error instead of quietly showing you the wrong records. Withdrawn and terminated filings are removed, and each filing is cross-checked against the approved permits dataset so you can see whether a permit has been issued yet.
+1. **DOB NOW Job Application Filings** (NYC Open Data, dataset w9ak-ipjd), the earliest and strongest signal. DOB NOW classifies any filing that changes a building's use, occupancy, or egress as an "Alteration CO" (Alt-CO, formerly Alt 1). The page filters on the exact job_type value "Alteration CO", verified against the live API. If the city ever renames that value, the page asks the dataset for its current list of job types, adopts the one that looks like Alt-CO, and tells you it did so in a yellow notice; if it can't find one it shows an error instead of quietly showing wrong records. Withdrawn filings are removed, each lead shows the filing's own job description, and the dataset's first_permit_date column shows whether a permit has issued yet. Filings from the past 9 months.
 
-2. NYS Liquor Authority current active licenses (data.ny.gov, dataset 9s3h-dpkz), filtered on the premises county column to New York County, sorted by original issue date so genuinely new licenses come first rather than renewals of old bars. If this dataset is unavailable the page falls back to the daily active license list (wg8y-fzsj) automatically, and says so in a notice when it does.
+2. **SLA pending license applications** (data.ny.gov, dataset f8i8-k2gm, updated daily), filtered to New York County, newest received date first. This is the moment a bar or restaurant's liquor application lands at the state, weeks to months before the license issues. Past 6 months.
 
-3. DOB NOW approved permits (NYC Open Data, dataset rbx6-tga4), filtered to Manhattan. Permit renewals are removed, since a renewal is an old job resurfacing, not a new buildout. A "Likely buildouts only" checkbox (on by default) hides plumbing-only, sprinkler, and similar maintenance permits unless the job description reads like a new tenant fit-out; a note tells you how many were hidden. If DOB NOW fails, the page falls back to the legacy BIS permit dataset (ipu4-2q9a) automatically, and says so.
+3. NYS Liquor Authority current active licenses (data.ny.gov, dataset 9s3h-dpkz), filtered to New York County, sorted by original issue date so genuinely new licenses come first rather than renewals of old bars. Past 6 months. If this dataset is unavailable the page falls back to the daily active license list (wg8y-fzsj) automatically, and says so in a notice when it does.
 
-4. DOHMH restaurant inspections (NYC Open Data, dataset 43nn-pn8j), filtered to Manhattan establishments whose inspection date is the 1900-01-01 placeholder. That placeholder is literally how the city flags a brand-new restaurant that has a permit but has not been inspected yet. These are the closest to opening.
+4. DOB NOW approved permits (NYC Open Data, dataset rbx6-tga4), filtered to Manhattan, past 4 months. Permit renewals are removed, since a renewal is an old job resurfacing, not a new buildout. A "Likely buildouts only" checkbox (on by default) hides scaffolds, sidewalk sheds, plumbing-only and similar maintenance permits unless the job description reads like a new tenant fit-out; a note tells you how many were hidden. If DOB NOW fails, the page falls back to the legacy BIS permit dataset (ipu4-2q9a) automatically, and says so.
+
+5. **DCWP license applications** (NYC Open Data, dataset ptev-4hud), new applications only, at Manhattan premises, past year. This catches the non-food storefronts the other feeds miss: secondhand dealers, salons, laundromats, garages, newsstands and so on, at the moment they apply for their operating license.
+
+6. DOHMH restaurant inspections (NYC Open Data, dataset 43nn-pn8j), filtered to Manhattan establishments whose inspection date is the 1900-01-01 placeholder. That placeholder is literally how the city flags a brand-new restaurant that has a permit but has not been inspected yet. These are the closest to opening.
 
 ## How leads are ranked and worked
 
@@ -24,7 +28,24 @@ The strongest signal of all is overlap. After a full scan, the page compares add
 
 Each lead has a Copy button (tab-separated, pastes clean into a spreadsheet row) and a "Mark called" button. Called leads disappear from the list and stay hidden on this device, even across scans; uncheck "Hide called" to review or un-mark them. Export CSV downloads whatever is currently visible with your filters applied, including the priority number and called status, ready for Salesforce import.
 
-The map plots every lead it can. The health and liquor feeds publish coordinates directly. The two DOB feeds publish none, so those addresses are located through the city's own free GeoSearch service (geosearch.planninglabs.nyc, no key needed), a few at a time, with every answer cached in your browser so repeat scans cost zero lookups.
+The map plots every lead it can. All six feeds publish coordinates on most records (verified against the live APIs), and the few addresses that arrive without them are located through the city's own free GeoSearch service (geosearch.planninglabs.nyc, no key needed), a few at a time, with every answer cached in your browser so repeat scans cost zero lookups.
+
+## The daily scan, NEW flags, and the morning email (Vercel)
+
+When this repo is deployed on Vercel, it's more than a static page. Two small server endpoints live in the api folder:
+
+- Every weekday morning around 7:30 New York time, Vercel runs /api/scan automatically. It pulls all six feeds, compares them with everything it has ever seen before, and remembers the result. This gives the tool real memory: it knows which leads are genuinely new, not just recently dated.
+- The page asks /api/state which leads are new. Anything first seen in the last two days, or so new the morning scan hasn't caught it yet, gets a green "new" pill in the list. If the endpoints aren't there (for example on GitHub Pages), the page works exactly as before, just without pills.
+- If email is configured, mornings with new leads produce a digest email listing them, grouped by feed. No new leads, no email.
+
+One-time setup, in the Vercel dashboard:
+
+1. Storage, then Create Database, then Blob, and connect it to the leads-manhattan project. This is the scan's memory. It's free at this scale and Vercel adds the access token to the project automatically. Without it, scans still work but remember nothing, and /api/scan tells you so in plain language.
+2. Optional, for the morning email: create a free account at resend.com, copy an API key, and add two environment variables to the project: RESEND_API_KEY (the key) and DIGEST_TO (your email address). Note that with the built-in sender address, Resend only delivers to the email you signed up with; verifying a domain there removes that limit.
+3. Optional, for higher rate limits: sign up free at data.cityofnewyork.us, create an app token, and add it as SOCRATA_APP_TOKEN. The scan sends it with every request when present.
+4. Optional, to lock the digest trigger: add a CRON_SECRET environment variable. Vercel's cron includes it automatically; manual visitors without it can still scan but cannot trigger emails.
+
+After changing environment variables, redeploy once. The very first scan seeds the memory and deliberately sends no email, since on day one everything looks new. You can trigger a scan manually anytime by opening /api/scan in your browser; it answers in JSON and refuses to hammer the city APIs more than once every ten minutes.
 
 ## How to publish this on GitHub Pages
 
@@ -44,7 +65,7 @@ To update the page later, just upload a new index.html the same way. GitHub Page
 
 ## Design decisions worth knowing
 
-Every feed now uses explicit, documented column names instead of guessing at the schema. The page still re-checks those names at runtime against the records it receives: if the city or state renames a column, a yellow notice appears above the list saying exactly which columns went missing, instead of the data quietly degrading. The rule everywhere is fail visibly, never silently.
+Every feed now uses explicit column names verified against the live APIs instead of guessing at the schema. The page still re-checks those names at runtime against the records it receives: if the city or state renames a column, a yellow notice appears above the list saying exactly which columns went missing, instead of the data quietly degrading. The rule everywhere is fail visibly, never silently.
 
 Query strings are built raw rather than with URLSearchParams, because Socrata silently ignores $where and $order parameters when the dollar sign gets URL-encoded. Parameter values (not names) are percent-encoded, which Socrata accepts. Related trap: never append extra made-up query parameters like a "_=123" cache buster, because Socrata rejects unrecognized parameters with an error. The page relies on the browser's no-store fetch mode instead.
 
@@ -54,7 +75,9 @@ If you ever hit rate limits from scanning a lot, a free Socrata app token raises
 
 ## Verification status
 
-The field names, filter values, and dataset choices in this version were checked against the published NYC Open Data and data.ny.gov dataset documentation on July 12, 2026, and the whole pipeline (loading, filtering, ranking, cross-referencing, geocoding, error states) was exercised in a browser against realistic test data. The one thing that update could not do was call the live city and state APIs directly, because the environment it was written in had restricted network access. That's exactly why the page verifies each feed's schema at runtime and reports anything unexpected in plain language: your browser performs the live check on every load, and if a feed's yellow notice or error message ever appears, that message is the ground truth.
+Every dataset id, field name, and filter value in this version was verified against the live NYC Open Data and data.ny.gov APIs on July 12, 2026: real records were fetched and inspected for all six feeds, including confirming the exact "Alteration CO" job type value, the exact county value on both liquor datasets, and which feeds carry coordinates. The whole pipeline (loading, filtering, ranking, cross-feed matching, geocoding, error states) was also exercised end to end in a browser. The page still re-verifies each feed's schema at runtime and reports anything unexpected in plain language, because government datasets change without notice; if a feed's yellow notice or error message ever appears, that message is the ground truth.
+
+Two live-verified traps worth recording: the two SLA datasets spell their columns differently (the active list has no underscores, like originalissuedate, while the pending list does, like received_date), and sorting any dataset by a date column puts blank dates first, so every date sort here is paired with a rolling date window like "past 6 months", which also keeps the lists fresh by construction.
 
 ## Honest limitations
 
