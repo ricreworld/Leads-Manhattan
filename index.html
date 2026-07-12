@@ -310,6 +310,187 @@
   footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);}
   footer a{color:var(--accent);text-decoration:none;}
+
+  /* =====================================================
+     Design elevation layer. Overrides and additions only;
+     every selector above keeps working. Editorial field
+     manual energy: film grain, ember glow, oversized
+     condensed display type, crop mark corners, staggered
+     reveals. All motion respects prefers-reduced-motion.
+     ===================================================== */
+
+  /* film grain over everything, dialed way down */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:2000;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  }
+
+  /* hero: ember glow, bigger voice */
+  .hero{position:relative;overflow:hidden;padding:104px 0 84px;}
+  .hero::before{
+    content:"";position:absolute;top:-22%;right:-14%;width:58vw;height:58vw;min-width:420px;min-height:420px;
+    background:radial-gradient(circle at center, rgba(255,106,57,0.16), rgba(255,106,57,0.05) 42%, transparent 68%);
+    pointer-events:none;
+  }
+  .hero .wrap{position:relative;}
+  h1{font-size:clamp(46px,7.6vw,96px);line-height:.95;letter-spacing:0;max-width:16ch;}
+  h1 em{text-shadow:0 0 34px rgba(255,106,57,0.45);}
+  .hero-sub{font-size:18px;margin-top:26px;}
+  .eyebrow{display:flex;align-items:center;gap:14px;}
+  .eyebrow::after{content:"";height:1px;flex:1;max-width:180px;background:linear-gradient(90deg,var(--accent-dim),transparent);}
+  .hero-stats{margin-top:64px;}
+  .hero-stat{position:relative;padding-top:24px;}
+  .hero-stat::before{content:"";position:absolute;top:-2px;left:0;width:34px;height:3px;background:var(--accent);}
+  .hero-stat .num{font-size:52px;line-height:1;}
+  .hero-stat .label{margin-top:8px;text-transform:uppercase;letter-spacing:.06em;font-size:11px;}
+  @media (max-width:640px){.hero-stat::before{top:6px;}}
+
+  /* section headers: editorial index + rule */
+  h2{font-size:clamp(32px,4.6vw,50px);line-height:.98;}
+  .section-head p{font-size:16px;}
+
+  /* buttons and controls go tactile */
+  .btn{text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:14px 20px;transition:border-color .15s ease, box-shadow .2s ease, transform .15s ease;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn.primary:hover{box-shadow:0 0 26px rgba(255,106,57,.35);}
+  .scan-btn{padding:16px 26px;letter-spacing:.07em;box-shadow:0 0 0 rgba(255,106,57,0);transition:box-shadow .25s ease, background .15s ease;}
+  .scan-btn:hover{box-shadow:0 0 30px rgba(255,106,57,.35);}
+  .tab{padding:13px 18px;font-size:13px;transition:color .15s ease, background .15s ease;}
+  .tab.active{box-shadow:0 0 20px rgba(255,106,57,.22);}
+  .tool-btn,.copy-btn{transition:border-color .15s ease, color .15s ease;}
+
+  /* ladder: ghost numerals that ignite on hover */
+  .rung{transition:background .2s ease;}
+  .rung .idx{
+    font-size:42px;line-height:1;color:transparent;
+    -webkit-text-stroke:1px #45505b;text-stroke:1px #45505b;
+    transition:-webkit-text-stroke-color .2s ease;
+  }
+  .rung:hover .idx{-webkit-text-stroke-color:var(--accent);}
+  @media (max-width:720px){.rung .idx{font-size:28px;}}
+
+  /* crop mark corners on the working surfaces */
+  .feed-panel,.chart-card,.verdict,.table-wrap,.playbook-shell{position:relative;}
+  .feed-panel::before,.chart-card::before,.verdict::before,.table-wrap::before,.playbook-shell::before{
+    content:"";position:absolute;top:-1px;left:-1px;width:16px;height:16px;z-index:5;
+    border-top:2px solid var(--accent);border-left:2px solid var(--accent);pointer-events:none;
+  }
+  .feed-panel::after,.chart-card::after,.verdict::after,.table-wrap::after,.playbook-shell::after{
+    content:"";position:absolute;bottom:-1px;right:-1px;width:16px;height:16px;z-index:5;
+    border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none;
+  }
+
+  /* lead rows: respond to the hand */
+  .lead-row{transition:background .15s ease;}
+  .lead-row:hover{background:rgba(255,255,255,0.025);}
+  .lead-row.hot{background:linear-gradient(90deg, rgba(255,106,57,0.05), transparent 40%);}
+
+  /* table rows */
+  tbody tr{transition:background .15s ease;}
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  .verdict .mark{font-size:64px;text-shadow:0 0 40px rgba(57,217,138,.35);}
+
+  /* ---------- scroll reveal (JS adds .reveal, io adds .in) ---------- */
+  html.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1);}
+  html.js .reveal.in{opacity:1;transform:none;}
+  html.js .rung.reveal:nth-child(2){transition-delay:.06s;}
+  html.js .rung.reveal:nth-child(3){transition-delay:.12s;}
+  html.js .rung.reveal:nth-child(4){transition-delay:.18s;}
+  html.js .rung.reveal:nth-child(5){transition-delay:.24s;}
+  html.js .rung.reveal:nth-child(6){transition-delay:.3s;}
+
+  /* ---------- the playbook: tucked away, revealed on demand ---------- */
+  .playbook-section{padding:40px 0;}
+  .playbook-shell{
+    border:1px solid var(--border);
+    background:linear-gradient(180deg, var(--panel), #151a1f);
+  }
+  .playbook-toggle{
+    width:100%;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    padding:20px 24px;background:transparent;border:none;cursor:pointer;
+    color:var(--text);text-align:left;
+  }
+  .pb-kicker{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);
+    letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
+  }
+  .pb-title{
+    font-family:'Barlow Condensed',sans-serif;font-weight:800;
+    font-size:clamp(20px,3vw,28px);text-transform:uppercase;letter-spacing:.02em;flex:1;min-width:200px;
+  }
+  .pb-hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .pb-chevron{
+    width:36px;height:36px;flex:none;border:1px solid var(--border);
+    display:grid;place-items:center;transition:transform .5s cubic-bezier(.33,1,.68,1), border-color .2s ease;
+  }
+  .pb-caret{width:9px;height:9px;border-right:2px solid var(--text-dim);border-bottom:2px solid var(--text-dim);transform:rotate(45deg) translate(-1px,-1px);transition:border-color .2s ease;}
+  .playbook-shell.open .pb-chevron{transform:rotate(180deg);border-color:var(--accent);}
+  .playbook-shell.open .pb-caret{border-color:var(--accent);}
+  .playbook-toggle:hover .pb-chevron{border-color:var(--accent);}
+  .playbook-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s cubic-bezier(.33,1,.68,1);}
+  .playbook-shell.open .playbook-body{grid-template-rows:1fr;}
+  .playbook-inner{overflow:hidden;min-height:0;}
+  .playbook-pad{padding:8px 24px 30px;border-top:1px solid var(--border);}
+
+  .pipe-title{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);margin:20px 0 14px;letter-spacing:.04em;}
+  .pipe-track{display:flex;align-items:stretch;gap:8px;overflow-x:auto;padding:10px 0 6px;}
+  .pipe-node{
+    flex:1;min-width:118px;border:1px solid var(--border);background:var(--bg);
+    padding:12px 12px 10px;position:relative;
+  }
+  .pipe-node b{display:block;font-size:13px;font-weight:600;}
+  .pipe-node span{display:block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-dim);}
+  .pipe-node.strike{border-color:var(--accent);}
+  .pipe-node.strike::after{
+    content:"CALL HERE";position:absolute;top:-8px;left:10px;
+    background:var(--accent);color:#14100c;
+    font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;
+    padding:2px 6px;letter-spacing:.09em;
+  }
+  .pipe-node.late{opacity:.5;border-style:dashed;}
+  .pipe-arrow{align-self:center;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;flex:none;}
+  .pipe-note{margin-top:12px;font-size:13px;color:var(--text-dim);max-width:64ch;}
+  .pipe-note b{color:var(--accent);font-weight:600;}
+
+  .steps{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:28px 0 4px;}
+  .step{
+    position:relative;border:1px solid var(--border);background:var(--bg);padding:18px 16px 16px;
+  }
+  html.js .step{opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease;}
+  html.js .playbook-shell.open .step{opacity:1;transform:none;}
+  html.js .playbook-shell.open .step:nth-child(2){transition-delay:.07s;}
+  html.js .playbook-shell.open .step:nth-child(3){transition-delay:.14s;}
+  html.js .playbook-shell.open .step:nth-child(4){transition-delay:.21s;}
+  html.js .playbook-shell.open .step:nth-child(5){transition-delay:.28s;}
+  .step-num{
+    display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:36px;line-height:1;
+    color:transparent;-webkit-text-stroke:1px var(--accent);margin-bottom:10px;
+  }
+  .step h4{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .step p{font-size:12.8px;color:var(--text-dim);line-height:1.55;}
+  .step:not(:last-child)::after{
+    content:"→";position:absolute;top:22px;right:-14px;z-index:2;
+    color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:14px;
+  }
+  @media (max-width:900px){
+    .steps{grid-template-columns:1fr;gap:10px;}
+    .step:not(:last-child)::after{content:"↓";top:auto;bottom:-16px;right:auto;left:20px;}
+    .steps{row-gap:22px;}
+  }
+  .pb-tips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+  .pb-tip{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);
+    border:1px dashed var(--border);padding:8px 12px;line-height:1.5;
+  }
+  .pb-tip b{color:var(--accent);font-weight:600;}
+
+  @media (prefers-reduced-motion:reduce){
+    html.js .reveal,html.js .reveal.in{opacity:1;transform:none;transition:none;}
+    html.js .step,html.js .playbook-shell.open .step{opacity:1;transform:none;transition:none;}
+    .playbook-body{transition:none;}
+    .pb-chevron{transition:none;}
+    .btn,.scan-btn,.lead-row,.rung,.tab{transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -337,6 +518,76 @@
       <div class="hero-stat"><div class="num">6</div><div class="label">Live public feeds, no key required</div></div>
       <div class="hero-stat"><div class="num">$0</div><div class="label">Cost to run this, forever</div></div>
       <div class="hero-stat"><div class="num">30 to 240</div><div class="label">Days of lead time before opening</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="playbook" class="playbook-section">
+  <div class="wrap">
+    <div class="playbook-shell" id="playbook-shell">
+      <button class="playbook-toggle" id="playbook-toggle" aria-expanded="false" aria-controls="playbook-body">
+        <span class="pb-kicker">Field manual</span>
+        <span class="pb-title">The playbook: your 15 minute route</span>
+        <span class="pb-hint" id="pb-hint">Tap to open</span>
+        <span class="pb-chevron" aria-hidden="true"><span class="pb-caret"></span></span>
+      </button>
+      <div class="playbook-body" id="playbook-body">
+        <div class="playbook-inner">
+          <div class="playbook-pad">
+
+            <div class="pipe-title">The paper trail every new business leaves, left to right. Your money is on the left.</div>
+            <div class="pipe-track">
+              <div class="pipe-node strike"><b>Buildout filing</b><span>90 to 240 days out</span></div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node strike"><b>Liquor application</b><span>30 to 120 days out</span></div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node"><b>Permit approved</b><span>45 to 180 days out</span></div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node"><b>Business license</b><span>30 to 90 days out</span></div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node"><b>Health inspection</b><span>7 to 30 days out</span></div>
+              <div class="pipe-arrow">→</div>
+              <div class="pipe-node late"><b>Opening day</b><span>every hauler calls now</span></div>
+            </div>
+            <div class="pipe-note">The <b>strike zone</b> is the left half of this trail. That far out, you are usually the only rep who knows the address exists.</div>
+
+            <ol class="steps">
+              <li class="step">
+                <span class="step-num">01</span>
+                <h4>Scan</h4>
+                <p>Hit Scan all signals now. Six feeds answer at once and every lead gets a priority score, freshest and most buildout heavy on top.</p>
+              </li>
+              <li class="step">
+                <span class="step-num">02</span>
+                <h4>Start earliest</h4>
+                <p>Open Buildout filings and Liquor pending first. Those leads are months from opening day, so you get there before anyone else does.</p>
+              </li>
+              <li class="step">
+                <span class="step-num">03</span>
+                <h4>Call the overlaps</h4>
+                <p>An orange edge marked multiple signals means one address is lighting up two or three feeds at once. Those calls come first, every time.</p>
+              </li>
+              <li class="step">
+                <span class="step-num">04</span>
+                <h4>Work and clear</h4>
+                <p>Copy lead drops a row straight into Salesforce. Mark called removes it for good. A green new tag means it appeared since the last scan.</p>
+              </li>
+              <li class="step">
+                <span class="step-num">05</span>
+                <h4>Map the route</h4>
+                <p>Export the survivors as CSV, then use the map to cluster calls by neighborhood so you walk the block once, not three times.</p>
+              </li>
+            </ol>
+
+            <div class="pb-tips">
+              <div class="pb-tip"><b>Green new tags</b> switch on once the daily scan is set up, five minutes in the README.</div>
+              <div class="pb-tip"><b>Likely buildouts only</b> on the permit tab hides scaffold and shed noise. Uncheck it to see everything.</div>
+              <div class="pb-tip"><b>One scan a morning</b> is enough. The city and state feeds refresh daily.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -475,12 +726,12 @@
       <p>Every pin comes from the same live scan above. All six feeds publish coordinates on most records, and the few addresses that arrive without them are located through the city's own free GeoSearch service a few seconds after a scan. Click a pin to see the lead and copy it straight to Salesforce.</p>
     </div>
     <div class="map-legend">
-      <span><span class="legend-dot" style="background:#ff6a39"></span>Buildout filings</span>
-      <span><span class="legend-dot" style="background:#d946ef"></span>Liquor pending</span>
-      <span><span class="legend-dot" style="background:#8b5cf6"></span>Liquor issued</span>
-      <span><span class="legend-dot" style="background:#39d98a"></span>Approved permits</span>
-      <span><span class="legend-dot" style="background:#ffc24b"></span>Business licenses</span>
-      <span><span class="legend-dot" style="background:#4a9eff"></span>New restaurants</span>
+      <span><span class="legend-dot" style="background:#ed5a28"></span>Buildout filings</span>
+      <span><span class="legend-dot" style="background:#d55181"></span>Liquor pending</span>
+      <span><span class="legend-dot" style="background:#9085e9"></span>Liquor issued</span>
+      <span><span class="legend-dot" style="background:#199e70"></span>Approved permits</span>
+      <span><span class="legend-dot" style="background:#c98500"></span>Business licenses</span>
+      <span><span class="legend-dot" style="background:#3987e5"></span>New restaurants</span>
     </div>
     <div id="map"></div>
     <div class="map-note" id="map-note">Run a scan above and pins will appear here. Addresses from the buildings feeds are located a few at a time, so give the map a few seconds to fill in after a scan.</div>
@@ -840,7 +1091,11 @@ function isFreshLead(l){
 // session cache, guarded so the page still works if storage is blocked
 const mem = {};
 const leadsBySource = {altco:[], slapending:[], sla:[], dob:[], dcwp:[], doh:[]};
-const sourceColor = {altco:'#ff6a39', slapending:'#d946ef', sla:'#8b5cf6', dob:'#39d98a', dcwp:'#ffc24b', doh:'#4a9eff'};
+// Map dot colors: validated as a 6 slot categorical palette on this dark
+// surface (lightness band, chroma, colorblind separation, contrast all
+// pass). The map legend and popups also carry text labels, so identity is
+// never color alone.
+const sourceColor = {altco:'#ed5a28', slapending:'#d55181', sla:'#9085e9', dob:'#199e70', dcwp:'#c98500', doh:'#3987e5'};
 const sourceLabel = {altco:'Buildout filing', slapending:'Pending liquor application', sla:'Liquor license', dob:'Approved permit', dcwp:'Business license application', doh:'New restaurant'};
 function cacheGet(k){
   try{ return JSON.parse(sessionStorage.getItem('sig3_'+k)); }catch(e){ return mem[k] || null; }
@@ -1774,6 +2029,43 @@ scanBtn.addEventListener('click', async () => {
     scanLabel.textContent = 'Scan all signals now';
   }
 });
+
+// ---------- playbook: tucked away, animated reveal, remembers itself ----------
+const pbShell = document.getElementById('playbook-shell');
+const pbToggle = document.getElementById('playbook-toggle');
+const pbHint = document.getElementById('pb-hint');
+function setPlaybook(open, persist){
+  if(!pbShell) return;
+  pbShell.classList.toggle('open', open);
+  pbToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(pbHint) pbHint.textContent = open ? 'Tap to tuck away' : 'Tap to open';
+  if(persist){ try{ localStorage.setItem('sig_playbook', open ? '1' : '0'); }catch(e){} }
+}
+if(pbToggle){
+  pbToggle.addEventListener('click', () => setPlaybook(!pbShell.classList.contains('open'), true));
+  let savedOpen = false;
+  try{ savedOpen = localStorage.getItem('sig_playbook') === '1'; }catch(e){}
+  setPlaybook(savedOpen, false);
+}
+
+// ---------- scroll reveal ----------
+// The .js class gates the hidden initial state, so with scripts blocked the
+// page renders fully visible. Reduced motion turns all of this off in CSS.
+document.documentElement.classList.add('js');
+const revealEls = document.querySelectorAll(
+  '.section-head, .hero-stats, .playbook-shell, .rung, .scan-bar, .tabs, .feed-panel, .map-legend, .map-note, .chart-card, .table-wrap, .verdict'
+);
+revealEls.forEach(el => el.classList.add('reveal'));
+if('IntersectionObserver' in window){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, {threshold: 0.1, rootMargin: '0px 0px -6% 0px'});
+  revealEls.forEach(el => io.observe(el));
+} else {
+  revealEls.forEach(el => el.classList.add('in'));
+}
 
 // initial load
 activateTab('altco');
