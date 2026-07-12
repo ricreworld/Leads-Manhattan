@@ -30,6 +30,23 @@ Each lead has a Copy button (tab-separated, pastes clean into a spreadsheet row)
 
 The map plots every lead it can. All six feeds publish coordinates on most records (verified against the live APIs), and the few addresses that arrive without them are located through the city's own free GeoSearch service (geosearch.planninglabs.nyc, no key needed), a few at a time, with every answer cached in your browser so repeat scans cost zero lookups.
 
+## The daily scan, NEW flags, and the morning email (Vercel)
+
+When this repo is deployed on Vercel, it's more than a static page. Two small server endpoints live in the api folder:
+
+- Every weekday morning around 7:30 New York time, Vercel runs /api/scan automatically. It pulls all six feeds, compares them with everything it has ever seen before, and remembers the result. This gives the tool real memory: it knows which leads are genuinely new, not just recently dated.
+- The page asks /api/state which leads are new. Anything first seen in the last two days, or so new the morning scan hasn't caught it yet, gets a green "new" pill in the list. If the endpoints aren't there (for example on GitHub Pages), the page works exactly as before, just without pills.
+- If email is configured, mornings with new leads produce a digest email listing them, grouped by feed. No new leads, no email.
+
+One-time setup, in the Vercel dashboard:
+
+1. Storage, then Create Database, then Blob, and connect it to the leads-manhattan project. This is the scan's memory. It's free at this scale and Vercel adds the access token to the project automatically. Without it, scans still work but remember nothing, and /api/scan tells you so in plain language.
+2. Optional, for the morning email: create a free account at resend.com, copy an API key, and add two environment variables to the project: RESEND_API_KEY (the key) and DIGEST_TO (your email address). Note that with the built-in sender address, Resend only delivers to the email you signed up with; verifying a domain there removes that limit.
+3. Optional, for higher rate limits: sign up free at data.cityofnewyork.us, create an app token, and add it as SOCRATA_APP_TOKEN. The scan sends it with every request when present.
+4. Optional, to lock the digest trigger: add a CRON_SECRET environment variable. Vercel's cron includes it automatically; manual visitors without it can still scan but cannot trigger emails.
+
+After changing environment variables, redeploy once. The very first scan seeds the memory and deliberately sends no email, since on day one everything looks new. You can trigger a scan manually anytime by opening /api/scan in your browser; it answers in JSON and refuses to hammer the city APIs more than once every ten minutes.
+
 ## How to publish this on GitHub Pages
 
 You only need to do this once. Five steps.

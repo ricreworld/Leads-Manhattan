@@ -809,6 +809,34 @@ function saveCalled(map){
 let calledMap = loadCalled();
 function leadKey(l){ return l.source + ':' + (l.id || (l.who + '|' + l.where)); }
 
+// ---------- optional server scan memory ----------
+// When this page is hosted on Vercel with the daily scan set up (see the
+// README), /api/state reports when each lead was first ever seen. A lead
+// the server first saw within the last two days, or has never seen at all,
+// gets a NEW pill. On plain static hosting the endpoint doesn't exist and
+// this feature simply stays off; the page is unaffected.
+let serverState = null;
+let serverStateRequested = false;
+function loadServerState(){
+  if(serverStateRequested) return;
+  serverStateRequested = true;
+  fetch('/api/state', {cache: 'no-store'})
+    .then(res => res.ok ? res.json() : null)
+    .then(s => {
+      if(s && s.ok && s.firstSeen){
+        serverState = s;
+        renderRows();
+      }
+    })
+    .catch(() => { /* no server scan on this host, feature stays off */ });
+}
+function isFreshLead(l){
+  if(!serverState) return false;
+  const fs = serverState.firstSeen[leadKey(l)];
+  // unknown to the server means it appeared after the last daily scan
+  return !fs || (Date.now() - fs) < 48 * 3600000;
+}
+
 // session cache, guarded so the page still works if storage is blocked
 const mem = {};
 const leadsBySource = {altco:[], slapending:[], sla:[], dob:[], dcwp:[], doh:[]};
@@ -886,7 +914,7 @@ function renderRows(){
     row.className = 'lead-row' + (r.multi ? ' hot' : '') + (isCalled ? ' called' : '');
     row.innerHTML = `
       <div>
-        <div class="who">${esc(r.who)}${r.multi ? '<span class="hot-pill">multiple signals</span>' : ''}</div>
+        <div class="who">${esc(r.who)}${isFreshLead(r) ? '<span class="new-pill">new</span>' : ''}${r.multi ? '<span class="hot-pill">multiple signals</span>' : ''}</div>
         <div class="where">${esc(r.where)}</div>
         ${fullTag(r) ? `<div class="tag">${esc(fullTag(r))}</div>` : ''}
       </div>
@@ -1627,6 +1655,7 @@ function adopt(name, res){
   currentRows = res.rows || [];
   currentNotices = res.notices || [];
   leadsBySource[name] = currentRows;
+  loadServerState();
   renderNotices();
   renderRows();
   updateMapAndCharts();
