@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Live early-warning feed of new businesses, restaurants, and buildouts in Manhattan, built on free NYC and NY State open data.">
-<title>SIGNAL — Manhattan Business Intelligence for Waste Sales</title>
+<title>SIGNAL / Manhattan Business Intelligence for Waste Sales</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -163,10 +163,6 @@
     font-size:9px;background:var(--live);color:#0c1712;padding:2px 6px;
     border-radius:2px;margin-left:6px;letter-spacing:0.05em;vertical-align:2px;
   }
-  .tab-experimental{
-    font-size:9px;color:var(--manual);border:1px solid var(--manual);padding:2px 6px;
-    border-radius:2px;margin-left:6px;text-transform:uppercase;letter-spacing:0.05em;
-  }
 
   /* ---------- live feed ---------- */
   .tabs{display:flex;gap:2px;border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;width:fit-content;max-width:100%;overflow-x:auto;}
@@ -186,17 +182,29 @@
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);
   }
   .feed-meta .src-link{color:var(--accent);text-decoration:none;}
+  .feed-notice{
+    padding:12px 20px;border-bottom:1px solid var(--border);
+    background:rgba(255,194,75,0.07);color:var(--manual);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6;
+  }
+  .feed-notice div + div{margin-top:6px;}
   .feed-tools{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
     padding:14px 20px;border-bottom:1px solid var(--border);background:var(--panel-2);
   }
   .search-box{
-    flex:1;min-width:200px;
+    flex:1;min-width:180px;
     font-family:'IBM Plex Mono',monospace;font-size:13px;
     padding:9px 12px;background:var(--bg);border:1px solid var(--border);
     border-radius:var(--radius);color:var(--text);
   }
   .search-box::placeholder{color:var(--text-dim);}
+  .chk{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);
+    cursor:pointer;white-space:nowrap;user-select:none;
+  }
+  .chk input{accent-color:var(--accent);cursor:pointer;}
   .tool-btn{
     font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:9px 14px;
     background:transparent;border:1px solid var(--border);color:var(--text-dim);
@@ -204,15 +212,28 @@
   }
   .tool-btn:hover{border-color:var(--accent);color:var(--accent);}
   .feed-list{max-height:520px;overflow-y:auto;}
+  .hidden-note{
+    padding:10px 20px;border-bottom:1px solid var(--border);
+    color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+  }
   .lead-row{
     display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;
     padding:16px 20px;border-bottom:1px solid var(--border);
   }
   .lead-row:last-child{border-bottom:none;}
+  .lead-row.hot{border-left:3px solid var(--accent);padding-left:17px;}
+  .lead-row.called{opacity:0.45;}
   .lead-row .who{font-weight:600;font-size:14.5px;}
+  .hot-pill{
+    font-size:9px;background:var(--accent);color:#14100c;padding:2px 6px;
+    border-radius:2px;margin-left:8px;letter-spacing:0.05em;text-transform:uppercase;
+    vertical-align:2px;white-space:nowrap;
+  }
   .lead-row .where{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-dim);margin-top:4px;}
   .lead-row .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-top:4px;}
   .lead-row .when{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);text-align:right;white-space:nowrap;}
+  .lead-row .score{display:block;font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .row-btns{display:flex;gap:8px;}
   .copy-btn{
     font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:7px 12px;
     background:transparent;border:1px solid var(--border);color:var(--text-dim);
@@ -315,7 +336,7 @@
     <div class="hero-stats">
       <div class="hero-stat"><div class="num">4</div><div class="label">Live public feeds, no key required</div></div>
       <div class="hero-stat"><div class="num">$0</div><div class="label">Cost to run this, forever</div></div>
-      <div class="hero-stat"><div class="num">30–240</div><div class="label">Days of lead time before opening</div></div>
+      <div class="hero-stat"><div class="num">30 to 240</div><div class="label">Days of lead time before opening</div></div>
     </div>
   </div>
 </section>
@@ -336,7 +357,7 @@
           <p>NY law requires 30 days' written notice to the local community board before filing an on-premise liquor license application. It's public record, discussed at CB meetings, and almost nobody outside the neighborhood reads it.</p>
         </div>
         <div class="stamp manual">Manual watch</div>
-        <div class="lead">60–120 days out<span>CB1/CB2/CB4/CB5 minutes</span></div>
+        <div class="lead">60 to 120 days out<span>CB1/CB2/CB4/CB5 minutes</span></div>
       </div>
 
       <div class="rung">
@@ -346,7 +367,7 @@
           <p>DOB NOW classifies any filing that changes a building's use, occupancy, or egress as an Alt-CO. That classification means someone is legally converting a space into a different kind of business, and it shows up the moment the filing is submitted, months before a permit is even approved.</p>
         </div>
         <div class="stamp live">Live below</div>
-        <div class="lead">90–240 days out<span>DOB NOW Job Filings</span></div>
+        <div class="lead">90 to 240 days out<span>DOB NOW Job Filings</span></div>
       </div>
 
       <div class="rung">
@@ -356,7 +377,7 @@
           <p>DOB approves the permit before a single wall gets built out. This is the confirmation step after the Alt-CO filing above, and it's also where general construction permits for simpler renovations show up.</p>
         </div>
         <div class="stamp live">Live below</div>
-        <div class="lead">45–180 days out<span>DOB NOW Approved Permits</span></div>
+        <div class="lead">45 to 180 days out<span>DOB NOW Approved Permits</span></div>
       </div>
 
       <div class="rung">
@@ -366,7 +387,7 @@
           <p>The State Liquor Authority publishes active licenses daily, including temporary operating permits, which is how many new spots open their doors while the full license is pending. A fresh filing at a Manhattan address means a bar, restaurant, or retail liquor operation is actively moving toward opening.</p>
         </div>
         <div class="stamp live">Live below</div>
-        <div class="lead">30–90 days out<span>NYS Liquor Authority</span></div>
+        <div class="lead">30 to 90 days out<span>NYS Liquor Authority</span></div>
       </div>
 
       <div class="rung">
@@ -376,7 +397,7 @@
           <p>Exterior signage needs a DOB sign permit. It usually lands close to the finish line, but it's a hard confirmation that the buildout is nearly done.</p>
         </div>
         <div class="stamp manual">Manual watch</div>
-        <div class="lead">14–30 days out<span>DOB NOW sign filings</span></div>
+        <div class="lead">14 to 30 days out<span>DOB NOW sign filings</span></div>
       </div>
 
       <div class="rung">
@@ -386,7 +407,7 @@
           <p>DOHMH flags a brand-new food establishment with a placeholder inspection date before the actual visit happens. It means the health permit is in hand and the doors are close.</p>
         </div>
         <div class="stamp live">Live below</div>
-        <div class="lead">7–30 days out<span>DOHMH Restaurant Inspections</span></div>
+        <div class="lead">7 to 30 days out<span>DOHMH Restaurant Inspections</span></div>
       </div>
 
       <div class="rung">
@@ -407,7 +428,7 @@
     <div class="section-head">
       <span class="eyebrow">Live, right now</span>
       <h2>Manhattan signal feed</h2>
-      <p>Pulled on page load directly from NYC Open Data and New York State's open data portal. No login, no API key, no cost. Copy a single lead, or export the whole list as a CSV ready for Salesforce import.</p>
+      <p>Pulled on page load directly from NYC Open Data and New York State's open data portal. No login, no API key, no cost. Leads are ranked so the freshest, most buildout-like signals sort to the top, and an address that shows up in more than one feed gets flagged as a priority. Copy a single lead, mark it called so it stops resurfacing, or export the list as a CSV ready for Salesforce import.</p>
     </div>
 
     <div class="scan-bar">
@@ -429,8 +450,11 @@
         <span id="feed-desc"></span>
         <a class="src-link" id="feed-src" href="#" target="_blank" rel="noopener">View raw dataset →</a>
       </div>
+      <div class="feed-notice" id="feed-notice" style="display:none"></div>
       <div class="feed-tools">
         <input type="search" class="search-box" id="feed-search" placeholder="Filter by name, street, ZIP…" aria-label="Filter leads">
+        <label class="chk" id="buildout-wrap" style="display:none"><input type="checkbox" id="chk-buildout" checked> Likely buildouts only</label>
+        <label class="chk"><input type="checkbox" id="chk-hidecalled" checked> Hide called</label>
         <button class="tool-btn" id="btn-csv">Export CSV</button>
         <button class="tool-btn" id="btn-refresh">Refresh this tab</button>
       </div>
@@ -446,7 +470,7 @@
     <div class="section-head">
       <span class="eyebrow">See it, not just read it</span>
       <h2>Live map of every lead</h2>
-      <p>Every pin comes from the same live scan above, plotted the moment coordinates are available in the city or state data. Click a pin to see the lead and copy it straight to Salesforce.</p>
+      <p>Every pin comes from the same live scan above. The health and liquor feeds publish coordinates directly. The two buildings feeds don't, so their addresses are located through the city's own free GeoSearch service, which means most of those pins appear a few seconds after a scan finishes. Click a pin to see the lead and copy it straight to Salesforce.</p>
     </div>
     <div class="map-legend">
       <span><span class="legend-dot" style="background:#ff6a39"></span>Buildout filings</span>
@@ -455,7 +479,7 @@
       <span><span class="legend-dot" style="background:#4a9eff"></span>New restaurants</span>
     </div>
     <div id="map"></div>
-    <div class="map-note" id="map-note">Run a scan above, then pins will appear here for every lead that includes map coordinates. Not every source publishes coordinates, so the map will usually show fewer pins than the full lead count.</div>
+    <div class="map-note" id="map-note">Run a scan above and pins will appear here. Addresses from the buildings feeds are located a few at a time, so give the map a few seconds to fill in after a scan.</div>
   </div>
 </section>
 
@@ -495,39 +519,39 @@
         </thead>
         <tbody>
           <tr>
-            <td class="name">DOB NOW Job Application Filings<div class="sub">NYC Open Data, dataset w9ak-ipjd — experimental</div></td>
+            <td class="name">DOB NOW Job Application Filings<div class="sub">NYC Open Data, dataset w9ak-ipjd</div></td>
             <td>Alt-CO filing submitted (change of use/occupancy), before approval</td>
-            <td>Yes — live above, schema partly unconfirmed</td>
+            <td>Yes, live above with an exact Alteration CO filter</td>
             <td>Earliest confirmed sign a space is becoming a different business</td>
           </tr>
           <tr>
             <td class="name">DOB NOW Approved Permits<div class="sub">NYC Open Data, Socrata API, updated daily</div></td>
             <td>Buildout / construction permit approved</td>
-            <td>Yes — live above</td>
+            <td>Yes, live above, renewals filtered out</td>
             <td>Retail, restaurant, office fit-outs, new buildings</td>
           </tr>
           <tr>
-            <td class="name">NYS Liquor Authority<div class="sub">data.ny.gov, daily active license list</div></td>
+            <td class="name">NYS Liquor Authority<div class="sub">data.ny.gov, current active license list</div></td>
             <td>New license or temporary permit issued</td>
-            <td>Yes — live above</td>
+            <td>Yes, live above, sorted by original issue date</td>
             <td>Bars, restaurants, retail alcohol</td>
           </tr>
           <tr>
             <td class="name">DOHMH Restaurant Inspections<div class="sub">NYC Open Data, Socrata API</div></td>
             <td>First inspection pending flag</td>
-            <td>Yes — live above</td>
+            <td>Yes, live above</td>
             <td>Any food service opening imminently</td>
           </tr>
           <tr>
-            <td class="name">DOB Permit Issuance (legacy BIS)<div class="sub">NYC Open Data — older system, still updated</div></td>
+            <td class="name">DOB Permit Issuance (legacy BIS)<div class="sub">NYC Open Data, older system, still updated</div></td>
             <td>Permits still processed in the old system</td>
-            <td>Yes — used as automatic backup above</td>
+            <td>Yes, used as automatic backup above</td>
             <td>Catching the shrinking share of BIS-only permits</td>
           </tr>
           <tr>
             <td class="name">Community board agendas<div class="sub">Manhattan CB websites, PDF minutes</div></td>
             <td>30-day advance liquor notice</td>
-            <td>Free, manual only — no clean API</td>
+            <td>Free, manual only, no clean API</td>
             <td>Earliest possible lead, worth 10 min a week</td>
           </tr>
           <tr>
@@ -539,7 +563,7 @@
           <tr>
             <td class="name">CoStar / LoopNet<div class="sub">Free tier is limited</div></td>
             <td>Lease signed, space marked "leased"</td>
-            <td>Partial — free tier is thin</td>
+            <td>Partial, free tier is thin</td>
             <td>Catching a deal before construction starts</td>
           </tr>
         </tbody>
@@ -557,10 +581,10 @@
     <div class="verdict">
       <div class="mark">YES</div>
       <div>
-        <h3>This is a real, buildable tool — and you're looking at a working version of it</h3>
-        <p>The three live feeds above are genuine public APIs with no cost and no login. What you're looking at right now already does the core job: it surfaces Manhattan addresses that are actively becoming something, before that something opens its doors.</p>
+        <h3>This is a real, buildable tool, and you're looking at a working version of it</h3>
+        <p>The four live feeds above are genuine public APIs with no cost and no login. What you're looking at right now already does the core job: it surfaces Manhattan addresses that are actively becoming something, before that something opens its doors, and ranks them so the most callable ones sit at the top.</p>
         <p>The honest limitation is coverage, not cost. The earliest signal on the ladder, community board notice, has no API; it lives in PDFs on volunteer-run websites. That one stays a five-minute manual habit, not a feed. Everything else here runs unattended.</p>
-        <p>Realistic path: use this page for a few weeks and get a feel for the noise level in the permit feed, since general construction permits include renovations that aren't new tenants. Once you know what a good lead looks like, the next step is a lightweight script that runs weekly, filters harder, and drops results straight into a Google Sheet or your Salesforce import queue.</p>
+        <p>Realistic path: use this page for a few weeks, mark leads as called so the list stays clean, and get a feel for what a good lead looks like. Once you know, the next step is a lightweight script that runs weekly, filters harder, and drops results straight into a Google Sheet or your Salesforce import queue.</p>
       </div>
     </div>
   </div>
@@ -577,9 +601,27 @@
 // =====================================================
 //  SIGNAL / Manhattan — live open-data lead feed
 //  All endpoints are free public Socrata APIs.
+//
 //  IMPORTANT: query strings are built raw on purpose.
 //  URLSearchParams encodes the $ in $where/$order and
-//  Socrata silently ignores encoded params.
+//  Socrata silently ignores encoded params. Parameter
+//  NAMES stay raw; parameter VALUES are percent-encoded
+//  with encodeURIComponent, which Socrata accepts.
+//
+//  Equally important: never append extra unknown query
+//  parameters (like a "_=123" cache buster). Socrata
+//  rejects unrecognized parameters with HTTP 400, so a
+//  cache buster breaks every request. fetch() is called
+//  with cache:'no-store' instead, which is enough.
+//
+//  Schema note: field names in the loaders below were
+//  checked against the published dataset documentation
+//  on 2026-07-12. Live API calls could not be executed
+//  from the environment this update was written in (its
+//  outbound network was restricted), so every loader
+//  also re-checks the schema at runtime against the
+//  records it receives and surfaces any renamed columns
+//  in a visible notice instead of guessing silently.
 // =====================================================
 
 // ---------- clock ----------
@@ -591,6 +633,9 @@ tickClock();
 setInterval(tickClock,1000);
 
 // ---------- helpers ----------
+// pickKey is only used by the SLA daily-list FALLBACK loader, whose schema
+// could not be pinned down. Every primary loader uses explicit, documented
+// field names and verifies them at runtime instead of guessing.
 function pickKey(obj, candidates){
   const keys = Object.keys(obj || {});
   for(const c of candidates){
@@ -599,38 +644,63 @@ function pickKey(obj, candidates){
   }
   return null;
 }
-// Detects lat/lng columns from a sample record and extracts valid coordinates
-// from a data row. Returns null if missing or clearly outside the NYC area,
-// so a bad geocode never puts a pin in the ocean or another state.
-function findCoordKeys(sample){
-  return {
-    latK: pickKey(sample,['latitude','lat']),
-    lngK: pickKey(sample,['longitude','lng','long'])
-  };
+// Coordinates are rejected outside the NYC bounding box so a bad geocode
+// never puts a pin in the ocean or another state.
+function inNYC(lat, lng){
+  return isFinite(lat) && isFinite(lng) && lat >= 40.4 && lat <= 40.95 && lng >= -74.3 && lng <= -73.65;
 }
-function extractCoords(row, latK, lngK){
-  if(!latK || !lngK) return null;
+// Explicit latitude/longitude columns (DOHMH and legacy BIS publish these).
+function coordsFromLatLng(row, latK, lngK){
   const lat = parseFloat(row[latK]);
   const lng = parseFloat(row[lngK]);
-  if(!isFinite(lat) || !isFinite(lng)) return null;
-  if(lat < 40.4 || lat > 40.95 || lng < -74.3 || lng > -73.65) return null;
-  return {lat, lng};
+  return inNYC(lat, lng) ? {lat, lng} : null;
+}
+// A Socrata geo column, either the GeoJSON Point shape used by the SLA
+// georeference field ({type:'Point', coordinates:[lng, lat]}) or the older
+// location shape ({latitude:'..', longitude:'..'}).
+function coordsFromPoint(val){
+  if(!val) return null;
+  if(Array.isArray(val.coordinates) && val.coordinates.length >= 2){
+    const lng = parseFloat(val.coordinates[0]);
+    const lat = parseFloat(val.coordinates[1]);
+    if(inNYC(lat, lng)) return {lat, lng};
+  }
+  if(val.latitude !== undefined && val.longitude !== undefined){
+    return coordsFromLatLng(val, 'latitude', 'longitude');
+  }
+  return null;
+}
+// Reports which expected columns are absent from EVERY returned record.
+// (A single record can legitimately omit a null field, so one record is
+// not enough to declare a column gone.)
+function missingFields(data, keys){
+  return keys.filter(k => !data.some(d => k in d));
 }
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 function fmtDate(v){
-  if(!v) return '—';
+  if(!v) return 'No date';
   const d = new Date(v);
   return isNaN(d) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function dateMs(v){
+  if(!v) return null;
+  const d = new Date(v);
+  return isNaN(d) ? null : d.getTime();
+}
+function fmtMoney(v){
+  const n = parseFloat(v);
+  if(!isFinite(n) || n <= 0) return null;
+  if(n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M est. cost';
+  if(n >= 1e3) return '$' + Math.round(n/1e3) + 'k est. cost';
+  return '$' + Math.round(n) + ' est. cost';
 }
 async function getJSON(url){
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
-  // cache-bust so the browser can never quietly reuse a stale answer
-  const bustedUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
   try{
-    const res = await fetch(bustedUrl, {signal: controller.signal, cache: 'no-store'});
+    const res = await fetch(url, {signal: controller.signal, cache: 'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     return await res.json();
   } finally {
@@ -646,253 +716,597 @@ function copyToClipboard(text, btn){
     setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
   });
 }
+
+// Normalizes an address just enough that the same storefront matches across
+// feeds ("100 West 25 Street" vs "100 W 25TH ST"). Used for the cross-feed
+// overlap flag and the geocode cache key.
+function addrKey(s){
+  return String(s || '').toUpperCase()
+    .replace(/[.,#]/g,' ')
+    .replace(/\b(STREET|STREE|STR)\b/g,'ST')
+    .replace(/\bAVENUE\b/g,'AVE')
+    .replace(/\bBOULEVARD\b/g,'BLVD')
+    .replace(/\bPLACE\b/g,'PL')
+    .replace(/\bROAD\b/g,'RD')
+    .replace(/\bWEST\b/g,'W').replace(/\bEAST\b/g,'E')
+    .replace(/\bNORTH\b/g,'N').replace(/\bSOUTH\b/g,'S')
+    .replace(/\b(\d+)(ST|ND|RD|TH)\b/g,'$1')
+    .replace(/\s+/g,' ').trim();
+}
+
+// ---------- lead scoring ----------
+// A simple, explainable points system so the most callable leads sort first.
+// Earlier-stage feeds start higher (less competition on the phone), fresher
+// dates add points, and real buildout markers (general construction work, a
+// six-figure job cost, an on-premises liquor type) add a bonus. An address
+// that appears in more than one feed gets the biggest bonus of all.
+const FEED_BASE = {altco: 40, sla: 32, dob: 30, doh: 24};
+function scoreLead(l){
+  let s = FEED_BASE[l.source] || 20;
+  if(l.ts){
+    const age = (Date.now() - l.ts) / 86400000;
+    if(age <= 7) s += 20;
+    else if(age <= 30) s += 12;
+    else if(age <= 90) s += 5;
+  }
+  s += l.bonus || 0;
+  if(l.multi) s += 25;
+  return s;
+}
+function finalizeRows(rows){
+  rows.forEach(r => { r.score = scoreLead(r); });
+  rows.sort((a,b) => (b.score - a.score) || ((b.ts||0) - (a.ts||0)));
+  return rows;
+}
+
+// ---------- called / dismissed state (persists on this device) ----------
+function loadCalled(){
+  try{ return JSON.parse(localStorage.getItem('sig_called')) || {}; }catch(e){ return {}; }
+}
+function saveCalled(map){
+  try{ localStorage.setItem('sig_called', JSON.stringify(map)); }catch(e){}
+}
+let calledMap = loadCalled();
+function leadKey(l){ return l.source + ':' + (l.id || (l.who + '|' + l.where)); }
+
 // session cache, guarded so the page still works if storage is blocked
 const mem = {};
 const leadsBySource = {altco:[], sla:[], dob:[], doh:[]};
 const sourceColor = {altco:'#ff6a39', sla:'#8b5cf6', dob:'#39d98a', doh:'#4a9eff'};
 const sourceLabel = {altco:'Buildout filing', sla:'Liquor license', dob:'Approved permit', doh:'New restaurant'};
 function cacheGet(k){
-  try{ return JSON.parse(sessionStorage.getItem('sig_'+k)); }catch(e){ return mem[k] || null; }
+  try{ return JSON.parse(sessionStorage.getItem('sig2_'+k)); }catch(e){ return mem[k] || null; }
 }
 function cacheSet(k, v){
   mem[k] = v;
-  try{ sessionStorage.setItem('sig_'+k, JSON.stringify(v)); }catch(e){}
+  try{ sessionStorage.setItem('sig2_'+k, JSON.stringify(v)); }catch(e){}
 }
 
 // ---------- rendering ----------
 const feedList = document.getElementById('feed-list');
 const feedDesc = document.getElementById('feed-desc');
 const feedSrc = document.getElementById('feed-src');
+const feedNotice = document.getElementById('feed-notice');
 const searchBox = document.getElementById('feed-search');
-let currentTab = 'sla';
+const chkBuildout = document.getElementById('chk-buildout');
+const chkHideCalled = document.getElementById('chk-hidecalled');
+let currentTab = 'altco';
 let currentRows = [];
+let currentNotices = [];
 
-function renderRows(rows){
-  const q = (searchBox.value || '').trim().toLowerCase();
-  const visible = q
-    ? rows.filter(r => (r.who+' '+r.where+' '+(r.tag||'')).toLowerCase().includes(q))
-    : rows;
-  if(!visible.length){
-    feedList.innerHTML = '<div class="feed-status">' + (rows.length
-      ? 'No leads match that filter.'
-      : 'No matching records returned right now. City data feeds occasionally lag — try Refresh in a minute.') + '</div>';
+function renderNotices(){
+  if(!currentNotices.length){
+    feedNotice.style.display = 'none';
+    feedNotice.innerHTML = '';
     return;
   }
-  feedList.innerHTML = '';
-  visible.forEach(r => {
+  feedNotice.style.display = 'block';
+  feedNotice.innerHTML = currentNotices.map(n => '<div>'+esc(n)+'</div>').join('');
+}
+
+function visibleRows(){
+  let rows = currentRows;
+  const hidden = {noise:0, called:0};
+  if(currentTab === 'dob' && chkBuildout.checked){
+    const keep = rows.filter(r => r.buildout);
+    hidden.noise = rows.length - keep.length;
+    rows = keep;
+  }
+  if(chkHideCalled.checked){
+    const keep = rows.filter(r => !calledMap[leadKey(r)]);
+    hidden.called = rows.length - keep.length;
+    rows = keep;
+  }
+  const q = (searchBox.value || '').trim().toLowerCase();
+  if(q) rows = rows.filter(r => (r.who+' '+r.where+' '+fullTag(r)).toLowerCase().includes(q));
+  return {rows, hidden};
+}
+
+function fullTag(r){
+  return [r.tag, r.tagMulti].filter(Boolean).join(' · ');
+}
+
+function renderRows(){
+  const {rows, hidden} = visibleRows();
+  const notes = [];
+  if(hidden.noise) notes.push(hidden.noise + ' permits that look like maintenance work rather than a new tenant are hidden. Uncheck "Likely buildouts only" to see them.');
+  if(hidden.called) notes.push(hidden.called + ' leads you marked as called are hidden. Uncheck "Hide called" to review them.');
+  const noteHtml = notes.length ? '<div class="hidden-note">'+esc(notes.join(' '))+'</div>' : '';
+
+  if(!rows.length){
+    feedList.innerHTML = noteHtml + '<div class="feed-status">' + (currentRows.length
+      ? 'No leads match the current filters.'
+      : 'No records loaded yet. City data feeds occasionally lag. Try Refresh in a minute.') + '</div>';
+    return;
+  }
+  feedList.innerHTML = noteHtml;
+  rows.forEach(r => {
+    const isCalled = !!calledMap[leadKey(r)];
     const row = document.createElement('div');
-    row.className = 'lead-row';
+    row.className = 'lead-row' + (r.multi ? ' hot' : '') + (isCalled ? ' called' : '');
     row.innerHTML = `
       <div>
-        <div class="who">${esc(r.who)}</div>
+        <div class="who">${esc(r.who)}${r.multi ? '<span class="hot-pill">multiple signals</span>' : ''}</div>
         <div class="where">${esc(r.where)}</div>
-        ${r.tag ? `<div class="tag">${esc(r.tag)}</div>` : ''}
+        ${fullTag(r) ? `<div class="tag">${esc(fullTag(r))}</div>` : ''}
       </div>
-      <div class="when">${esc(r.when)}</div>
-      <button class="copy-btn">Copy lead</button>
+      <div class="when">${esc(r.when)}<span class="score">priority ${esc(r.score ?? '')}</span></div>
+      <div class="row-btns">
+        <button class="copy-btn">Copy lead</button>
+        <button class="copy-btn call-btn">${isCalled ? 'Called, undo' : 'Mark called'}</button>
+      </div>
     `;
     row.querySelector('.copy-btn').addEventListener('click', (e) => {
-      copyToClipboard(`${r.who}\t${r.where}\t${r.tag || ''}\t${r.when}`, e.target);
+      copyToClipboard(`${r.who}\t${r.where}\t${fullTag(r)}\t${r.when}`, e.target);
+    });
+    row.querySelector('.call-btn').addEventListener('click', () => {
+      const k = leadKey(r);
+      if(calledMap[k]) delete calledMap[k];
+      else calledMap[k] = Date.now();
+      saveCalled(calledMap);
+      renderRows();
     });
     feedList.appendChild(row);
   });
 }
 function showStatus(msg, isError){
-  feedList.innerHTML = `<div class="feed-status${isError ? ' error' : ''}">${msg}</div>`;
+  feedList.innerHTML = `<div class="feed-status${isError ? ' error' : ''}">${esc(msg)}</div>`;
 }
 
 // ---------- feed loaders ----------
-// Each loader returns an array of {who, where, tag, when}.
-// Field names are detected from a live probe record where the
-// schema isn't guaranteed, so a renamed column degrades
-// gracefully instead of breaking the page.
+// Every loader resolves to {rows, notices}. rows are lead objects:
+//   {id, source, who, where, tag, when, ts, coords, addr, bonus, buildout}
+// A loader THROWS a plain-language Error when its feed is unusable.
+// Nothing ever silently falls back to lower-quality data: fallbacks and
+// schema surprises always produce a visible notice above the list.
 
-// DOB NOW: Build – Approved Permits (primary, where new permits land today)
-// Falls back to the legacy BIS Permit Issuance dataset if DOB NOW fails.
+// Words that mark a permit as a probable new-tenant buildout, and work
+// types that are almost always maintenance noise for our purposes.
+const BUILDOUT_DESC = /tenant|fit[ -]?out|build[ -]?out|restaurant|cafe|coffee|bakery|eating and drinking|food|retail|store(front)?|salon|barber|spa|gym|fitness|medical|clinic|dental|office|bank|hotel|gallery|daycare|school|change of use|change in use|occupancy/i;
+function isLikelyBuildout(workType, desc){
+  if(/general construction/i.test(workType || '')) return true;
+  return BUILDOUT_DESC.test(desc || '');
+}
+
+// DOB NOW: Build, Approved Permits (rbx6-tga4).
+// Documented fields used: job_filing_number, work_type, filing_reason,
+// house_no, street_name, borough, approved_date, issued_date,
+// applicant_business_name, owner_business_name, job_description,
+// estimated_job_costs. This dataset publishes NO coordinate columns;
+// pins come from the GeoSearch geocoder further down.
+async function loadDOBNOW(){
+  const base = 'https://data.cityofnewyork.us/resource/rbx6-tga4.json';
+  const url = base
+    + '?$limit=150'
+    + '&$where=' + encodeURIComponent("upper(borough)='MANHATTAN'")
+    + '&$order=' + encodeURIComponent('approved_date DESC');
+  const data = await getJSON(url);
+  if(!Array.isArray(data) || !data.length) throw new Error('The DOB NOW permit feed answered with zero Manhattan permits, which almost never happens. The dataset may be mid-update.');
+
+  const notices = [];
+  const missing = missingFields(data, ['job_filing_number','work_type','approved_date','house_no','street_name']);
+  if(missing.length) notices.push('The city appears to have renamed these columns in the permit dataset: ' + missing.join(', ') + '. Some details below may be blank until this page is updated.');
+
+  const seen = new Set();
+  const rows = [];
+  let renewals = 0;
+  for(const d of data){
+    // A permit renewal is an old job resurfacing, not a new buildout.
+    if(/renewal/i.test(d.filing_reason || '')){ renewals++; continue; }
+    const job = d.job_filing_number || '';
+    const work = d.work_type || '';
+    const dedupeKey = job + ':' + work;
+    if(job && seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    const addr = [d.house_no, d.street_name].filter(Boolean).join(' ');
+    const cost = parseFloat(d.estimated_job_costs);
+    rows.push({
+      id: dedupeKey,
+      source: 'dob',
+      who: d.applicant_business_name || d.owner_business_name || 'Business name not listed on permit',
+      where: (addr || 'Address not listed') + ', Manhattan',
+      tag: [work || null, fmtMoney(d.estimated_job_costs), job ? 'Filing ' + job : null].filter(Boolean).join(' · '),
+      when: fmtDate(d.approved_date || d.issued_date),
+      ts: dateMs(d.approved_date || d.issued_date),
+      coords: null,
+      addr,
+      bonus: (/general construction/i.test(work) ? 8 : 0) + ((isFinite(cost) && cost >= 100000) ? 6 : 0),
+      buildout: isLikelyBuildout(work, d.job_description)
+    });
+    if(rows.length >= 60) break;
+  }
+  if(!rows.length) throw new Error('Every permit the city returned was a renewal of an old job, which is unexpected. Try Refresh in a minute.');
+  return {rows: finalizeRows(rows), notices};
+}
+
+// Legacy BIS Permit Issuance (ipu4-2q9a), automatic backup only.
+// Documented fields used: borough, job_type, house__ and job__ (the double
+// underscores are real), street_name, issuance_date,
+// permittee_s_business_name, gis_latitude, gis_longitude.
+async function loadBISFallback(){
+  const url = 'https://data.cityofnewyork.us/resource/ipu4-2q9a.json'
+    + '?$where=' + encodeURIComponent("upper(borough)='MANHATTAN' AND job_type IN('A1','A2','NB')")
+    + '&$order=' + encodeURIComponent('issuance_date DESC')
+    + '&$limit=80';
+  const data = await getJSON(url);
+  if(!Array.isArray(data) || !data.length) throw new Error('The legacy BIS permit feed returned nothing either.');
+  const rows = data.slice(0, 60).map(d => {
+    const addr = [d.house__, d.street_name].filter(Boolean).join(' ');
+    return {
+      id: (d.job__ || '') + ':' + (d.permit_sequence__ || ''),
+      source: 'dob',
+      who: d.permittee_s_business_name || d.owner_s_business_name || 'Business name not listed on permit',
+      where: (addr || 'Address not listed') + ', Manhattan',
+      tag: ['Legacy BIS', 'Job type ' + (d.job_type || 'unknown')].join(' · '),
+      when: fmtDate(d.issuance_date),
+      ts: dateMs(d.issuance_date),
+      coords: coordsFromLatLng(d, 'gis_latitude', 'gis_longitude'),
+      addr,
+      bonus: 0,
+      buildout: true
+    };
+  });
+  return {rows: finalizeRows(rows), notices: []};
+}
+
 async function loadDOB(){
   try{
-    const probe = await getJSON('https://data.cityofnewyork.us/resource/rbx6-tga4.json?$limit=1');
-    const s = probe[0] || {};
-    const boroK = pickKey(s,['borough','boro']);
-    const dateK = pickKey(s,['approved_date','issued_date','issuance']) || pickKey(s,['date']);
-    const nameK = pickKey(s,['applicant_business','owner_business','business_name','owner_name','applicant']);
-    const houseK = pickKey(s,['house']);
-    const streetK = pickKey(s,['street_name','street']);
-    const workK = pickKey(s,['work_type','job_description','permit_type']);
-    const jobK = pickKey(s,['job_filing_number','job_number','job__']);
-    const {latK, lngK} = findCoordKeys(s);
-
-    let url = 'https://data.cityofnewyork.us/resource/rbx6-tga4.json?$limit=40';
-    if(boroK) url += `&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
-    if(dateK) url += `&$order=${dateK} DESC`;
-    const data = await getJSON(url);
-    if(!data.length) throw new Error('empty');
-    return data.map(d => ({
-      who: (nameK && d[nameK]) || 'Permit approved — business name not listed',
-      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan',
-      tag: [workK && d[workK], jobK && d[jobK] ? 'Filing '+d[jobK] : ''].filter(Boolean).join(' · '),
-      when: dateK ? fmtDate(d[dateK]) : '—',
-      coords: extractCoords(d, latK, lngK)
-    }));
+    return await loadDOBNOW();
   }catch(err){
-    // legacy BIS fallback
-    const where = encodeURIComponent("upper(borough)='MANHATTAN' AND job_type IN('A1','A2','A3','NB')");
-    const url = `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?$where=${where}&$order=issuance_date DESC&$limit=40`;
-    const data = await getJSON(url);
-    const s = data[0] || {};
-    const houseK = pickKey(s,['house']);
-    const streetK = pickKey(s,['street_name']);
-    const bizK = pickKey(s,['permittee_s_business_name','owner_s_business_name','business_name']);
-    const typeK = pickKey(s,['job_type']);
-    const dateK = pickKey(s,['issuance_date']);
-    const {latK, lngK} = findCoordKeys(s);
-    return data.map(d => ({
-      who: (bizK && d[bizK]) || 'Permit filed — business name not listed',
-      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan (legacy BIS)',
-      tag: typeK ? 'Job type: '+d[typeK] : '',
-      when: dateK ? fmtDate(d[dateK]) : '—',
-      coords: extractCoords(d, latK, lngK)
-    }));
+    const fb = await loadBISFallback();
+    fb.notices.unshift('The DOB NOW permit feed did not answer (' + err.message + ') so this list is coming from the legacy BIS permit system instead. It covers a shrinking share of permits.');
+    return fb;
   }
 }
 
-// DOHMH: restaurants with a permit but no inspection yet (1900-01-01 placeholder)
+// DOHMH Restaurant Inspections (43nn-pn8j).
+// Documented fields used: camis, dba, boro (NOT borough), building, street,
+// zipcode, cuisine_description, inspection_date, latitude, longitude.
+// inspection_date equal to the 1900-01-01 placeholder is how the city flags
+// a brand-new establishment that has a permit but no inspection yet.
 async function loadDOH(){
-  const where = encodeURIComponent("upper(boro)='MANHATTAN' AND inspection_date='1900-01-01T00:00:00.000'");
-  const url = `https://data.cityofnewyork.us/resource/43nn-pn8j.json?$where=${where}&$limit=300`;
+  const url = 'https://data.cityofnewyork.us/resource/43nn-pn8j.json'
+    + '?$where=' + encodeURIComponent("upper(boro)='MANHATTAN' AND inspection_date='1900-01-01T00:00:00.000'")
+    + '&$limit=300';
   const data = await getJSON(url);
-  if(!data.length) throw new Error('empty');
-  const s = data[0];
-  const camisK = pickKey(s,['camis']) || 'camis';
-  const dbaK = pickKey(s,['dba']) || 'dba';
-  const buildingK = pickKey(s,['building']);
-  const streetK = pickKey(s,['street']);
-  const zipK = pickKey(s,['zip']);
-  const cuisineK = pickKey(s,['cuisine']);
-  const {latK, lngK} = findCoordKeys(s);
+  if(!Array.isArray(data) || !data.length) throw new Error('The health department feed answered with zero pending first inspections. That can genuinely happen right after the city refreshes the dataset. Try again later today.');
+
+  const notices = [];
+  const missing = missingFields(data, ['camis','dba','building','street']);
+  if(missing.length) notices.push('The city appears to have renamed these restaurant columns: ' + missing.join(', ') + '. Some details below may be blank until this page is updated.');
+
   const seen = new Set();
   const rows = [];
   for(const d of data){
-    const id = d[camisK];
-    if(seen.has(id)) continue;
-    seen.add(id);
+    if(seen.has(d.camis)) continue;
+    seen.add(d.camis);
+    const addr = [d.building, d.street].filter(Boolean).join(' ');
     rows.push({
-      who: d[dbaK] || 'Unnamed establishment',
-      where: [buildingK && d[buildingK], streetK && d[streetK], zipK && d[zipK]].filter(Boolean).join(' ') + ', Manhattan',
-      tag: (cuisineK && d[cuisineK]) ? d[cuisineK]+' · not yet inspected' : 'Not yet inspected — brand new',
-      when: 'Permit filed',
-      coords: extractCoords(d, latK, lngK)
+      id: d.camis,
+      source: 'doh',
+      who: d.dba || 'Unnamed establishment',
+      where: (addr || 'Address not listed') + (d.zipcode ? ' ' + d.zipcode : '') + ', Manhattan',
+      tag: [d.cuisine_description || null, 'Not yet inspected, brand new'].filter(Boolean).join(' · '),
+      when: 'Permit on file',
+      ts: null,
+      coords: coordsFromLatLng(d, 'latitude', 'longitude'),
+      addr,
+      bonus: 0,
+      buildout: true
     });
-    if(rows.length >= 40) break;
+    if(rows.length >= 60) break;
   }
-  return rows;
+  return {rows: finalizeRows(rows), notices};
 }
 
-// DOB NOW: Job Application Filings (w9ak-ipjd) — the Alt-CO signal.
-// This is the earliest and least noisy signal on the ladder: a filing that
-// legally changes a building's use, occupancy, or egress. IMPORTANT: the
-// exact column that carries this classification could not be fully confirmed
-// against the live schema, so this loader probes the dataset and searches
-// several candidate field names / value patterns before falling back to an
-// unfiltered "all Manhattan filings" view. Cross-references each filing's
-// job_filing_number against the Approved Permits dataset to show whether a
-// permit has been issued yet.
+// DOB NOW: Build, Job Application Filings (w9ak-ipjd). The Alt-CO signal.
+// Documented fields used: job_filing_number, filing_status, job_type,
+// house_no, street_name, borough, owner_s_business_name, filing_date,
+// initial_cost. Per NYC DOB documentation, the job_type value for a change
+// of use, occupancy, or egress is "Alteration CO" (Alt-CO, formerly Alt 1).
+// If that exact value ever stops matching, the loader asks the dataset for
+// its current list of job_type values, adopts the one that looks like
+// Alt-CO, and SAYS SO in a visible notice. If none exists it shows an error
+// instead of quietly showing unfiltered filings. This dataset publishes NO
+// coordinate columns; pins come from the GeoSearch geocoder further down.
 async function loadALTCO(){
   const base = 'https://data.cityofnewyork.us/resource/w9ak-ipjd.json';
-  const probe = await getJSON(base+'?$limit=1');
-  const s = probe[0] || {};
-  const boroK = pickKey(s,['borough']) || 'borough';
-  const jobK = pickKey(s,['job_filing_number']) || 'job_filing_number';
-  const statusK = pickKey(s,['filing_status']);
-  const houseK = pickKey(s,['house_no','house']);
-  const streetK = pickKey(s,['street_name']);
-  const ownerK = pickKey(s,['owner_s_business_name','owner_business']);
-  const dateK = pickKey(s,['latest_action_date','filing_date','current_status_date','action_date']);
-  const typeK = pickKey(s,['job_type','classification','alt_co','building_type']);
-  const {latK, lngK} = findCoordKeys(s);
+  const urlFor = v => base
+    + '?$limit=100'
+    + '&$where=' + encodeURIComponent(`job_type='${String(v).replace(/'/g,"''")}' AND upper(borough)='MANHATTAN'`)
+    + '&$order=' + encodeURIComponent('filing_date DESC');
 
-  let url = `${base}?$limit=60&$where=${encodeURIComponent(`upper(${boroK})='MANHATTAN'`)}`;
-  if(dateK) url += `&$order=${dateK} DESC`;
-  const data = await getJSON(url);
-  if(!data.length) throw new Error('empty');
+  const notices = [];
+  let data = await getJSON(urlFor('Alteration CO'));
 
-  // try to isolate Alt-CO style records if a usable type/classification field exists
-  let rows = data;
-  let typeDetected = false;
-  if(typeK){
-    const altcoRows = data.filter(d => {
-      const v = String(d[typeK] || '').toLowerCase();
-      return v.includes('alt') && (v.includes('co') || v.includes('occupancy') || v.includes('change'));
-    });
-    if(altcoRows.length){ rows = altcoRows; typeDetected = true; }
+  if(!Array.isArray(data) || !data.length){
+    // Ask the dataset which job_type values actually exist right now.
+    const catUrl = base + '?$select=' + encodeURIComponent('job_type,count(*) as n') + '&$group=job_type&$limit=100';
+    const cats = await getJSON(catUrl);
+    const hit = (cats || []).map(c => c.job_type || '').find(v => /alt/i.test(v) && /(co\b|c\.o\.|occupancy)/i.test(v));
+    if(!hit) throw new Error('Could not find the Alteration CO category in the city filings dataset. Rather than show you the wrong records, this tab is showing nothing. Open the raw dataset link above and check the job_type column, then update this page.');
+    notices.push('The city currently labels this category "' + hit + '" instead of "Alteration CO". The feed adjusted automatically.');
+    data = await getJSON(urlFor(hit));
+    if(!Array.isArray(data) || !data.length) throw new Error('The Alt-CO category exists but returned zero Manhattan filings, which is unexpected. Try Refresh in a minute.');
   }
 
-  // cross-reference against Approved Permits by job filing number
-  const jobNumbers = rows.map(d => d[jobK]).filter(Boolean).slice(0,60);
-  let permitMap = {};
-  if(jobNumbers.length){
+  const missing = missingFields(data, ['job_filing_number','filing_status','house_no','street_name','filing_date']);
+  if(missing.length) notices.push('The city appears to have renamed these filing columns: ' + missing.join(', ') + '. Some details below may be blank until this page is updated.');
+
+  // Drop dead filings and duplicates.
+  const seen = new Set();
+  const filings = [];
+  for(const d of data){
+    if(/withdraw|terminat|abandon/i.test(d.filing_status || '')) continue;
+    const job = d.job_filing_number || JSON.stringify([d.house_no, d.street_name, d.filing_date]);
+    if(seen.has(job)) continue;
+    seen.add(job);
+    filings.push(d);
+    if(filings.length >= 60) break;
+  }
+  if(!filings.length) throw new Error('Every Alt-CO filing the city returned was withdrawn or terminated, which is unexpected. Try Refresh in a minute.');
+
+  // Cross-reference against DOB NOW Approved Permits (rbx6-tga4) by
+  // job_filing_number. Both datasets use the same DOB NOW filing number
+  // format, unlike the legacy BIS job numbers this page used to query.
+  // If the check fails we say so instead of failing silently.
+  const havePermit = new Set();
+  const jobNums = filings.map(d => d.job_filing_number).filter(Boolean).slice(0, 60);
+  if(jobNums.length){
     try{
-      const inList = jobNumbers.map(n => `'${String(n).replace(/'/g,"''")}'`).join(',');
-      const permitUrl = `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?$where=${encodeURIComponent(`job__ IN(${inList})`)}&$limit=200`;
-      const permits = await getJSON(permitUrl).catch(() => []);
-      permits.forEach(p => { if(p.job__) permitMap[p.job__] = p; });
-    }catch(e){ /* cross-reference is best-effort, feed still works without it */ }
+      const inList = jobNums.map(n => `'${String(n).replace(/'/g,"''")}'`).join(',');
+      const permitUrl = 'https://data.cityofnewyork.us/resource/rbx6-tga4.json'
+        + '?$select=job_filing_number'
+        + '&$where=' + encodeURIComponent(`job_filing_number in(${inList})`)
+        + '&$limit=400';
+      const permits = await getJSON(permitUrl);
+      (permits || []).forEach(p => { if(p.job_filing_number) havePermit.add(p.job_filing_number); });
+    }catch(e){
+      notices.push('Could not check which filings already have an approved permit just now, so that label is missing below. The leads themselves are unaffected.');
+    }
   }
 
-  return rows.slice(0,40).map(d => {
-    const jobNum = d[jobK];
-    const hasPermit = jobNum && permitMap[jobNum];
+  const rows = filings.map(d => {
+    const job = d.job_filing_number;
+    const approved = job && havePermit.has(job);
+    const addr = [d.house_no, d.street_name].filter(Boolean).join(' ');
+    const cost = parseFloat(d.initial_cost);
     return {
-      who: (ownerK && d[ownerK]) || 'Filing submitted — owner name not listed',
-      where: [houseK && d[houseK], streetK && d[streetK]].filter(Boolean).join(' ') + ', Manhattan',
+      id: job || addr,
+      source: 'altco',
+      who: d.owner_s_business_name || 'Owner name not listed on filing',
+      where: (addr || 'Address not listed') + ', Manhattan',
       tag: [
-        typeDetected ? 'Alt-CO: change of use/occupancy' : (typeK && d[typeK] ? String(d[typeK]) : 'Job filing'),
-        statusK && d[statusK] ? d[statusK] : null,
-        hasPermit ? 'Permit already approved' : 'No permit yet — earliest stage'
+        'Alt-CO, change of use or occupancy',
+        d.filing_status || null,
+        fmtMoney(d.initial_cost),
+        approved ? 'Permit already approved' : 'No permit yet, earliest stage'
       ].filter(Boolean).join(' · '),
-      when: dateK && d[dateK] ? fmtDate(d[dateK]) : (jobNum ? `Filing ${jobNum}` : '—'),
-      coords: extractCoords(d, latK, lngK)
+      when: fmtDate(d.filing_date),
+      ts: dateMs(d.filing_date),
+      coords: null,
+      addr,
+      bonus: (approved ? 0 : 4) + ((isFinite(cost) && cost >= 100000) ? 6 : 0),
+      buildout: true
     };
   });
+  return {rows: finalizeRows(rows), notices};
 }
 
-// NYS SLA: current active licenses (9s3h-dpkz), fallback to daily list (wg8y-fzsj)
-async function loadSLAFrom(datasetId){
-  const base = `https://data.ny.gov/resource/${datasetId}.json`;
-  const probe = await getJSON(base+'?$limit=1');
-  const s = probe[0] || {};
-  const countyK = pickKey(s,['county']);
-  const zipK = pickKey(s,['zip']);
-  const dateK = pickKey(s,['original','effective_date','license_issued','issue_date','license_date','current','date']);
-  const nameK = pickKey(s,['doing_business','dba','trade_name','premises_name','premise_name','license_name','name']);
-  const addrK = pickKey(s,['address','premises','premise']);
-  const typeK = pickKey(s,['license_type_name','license_class','license_type','type']);
-  const {latK, lngK} = findCoordKeys(s);
+// NYS Liquor Authority, Current List of Active Licenses (9s3h-dpkz).
+// Documented fields used: premises_county, dba, legalname,
+// actual_address_of_premises, zip_code, original_issue_date, effective_date,
+// license_type (with class/description as labels), georeference (a Point).
+// Manhattan is premises_county = 'New York'; there is no borough field, and
+// other columns also contain the words New York, so only the county column
+// is filtered.
+async function loadSLAPrimary(){
+  const base = 'https://data.ny.gov/resource/9s3h-dpkz.json';
+  const url = base
+    + '?$limit=100'
+    + '&$where=' + encodeURIComponent("upper(premises_county)='NEW YORK' AND original_issue_date IS NOT NULL")
+    + '&$order=' + encodeURIComponent('original_issue_date DESC');
+  const data = await getJSON(url);
+  if(!Array.isArray(data) || !data.length) throw new Error('The state license list answered with zero New York County records, which almost never happens.');
+
+  const notices = [];
+  const missing = missingFields(data, ['actual_address_of_premises','original_issue_date']);
+  if(missing.length) notices.push('The state appears to have renamed these license columns: ' + missing.join(', ') + '. Some details below may be blank until this page is updated.');
+
+  const seen = new Set();
+  const rows = [];
+  for(const d of data){
+    const name = (d.dba || '').trim() || (d.legalname || '').trim() || (d.legal_name || '').trim();
+    const addr = (d.actual_address_of_premises || '').trim();
+    const id = d.license_permit_id || d.license_serial_number || (name + '|' + addr);
+    if(seen.has(id)) continue;
+    seen.add(id);
+    const licType = d.description || d.license_type_name || d.type || d.license_class || '';
+    const onPremises = /restaurant|tavern|club|hotel|catering|eating|bar\b/i.test(licType);
+    rows.push({
+      id,
+      source: 'sla',
+      who: name || 'Licensee name not listed',
+      where: (addr || 'Address not listed') + (d.zip_code ? ' ' + d.zip_code : '') + ', Manhattan',
+      tag: [licType || 'License', 'Issued ' + fmtDate(d.original_issue_date)].filter(Boolean).join(' · '),
+      when: fmtDate(d.original_issue_date || d.effective_date),
+      ts: dateMs(d.original_issue_date || d.effective_date),
+      coords: coordsFromPoint(d.georeference),
+      addr,
+      bonus: onPremises ? 6 : 0,
+      buildout: true
+    });
+    if(rows.length >= 60) break;
+  }
+  return {rows: finalizeRows(rows), notices};
+}
+
+// Daily list fallback (wg8y-fzsj). Its exact schema could not be confirmed,
+// so this one probes for its columns adaptively. It only ever runs when the
+// primary list fails, and it announces itself in a visible notice.
+async function loadSLAFallbackDaily(){
+  const base = 'https://data.ny.gov/resource/wg8y-fzsj.json';
+  const probe = await getJSON(base + '?$limit=1');
+  const s = (probe && probe[0]) || {};
+  const countyK = pickKey(s, ['county']);
+  const zipK = pickKey(s, ['zip']);
+  const dateK = pickKey(s, ['original', 'effective_date', 'issue_date', 'license_date', 'date']);
+  const nameK = pickKey(s, ['doing_business', 'dba', 'trade_name', 'premises_name', 'premise_name', 'legalname', 'legal_name', 'name']);
+  const addrK = pickKey(s, ['address', 'premises', 'premise']);
+  const typeK = pickKey(s, ['license_type_name', 'description', 'license_class', 'license_type', 'type']);
+  const latK = pickKey(s, ['latitude']);
+  const lngK = pickKey(s, ['longitude']);
 
   let where = '';
   if(countyK) where = `upper(${countyK})='NEW YORK'`;
   else if(zipK) where = `(${zipK} like '100%' OR ${zipK} like '101%' OR ${zipK} like '102%')`;
 
-  let url = base+'?$limit=40';
-  if(where) url += `&$where=${encodeURIComponent(where)}`;
-  if(dateK) url += `&$order=${dateK} DESC`;
+  let url = base + '?$limit=80';
+  if(where) url += '&$where=' + encodeURIComponent(where);
+  if(dateK) url += '&$order=' + encodeURIComponent(dateK + ' DESC');
 
   const data = await getJSON(url);
-  if(!data.length) throw new Error('empty');
-  return data.map(d => ({
-    who: (nameK && d[nameK]) || 'Licensee name not listed in this field set',
-    where: (addrK && d[addrK]) ? d[addrK]+', Manhattan' : 'Address field not identified',
-    tag: (typeK && d[typeK]) ? String(d[typeK]) : '',
-    when: (dateK && d[dateK]) ? fmtDate(d[dateK]) : '—',
-    coords: extractCoords(d, latK, lngK)
-  }));
-}
-async function loadSLA(){
-  try{ return await loadSLAFrom('9s3h-dpkz'); }
-  catch(err){ return await loadSLAFrom('wg8y-fzsj'); }
+  if(!Array.isArray(data) || !data.length) throw new Error('The daily state license list returned nothing either.');
+  const rows = data.slice(0, 60).map(d => {
+    const addr = (addrK && d[addrK]) ? String(d[addrK]) : '';
+    return {
+      id: (nameK && d[nameK] ? d[nameK] : '') + '|' + addr,
+      source: 'sla',
+      who: (nameK && d[nameK]) || 'Licensee name not listed',
+      where: (addr || 'Address not listed') + ', Manhattan',
+      tag: (typeK && d[typeK]) ? String(d[typeK]) : 'License',
+      when: (dateK && d[dateK]) ? fmtDate(d[dateK]) : 'No date',
+      ts: dateK ? dateMs(d[dateK]) : null,
+      coords: (latK && lngK) ? coordsFromLatLng(d, latK, lngK) : null,
+      addr,
+      bonus: 0,
+      buildout: true
+    };
+  });
+  return {rows: finalizeRows(rows), notices: []};
 }
 
-// ---------- tab config ----------
+async function loadSLA(){
+  try{
+    return await loadSLAPrimary();
+  }catch(err){
+    const fb = await loadSLAFallbackDaily();
+    fb.notices.unshift('The main state license list did not answer (' + err.message + ') so this list is coming from the daily fallback list instead. Some details may read differently.');
+    return fb;
+  }
+}
+
+// ---------- free geocoding for the feeds without coordinates ----------
+// The two DOB NOW datasets publish no latitude/longitude. NYC's own
+// GeoSearch API (geosearch.planninglabs.nyc) is free, needs no key, and is
+// built for exactly this. At most GEO_MAX addresses are looked up per scan,
+// one at a time with a short pause between lookups to stay polite, and
+// every answer (including misses) is cached in localStorage so repeat scans
+// cost zero lookups. If the geocoder is unreachable the map simply shows
+// fewer pins; nothing else breaks.
+const GEO_MAX = 60;
+let geoBusy = false;
+function loadGeoCache(){
+  try{ return JSON.parse(localStorage.getItem('sig_geo')) || {}; }catch(e){ return {}; }
+}
+function saveGeoCache(c){
+  try{ localStorage.setItem('sig_geo', JSON.stringify(c)); }catch(e){}
+}
+async function geocodeQueue(rows){
+  if(geoBusy) return;
+  geoBusy = true;
+  try{
+    const cache = loadGeoCache();
+    let lookups = 0;
+    let added = 0;
+    for(const r of rows){
+      if(r.coords || !r.addr) continue;
+      const key = addrKey(r.addr);
+      if(key in cache){
+        if(cache[key]) r.coords = cache[key];
+        continue;
+      }
+      if(lookups >= GEO_MAX) break;
+      lookups++;
+      try{
+        const res = await getJSON('https://geosearch.planninglabs.nyc/v2/search?size=1&text='
+          + encodeURIComponent(r.addr + ', Manhattan, NY'));
+        const f = res && res.features && res.features[0];
+        let c = null;
+        if(f && f.geometry && Array.isArray(f.geometry.coordinates)){
+          const lat = parseFloat(f.geometry.coordinates[1]);
+          const lng = parseFloat(f.geometry.coordinates[0]);
+          if(inNYC(lat, lng)) c = {lat, lng};
+        }
+        cache[key] = c;
+        if(c){ r.coords = c; added++; }
+      }catch(e){
+        break; // geocoder unreachable, stop trying this round
+      }
+      await new Promise(done => setTimeout(done, 150));
+      if(added && added % 10 === 0) renderMap();
+    }
+    saveGeoCache(cache);
+  } finally {
+    geoBusy = false;
+    renderMap();
+  }
+}
+
+// ---------- cross-feed overlap ----------
+// The same storefront can appear in two or three feeds at different stages.
+// That overlap is the strongest signal on this page, so it gets flagged and
+// scored accordingly after every full scan.
+function annotateOverlap(){
+  const byAddr = {};
+  Object.entries(leadsBySource).forEach(([src, rows]) => (rows || []).forEach(r => {
+    if(!r.addr) return;
+    const k = addrKey(r.addr);
+    if(!k) return;
+    (byAddr[k] = byAddr[k] || new Set()).add(src);
+  }));
+  let multi = 0;
+  Object.entries(leadsBySource).forEach(([src, rows]) => (rows || []).forEach(r => {
+    const k = r.addr && addrKey(r.addr);
+    const srcs = k && byAddr[k];
+    r.multi = !!(srcs && srcs.size > 1);
+    if(r.multi){
+      multi++;
+      r.tagMulti = 'Also in ' + [...srcs].filter(x => x !== src).map(x => sourceLabel[x].toLowerCase() + 's').join(' and ');
+    } else {
+      r.tagMulti = '';
+    }
+  }));
+  Object.keys(leadsBySource).forEach(src => {
+    if(leadsBySource[src] && leadsBySource[src].length){
+      finalizeRows(leadsBySource[src]);
+      const cached = cacheGet(src);
+      cacheSet(src, {rows: leadsBySource[src], notices: (cached && cached.notices) || []});
+    }
+  });
+  return multi;
+}
+
 // ---------- live map ----------
 let leafletMap = null;
 let markerLayer = null;
@@ -922,16 +1336,17 @@ function renderMap(){
         weight: 1.5
       });
       const popupId = 'pop_'+Math.random().toString(36).slice(2);
+      const tagText = [lead.tag, lead.tagMulti].filter(Boolean).join(' · ');
       marker.bindPopup(`
         <div class="popup-who">${esc(lead.who)}</div>
         <div class="popup-where">${esc(lead.where)}</div>
-        <div class="popup-tag">${esc(sourceLabel[src])}${lead.tag ? ' · '+esc(lead.tag) : ''}</div>
+        <div class="popup-tag">${esc(sourceLabel[src])}${tagText ? ' · '+esc(tagText) : ''}</div>
         <button class="popup-copy" id="${popupId}">Copy lead</button>
       `);
       marker.on('popupopen', () => {
         const btn = document.getElementById(popupId);
         if(btn) btn.addEventListener('click', () => {
-          copyToClipboard(`${lead.who}\t${lead.where}\t${lead.tag||''}\t${lead.when}`, btn);
+          copyToClipboard(`${lead.who}\t${lead.where}\t${tagText}\t${lead.when}`, btn);
         });
       });
       marker.addTo(markerLayer);
@@ -940,8 +1355,8 @@ function renderMap(){
   const noteEl = document.getElementById('map-note');
   if(noteEl){
     noteEl.textContent = pinCount
-      ? `Showing ${pinCount} mapped leads out of your last scan. Some leads don't include coordinates and won't have a pin.`
-      : `Run a scan above, then pins will appear here for every lead that includes map coordinates. Not every source publishes coordinates, so the map will usually show fewer pins than the full lead count.`;
+      ? `Showing ${pinCount} mapped leads from your last scan. Addresses from the buildings feeds are located a few at a time, so this count can keep climbing for a few seconds after a scan.`
+      : `Run a scan above and pins will appear here. Addresses from the buildings feeds are located a few at a time, so give the map a few seconds to fill in after a scan.`;
   }
 }
 
@@ -1045,28 +1460,41 @@ function updateMapAndCharts(){
   renderHistoryChart();
 }
 
+// ---------- tab config ----------
 const configs = {
   altco: {
-    desc: 'DOB NOW Job Application Filings — Alt-CO change-of-use filings in Manhattan, cross-checked against approved permits. Experimental: schema partly unconfirmed, verify before relying on it.',
+    desc: 'DOB NOW Job Application Filings, filtered to Alt-CO (change of use or occupancy) filings in Manhattan, cross-checked against approved permits, highest priority first.',
     src: 'https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Job-Application-Filings/w9ak-ipjd',
     load: loadALTCO
   },
   sla: {
-    desc: 'New York State Liquor Authority — current active licenses, filtered to New York County (Manhattan), newest first.',
+    desc: 'New York State Liquor Authority current active licenses, filtered to New York County (Manhattan), newest original issue date first.',
     src: 'https://data.ny.gov/Economic-Development/Current-Liquor-Authority-Active-Licenses/9s3h-dpkz',
     load: loadSLA
   },
   dob: {
-    desc: 'NYC Department of Buildings — DOB NOW approved permits in Manhattan, newest first. Falls back to the legacy BIS dataset automatically.',
+    desc: 'DOB NOW approved permits in Manhattan, renewals removed, highest priority first. Falls back to the legacy BIS dataset automatically and says so when it does.',
     src: 'https://data.cityofnewyork.us/Housing-Development/DOB-NOW-Build-Approved-Permits/rbx6-tga4',
     load: loadDOB
   },
   doh: {
-    desc: 'NYC Health Department — restaurants with a permit on file but no inspection conducted yet.',
+    desc: 'NYC Health Department, restaurants with a permit on file but no inspection conducted yet. These are the closest to opening day.',
     src: 'https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j',
     load: loadDOH
   }
 };
+
+let scanningNow = false;
+
+function adopt(name, res){
+  currentRows = res.rows || [];
+  currentNotices = res.notices || [];
+  leadsBySource[name] = currentRows;
+  renderNotices();
+  renderRows();
+  updateMapAndCharts();
+  if(!scanningNow) geocodeQueue(currentRows);
+}
 
 async function activateTab(name, forceReload){
   currentTab = name;
@@ -1077,41 +1505,44 @@ async function activateTab(name, forceReload){
   });
   feedDesc.textContent = configs[name].desc;
   feedSrc.href = configs[name].src;
+  document.getElementById('buildout-wrap').style.display = name === 'dob' ? '' : 'none';
 
   const cached = forceReload ? null : cacheGet(name);
-  if(cached){
-    currentRows = cached;
-    renderRows(currentRows);
-    leadsBySource[name] = cached;
-    updateMapAndCharts();
+  if(cached && cached.rows){
+    adopt(name, cached);
     return;
   }
+  currentNotices = [];
+  renderNotices();
   showStatus('Loading live records…');
   try{
-    currentRows = await configs[name].load();
-    cacheSet(name, currentRows);
-    renderRows(currentRows);
-    leadsBySource[name] = currentRows;
-    updateMapAndCharts();
+    const res = await configs[name].load();
+    cacheSet(name, res);
+    adopt(name, res);
   }catch(err){
     currentRows = [];
-    showStatus('Live feed didn\'t respond. These public endpoints occasionally rate-limit anonymous requests — hit Refresh in a minute, or open the raw dataset link above.', true);
+    currentNotices = [];
+    renderNotices();
+    showStatus((err && err.message ? err.message + ' ' : '') + 'These public endpoints also occasionally rate-limit anonymous requests, so Refresh in a minute is always worth one try. The raw dataset link above shows whether the source itself is up.', true);
   }
 }
 
 document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => activateTab(t.dataset.tab)));
-searchBox.addEventListener('input', () => renderRows(currentRows));
+searchBox.addEventListener('input', () => renderRows());
+chkBuildout.addEventListener('change', () => renderRows());
+chkHideCalled.addEventListener('change', () => renderRows());
 document.getElementById('btn-refresh').addEventListener('click', () => activateTab(currentTab, true));
 
-// ---------- CSV export ----------
+// ---------- CSV export (exports what's visible with the current filters) ----------
 document.getElementById('btn-csv').addEventListener('click', () => {
-  if(!currentRows.length) return;
-  const head = ['Business/Name','Address','Detail','Date','Source'];
+  const {rows} = visibleRows();
+  if(!rows.length) return;
+  const head = ['Business/Name','Address','Detail','Date','Source','Priority','Called'];
   const csvCell = v => '"'+String(v ?? '').replace(/"/g,'""')+'"';
   const lines = [head.map(csvCell).join(',')];
-  currentRows.forEach(r => {
-    lines.push([r.who, r.where, r.tag || '', r.when, currentTab.toUpperCase()].map(csvCell).join(','));
+  rows.forEach(r => {
+    lines.push([r.who, r.where, fullTag(r), r.when, currentTab.toUpperCase(), r.score ?? '', calledMap[leadKey(r)] ? 'yes' : 'no'].map(csvCell).join(','));
   });
   const blob = new Blob([lines.join('\r\n')], {type:'text/csv'});
   const a = document.createElement('a');
@@ -1134,30 +1565,44 @@ scanBtn.addEventListener('click', async () => {
   scanBtn.classList.add('scanning');
   scanLabel.textContent = 'Scanning Manhattan…';
   scanResult.textContent = '';
+  scanningNow = true;
   try{
     const names = ['altco','sla','dob','doh'];
+    const results = await Promise.allSettled(names.map(n => configs[n].load()));
     const counts = {};
-    for(const name of names){
-      try{
-        const rows = await configs[name].load();
-        cacheSet(name, rows);
-        counts[name] = rows.length;
-        leadsBySource[name] = rows;
-      }catch(e){
-        console.warn('Scan failed for', name, e);
-        counts[name] = 0;
+    const failed = [];
+    results.forEach((res, i) => {
+      const n = names[i];
+      if(res.status === 'fulfilled'){
+        leadsBySource[n] = res.value.rows;
+        cacheSet(n, res.value);
+        counts[n] = res.value.rows.length;
+      } else {
+        console.warn('Scan failed for', n, res.reason);
+        counts[n] = 0;
+        leadsBySource[n] = [];
+        failed.push(sourceLabel[n] + 's');
       }
-    }
+    });
+    const multi = annotateOverlap();
     const total = Object.values(counts).reduce((a,b) => a+b, 0);
     saveScanHistoryEntry(total);
     const stamp = new Date().toLocaleTimeString('en-US',{hour12:false});
-    scanResult.innerHTML = `<strong>${total} live leads found</strong> — ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants <span style="color:var(--text-dim)">(scanned at ${stamp})</span>`;
+    let html = `<strong>${total} live leads found</strong>: ${counts.altco||0} buildout filings · ${counts.sla||0} liquor licenses · ${counts.dob||0} approved permits · ${counts.doh||0} new restaurants <span style="color:var(--text-dim)">(scanned at ${stamp})</span>`;
+    if(multi) html += ` <strong>${multi} leads sit at an address that shows up in more than one feed.</strong>`;
+    if(failed.length) html += ` <span style="color:var(--accent)">The ${esc(failed.join(' and '))} feed did not answer. Open that tab and press Refresh to retry it.</span>`;
+    scanResult.innerHTML = html;
     // refresh whatever tab is currently showing with the just-fetched data
+    // (scanningNow is still true here so the tab doesn't start its own
+    // partial geocode pass; the full one below covers every feed)
     activateTab(currentTab, false);
+    scanningNow = false;
+    geocodeQueue(Object.values(leadsBySource).flat());
   } catch(err){
     console.error('Scan all failed', err);
-    scanResult.innerHTML = 'Scan hit an unexpected error. Try again in a moment.';
+    scanResult.textContent = 'Scan hit an unexpected error. Try again in a moment.';
   } finally {
+    scanningNow = false;
     scanBtn.disabled = false;
     scanBtn.classList.remove('scanning');
     scanLabel.textContent = 'Scan all signals now';
