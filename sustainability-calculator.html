@@ -75,6 +75,16 @@
   .toolbar button.primary { background:#2A1DBF; color:#fff; border-color:#2A1DBF; }
   .toolbar button.primary:hover { background:#1B1385; }
 
+  .modal-overlay { position:fixed; inset:0; background:rgba(21,21,43,.45); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal { background:#fff; border-radius:10px; max-width:520px; width:100%; padding:22px 24px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  .modal h2 { font-family:'Poppins',sans-serif; font-weight:700; font-size:16px; color:#15152B; margin-bottom:6px; }
+  .modal p { font-size:11.5px; color:#5B5B78; line-height:1.5; margin-bottom:12px; }
+  .modal textarea { width:100%; height:150px; border:1px solid #E3E4F0; border-radius:6px; padding:10px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#15152B; resize:vertical; }
+  .modal textarea:focus { outline:none; border-color:#2A1DBF; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+  .modal-actions button { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; border-radius:6px; padding:8px 16px; cursor:pointer; border:1px solid #E3E4F0; background:#fff; color:#15152B; }
+  .modal-actions button.primary { background:#2A1DBF; color:#fff; border-color:#2A1DBF; }
+
   @media (max-width:640px) {
     .account-grid, .metrics-grid { grid-template-columns:1fr; }
     .ytd-grid { grid-template-columns:1fr 1fr; }
@@ -106,6 +116,7 @@
 
   <div class="toolbar no-print">
     <button class="primary" id="btn-print">Print / Save as PDF</button>
+    <button id="btn-excel">Save as Excel</button>
     <button id="btn-reset">Reset all fields</button>
     <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
   </div>
@@ -144,7 +155,10 @@
 
   <div class="table-head">
     <div class="section-label" style="margin-bottom:0;">Waste Delivery Detail</div>
-    <button class="btn-add" id="btn-add">+ Add delivery</button>
+    <div style="display:flex;gap:8px;" class="no-print">
+      <button class="btn-add" id="btn-paste">⧉ Paste rows</button>
+      <button class="btn-add" id="btn-add">+ Add delivery</button>
+    </div>
   </div>
 
   <table class="card-table">
@@ -197,6 +211,20 @@
     </div>
     <div class="ytd-foot">Cumulative <span id="ytdYear">2026</span> deliveries · <span id="ytdTonsFoot">0</span> tons processed · 100% diverted from landfill</div>
   </div>
+
+  <div class="section-label teal" style="margin:26px 0 10px;">Impact Summary</div>
+  <table class="card-table" style="margin-bottom:20px;">
+    <thead>
+      <tr>
+        <th style="padding-left:16px;">Impact Metric</th>
+        <th style="text-align:right;" id="sumPeriodHead">This Period</th>
+        <th style="text-align:right;" id="sumYtdHead">YTD</th>
+        <th>Unit</th>
+        <th style="padding-right:16px;">Calculation Basis</th>
+      </tr>
+    </thead>
+    <tbody id="summaryBody"></tbody>
+  </table>
 
   <div class="section-label">Conversion Factors (fixed)</div>
   <table class="card-table" style="margin-bottom:16px;">
@@ -285,10 +313,12 @@ function calc() {
     fuelOil: energy / FACTORS.fuelOilKwhGal,
     metal:   periodTons * FACTORS.metalPerTon,
 
-    ytdGhg:    ytdTons * FACTORS.ghgPerTon,
-    ytdEnergy: ytdTons * FACTORS.energyPerTon,
-    ytdHomes:  (ytdTons * FACTORS.energyPerTon) / FACTORS.homeKwhMonth,
-    ytdMetal:  ytdTons * FACTORS.metalPerTon
+    ytdGhg:     ytdTons * FACTORS.ghgPerTon,
+    ytdEnergy:  ytdTons * FACTORS.energyPerTon,
+    ytdHomes:   (ytdTons * FACTORS.energyPerTon) / FACTORS.homeKwhMonth,
+    ytdMetal:   ytdTons * FACTORS.metalPerTon,
+    ytdCoal:    (ytdTons * FACTORS.energyPerTon) / FACTORS.coalKwhTon,
+    ytdFuelOil: (ytdTons * FACTORS.energyPerTon) / FACTORS.fuelOilKwhGal
   };
 }
 
@@ -377,7 +407,49 @@ function render() {
 
   // Pull the reporting year out of the period text if present, else keep 2026.
   var yearMatch = (state.meta.period || '').match(/(20\d{2})/);
-  set('ytdYear', yearMatch ? yearMatch[1] : '2026');
+  var year = yearMatch ? yearMatch[1] : '2026';
+  set('ytdYear', year);
+
+  renderSummary(c, year);
+}
+
+// Column labels for the summary table (and Excel export).
+function periodHeadLabel() {
+  var p = (state.meta.period || '').trim();
+  return p ? p : 'This Period';
+}
+function ytdHeadLabel(year) { return year + ' YTD'; }
+
+// One descriptor per impact metric — the single source of truth for both the
+// on-screen summary table and the Excel export.
+function buildMetrics(c) {
+  return [
+    { name: 'Renewable energy generated',        period: c.energy,  ytd: c.ytdEnergy,  unit: 'kWh',      basis: 'Tons × 550 kWh/ton' },
+    { name: 'Greenhouse gas emissions avoided',  period: c.ghg,     ytd: c.ytdGhg,     unit: 'tons CO₂e', basis: 'Tons × 2.4 t CO₂e/ton' },
+    { name: 'Metals recovered for recycling',    period: c.metal,   ytd: c.ytdMetal,   unit: 'lbs',      basis: 'Tons × 50 lbs/ton' },
+    { name: 'Homes powered for one month',       period: c.homes,   ytd: c.ytdHomes,   unit: 'homes',    basis: 'kWh ÷ 893 kWh/home-month' },
+    { name: 'Coal not needed',                   period: c.coal,    ytd: c.ytdCoal,    unit: 'tons',     basis: 'kWh ÷ 1,881 kWh/ton coal' },
+    { name: 'Fuel oil not needed',               period: c.fuelOil, ytd: c.ytdFuelOil, unit: 'gallons',  basis: 'kWh ÷ 13.108 kWh/gallon' }
+  ];
+}
+
+// Paint the Impact Summary table.
+function renderSummary(c, year) {
+  document.getElementById('sumPeriodHead').textContent = periodHeadLabel();
+  document.getElementById('sumYtdHead').textContent = ytdHeadLabel(year);
+
+  var body = document.getElementById('summaryBody');
+  body.innerHTML = '';
+  buildMetrics(c).forEach(function (m) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="padding-left:16px;">' + m.name + '</td>' +
+      '<td style="text-align:right;font-weight:600;">' + fmt(m.period) + '</td>' +
+      '<td style="text-align:right;font-weight:600;">' + fmt(m.ytd) + '</td>' +
+      '<td>' + m.unit + '</td>' +
+      '<td style="padding-right:16px;color:#5B5B78;">' + m.basis + '</td>';
+    body.appendChild(tr);
+  });
 }
 
 // Called whenever anything changes. skipRerenderRows avoids stealing focus
@@ -411,6 +483,182 @@ document.getElementById('btn-reset').addEventListener('click', function () {
 document.getElementById('btn-print').addEventListener('click', function () {
   window.print();
 });
+
+/* --- Excel export ------------------------------------------------------------
+   Builds a spreadsheet-friendly HTML document that Excel, Google Sheets and
+   LibreOffice all open as a real table. No library, works fully offline.
+--------------------------------------------------------------------------- */
+function sanitizeFilename(s) {
+  return (s || '').replace(/[^a-z0-9\-_ ]/gi, '').trim().replace(/\s+/g, '_').slice(0, 60);
+}
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function exportExcel() {
+  var c = calc();
+  var meta = state.meta;
+  var year = ((meta.period || '').match(/(20\d{2})/) || [])[1] || '2026';
+  var periodHead = periodHeadLabel();
+
+  var rowsHtml = '';
+  var addRow = function (a, b) { rowsHtml += '<tr><td>' + esc(a) + '</td><td>' + esc(b) + '</td></tr>'; };
+
+  var h = [];
+  h.push('<table border="1">');
+  h.push('<tr><td colspan="5" style="font-weight:bold;font-size:16px;">Reworld — Sustainability Impact Report</td></tr>');
+  h.push('<tr></tr>');
+
+  // Account details
+  h.push('<tr><td colspan="5" style="font-weight:bold;">Account Details</td></tr>');
+  var acct = [
+    ['Reporting Period', meta.period],
+    ['Generator', meta.generator],
+    ['Service Location', meta.serviceLocation],
+    ['Processing Facility', meta.facility],
+    ['Service Type', meta.serviceType],
+    ['Waste Profile #', meta.wasteProfile],
+    ['Prior Year-to-Date Tons', num(meta.priorYtdTons)]
+  ];
+  acct.forEach(function (r) { h.push('<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'); });
+  h.push('<tr></tr>');
+
+  // Delivery detail
+  h.push('<tr><td colspan="5" style="font-weight:bold;">Waste Delivery Detail</td></tr>');
+  h.push('<tr><td style="font-weight:bold;">Delivery Date</td><td style="font-weight:bold;">Tons</td></tr>');
+  state.rows.forEach(function (r) {
+    h.push('<tr><td>' + esc(r.date) + '</td><td>' + num(r.tons) + '</td></tr>');
+  });
+  h.push('<tr><td style="font-weight:bold;">Period Tons</td><td style="font-weight:bold;">' + c.periodTons + '</td></tr>');
+  h.push('<tr><td style="font-weight:bold;">Year-to-Date Tons</td><td style="font-weight:bold;">' + c.ytdTons + '</td></tr>');
+  h.push('<tr></tr>');
+
+  // Impact summary
+  h.push('<tr><td colspan="5" style="font-weight:bold;">Impact Summary</td></tr>');
+  h.push('<tr>' +
+    '<td style="font-weight:bold;">Impact Metric</td>' +
+    '<td style="font-weight:bold;">' + esc(periodHead) + '</td>' +
+    '<td style="font-weight:bold;">' + esc(year + ' YTD') + '</td>' +
+    '<td style="font-weight:bold;">Unit</td>' +
+    '<td style="font-weight:bold;">Calculation Basis</td></tr>');
+  buildMetrics(c).forEach(function (m) {
+    h.push('<tr><td>' + esc(m.name) + '</td><td>' + Math.round(m.period) + '</td><td>' + Math.round(m.ytd) +
+      '</td><td>' + esc(m.unit) + '</td><td>' + esc(m.basis) + '</td></tr>');
+  });
+  h.push('</table>');
+
+  var doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+    'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>' +
+    '<x:ExcelWorksheet><x:Name>Impact Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/>' +
+    '</x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->' +
+    '</head><body>' + h.join('') + '</body></html>';
+
+  var name = 'Reworld_Impact';
+  if (meta.generator) name += '_' + sanitizeFilename(meta.generator);
+  if (meta.period) name += '_' + sanitizeFilename(meta.period);
+  name += '.xls';
+
+  var blob = new Blob(['﻿' + doc], { type: 'application/vnd.ms-excel' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+document.getElementById('btn-excel').addEventListener('click', exportExcel);
+
+/* --- Batch paste -------------------------------------------------------------
+   Lets the user paste many deliveries at once (e.g. straight from Excel).
+   Each line: a date and a tonnage in any order, separated by tab, comma or
+   spaces. Lines without a usable number (like a header row) are skipped.
+--------------------------------------------------------------------------- */
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function normalizeDate(s) {
+  s = (s || '').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
+    var p = s.split('-'); return p[0] + '-' + pad2(+p[1]) + '-' + pad2(+p[2]);
+  }
+  var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); // US M/D/Y
+  if (m) {
+    var mo = +m[1], d = +m[2], y = +m[3];
+    if (y < 100) y += 2000;
+    if (mo > 12 && d <= 12) { var t = mo; mo = d; d = t; }
+    return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
+  return '';
+}
+
+function toNum(s) {
+  if (s == null) return null;
+  var n = parseFloat(String(s).replace(/,/g, '').replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function parsePasted(text) {
+  var out = [];
+  (text || '').split(/\r?\n/).forEach(function (line) {
+    line = line.trim();
+    if (!line) return;
+    var parts = line.split(/\t|,|;|\s{2,}/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length === 1) parts = line.split(/\s+/);
+
+    var date = '', tons = null;
+    if (parts.length >= 2) {
+      // Assume "date, tons"; if that leaves no number, try "tons, date".
+      date = normalizeDate(parts[0]);
+      tons = toNum(parts[parts.length - 1]);
+      if (tons === null) { tons = toNum(parts[0]); date = normalizeDate(parts[1]); }
+      else if (!date) { var alt = normalizeDate(parts[1]); if (alt) date = alt; }
+    } else {
+      tons = toNum(parts[0]);
+    }
+    if (tons === null) return; // skip header / unusable lines
+    out.push({ date: date || '', tons: tons });
+  });
+  return out;
+}
+
+function openPasteModal() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay no-print';
+  overlay.innerHTML =
+    '<div class="modal">' +
+      '<h2>Paste delivery rows</h2>' +
+      '<p>One delivery per line — a date and a tonnage, in any order, separated by a tab, comma, or spaces. ' +
+      'You can copy two columns straight from Excel and paste here. A header row is ignored automatically.<br><br>' +
+      'Examples:<br>2026-01-15&nbsp;&nbsp;12.5<br>3/2/2026, 8<br>20</p>' +
+      '<textarea placeholder="2026-01-15\t12.5&#10;2026-02-03\t8&#10;..."></textarea>' +
+      '<div class="modal-actions">' +
+        '<button data-act="cancel">Cancel</button>' +
+        '<button class="primary" data-act="add">Add rows</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  var ta = overlay.querySelector('textarea');
+  ta.focus();
+
+  function close() { document.body.removeChild(overlay); }
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  overlay.querySelector('[data-act="add"]').addEventListener('click', function () {
+    var parsed = parsePasted(ta.value);
+    if (!parsed.length) { alert('No usable rows found. Each line needs a tonnage number.'); return; }
+    // If the table is still just the single empty starter row, replace it.
+    var onlyEmpty = state.rows.length === 1 && !state.rows[0].date && num(state.rows[0].tons) === 0;
+    state.rows = onlyEmpty ? parsed : state.rows.concat(parsed);
+    renderRows();
+    onChange();
+    close();
+  });
+}
+
+document.getElementById('btn-paste').addEventListener('click', openPasteModal);
 
 // Initial paint.
 renderMeta();
