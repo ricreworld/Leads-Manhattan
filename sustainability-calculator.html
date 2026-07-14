@@ -599,19 +599,30 @@ document.getElementById('btn-excel').addEventListener('click', exportExcel);
 --------------------------------------------------------------------------- */
 function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
+var MONTH_NAMES = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+var MONTH_IDX = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+
+// Parse a date and return YYYY-MM-DD, or '' if it isn't a real calendar date.
+// A day-of-month is required, so period labels like "January 2026" or
+// "Q1 2026" never get mistaken for a delivery date.
 function normalizeDate(s) {
   s = (s || '').trim();
   if (!s) return '';
   if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
     var p = s.split('-'); return p[0] + '-' + pad2(+p[1]) + '-' + pad2(+p[2]);
   }
-  var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); // US M/D/Y
+  var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); // M/D/Y (US)
   if (m) {
     var mo = +m[1], d = +m[2], y = +m[3];
     if (y < 100) y += 2000;
     if (mo > 12 && d <= 12) { var t = mo; mo = d; d = t; }
     return y + '-' + pad2(mo) + '-' + pad2(d);
   }
+  var mn = s.toLowerCase().match(/^([a-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})$/); // "Jan 12, 2026"
+  if (mn && MONTH_IDX[mn[1].slice(0, 3)]) return mn[3] + '-' + pad2(MONTH_IDX[mn[1].slice(0, 3)]) + '-' + pad2(+mn[2]);
+  var mn2 = s.toLowerCase().match(/^(\d{1,2})\s+([a-z]{3,9})\.?,?\s+(\d{4})$/); // "12 Jan 2026"
+  if (mn2 && MONTH_IDX[mn2[2].slice(0, 3)]) return mn2[3] + '-' + pad2(MONTH_IDX[mn2[2].slice(0, 3)]) + '-' + pad2(+mn2[1]);
   return '';
 }
 
@@ -805,28 +816,87 @@ var META_LABELS = [
   [/waste profile/i, 'wasteProfile']
 ];
 
+// Classify a delivery-table header cell into one of our known column kinds.
+function classifyHeader(text) {
+  var t = String(text).trim().toLowerCase();
+  if (t === 'delivery date' || t === 'date' || t === 'ship date' || t === 'pickup date' || t === 'service date') return 'date';
+  if (t === 'tons' || t === 'tonnage' || t === 'net tons' || t === 'tons processed' || t === 'weight (tons)' || t === 'qty (tons)' || t === 'quantity (tons)') return 'tons';
+  if (t === 'generator' || t === 'customer' || t === 'customer name' || t === 'account' || t === 'account name' || t === 'company' || t === 'client') return 'generator';
+  if (t === 'origin' || t === 'service location' || t === 'location' || t === 'address' || t === 'site' || t === 'origin address') return 'origin';
+  if (t === 'processing facility' || t === 'facility' || t === 'plant' || t === 'destination') return 'facility';
+  if (t === 'waste profile #' || t === 'waste profile' || t === 'profile #' || t === 'profile' || t === 'profile number') return 'profile';
+  if (t === 'waste type' || t === 'material' || t === 'material type' || t === 'waste stream' || t === 'waste') return 'wasteType';
+  return null;
+}
+
+// Most frequent non-empty value in a list, plus how many distinct ones exist.
+function mostCommon(arr) {
+  var counts = {}, best = null, bestN = 0, distinct = 0;
+  arr.forEach(function (v) {
+    v = String(v == null ? '' : v).trim();
+    if (!v) return;
+    if (!counts[v]) { counts[v] = 0; distinct++; }
+    counts[v]++;
+    if (counts[v] > bestN) { bestN = counts[v]; best = v; }
+  });
+  return { value: best, distinct: distinct };
+}
+
+function prettyDate(iso) { var p = iso.split('-'); return MONTH_NAMES[+p[1]].slice(0, 3) + ' ' + (+p[2]); }
+
+// Turn a set of delivery dates into a human reporting-period label:
+// one month, one quarter, a full year, or an explicit date range.
+function describePeriod(dates) {
+  if (!dates.length) return '';
+  var s = dates.slice().sort();
+  var lo = s[0], hi = s[s.length - 1];
+  var loY = lo.slice(0, 4), hiY = hi.slice(0, 4);
+  var loM = +lo.slice(5, 7), hiM = +hi.slice(5, 7);
+  if (loY === hiY) {
+    if (loM === hiM) return MONTH_NAMES[loM] + ' ' + loY;
+    var q = function (m) { return Math.floor((m - 1) / 3) + 1; };
+    if (q(loM) === q(hiM)) {
+      var qn = q(loM);
+      var span = ['', 'January 1 – March 31', 'April 1 – June 30', 'July 1 – September 30', 'October 1 – December 31'][qn];
+      return 'Q' + qn + ' ' + loY + '  (' + span + ', ' + loY + ')';
+    }
+    if (loM === 1 && hiM === 12) return loY + '  (January 1 – December 31, ' + loY + ')';
+    return prettyDate(lo) + ' – ' + prettyDate(hi) + ', ' + loY;
+  }
+  return prettyDate(lo) + ', ' + loY + ' – ' + prettyDate(hi) + ', ' + hiY;
+}
+
 // Pull everything we can out of the parsed sheets.
 function extractFromSheets(sheets) {
   var meta = {}, rows = [], ytdTotal = null;
+  var cols = { generator: [], origin: [], facility: [], profile: [], wasteType: [] };
 
   sheets.forEach(function (grid) {
     var rowNums = Object.keys(grid).map(Number).sort(function (a, b) { return a - b; });
 
+    // A row with 2+ recognisable column headers is a table header, not an
+    // account-detail label/value pair — don't mine it for account fields.
+    var isHeaderRow = {};
+    rowNums.forEach(function (rn) {
+      var hits = 0, cells = grid[rn];
+      Object.keys(cells).forEach(function (col) { if (classifyHeader(cells[col])) hits++; });
+      if (hits >= 2) isHeaderRow[rn] = true;
+    });
+
     // --- Account details: label in one cell, value in the next column. ---
     rowNums.forEach(function (rn) {
+      if (isHeaderRow[rn]) return;
       var cells = grid[rn];
       Object.keys(cells).forEach(function (col) {
         var text = String(cells[col]).trim();
         META_LABELS.forEach(function (pair) {
           if (pair[0].test(text) && text.length < 40) {
-            var nextCol = colLetter(colNum(col) + 1);
-            var v = cells[nextCol];
+            var v = cells[colLetter(colNum(col) + 1)];
             if (v != null && String(v).trim() && meta[pair[1]] == null) meta[pair[1]] = String(v).trim();
           }
         });
         // Capture a "year-to-date tons" total so we can back out prior YTD.
         if (/year[- ]?to[- ]?date tons/i.test(text)) {
-          var nc = colLetter(colNum(col) + 1);
           for (var k = 0; k < 3; k++) {
             var cand = cells[colLetter(colNum(col) + 1 + k)];
             var f = parseFloat(String(cand).replace(/,/g, ''));
@@ -836,25 +906,24 @@ function extractFromSheets(sheets) {
       });
     });
 
-    // --- Delivery rows: find a header row with "Delivery Date" + "Tons". ---
-    var headerRow = null, dateCol = null, tonsCol = null;
+    // --- Delivery rows: find a header row with a date column + a tons column,
+    //     then read EVERY data row below it (any length — month/quarter/year). ---
+    var headerRow = null, map = null;
     for (var ri = 0; ri < rowNums.length; ri++) {
       var cells2 = grid[rowNums[ri]];
-      var dc = null, tc = null;
+      var m = {};
       Object.keys(cells2).forEach(function (col) {
-        var text = String(cells2[col]).trim().toLowerCase();
-        if (text === 'delivery date' || text === 'date') dc = col;
-        if (text === 'tons' || text === 'tonnage' || text === 'weight (tons)') tc = col;
+        var kind = classifyHeader(cells2[col]);
+        if (kind && !m[kind]) m[kind] = col;
       });
-      if (dc && tc) { headerRow = rowNums[ri]; dateCol = dc; tonsCol = tc; break; }
+      if (m.date && m.tons) { headerRow = rowNums[ri]; map = m; break; }
     }
     if (headerRow != null) {
       rowNums.forEach(function (rn) {
         if (rn <= headerRow) return;
-        var cells3 = grid[rn];
-        var rawTons = cells3[tonsCol];
-        var rawDate = cells3[dateCol];
-        if (rawTons == null || rawDate == null) return;      // totals rows have no date
+        var c = grid[rn];
+        var rawTons = c[map.tons], rawDate = c[map.date];
+        if (rawTons == null || rawDate == null) return;       // totals rows have no date
         var tons = parseFloat(String(rawTons).replace(/,/g, ''));
         if (isNaN(tons)) return;
         var dateStr = normalizeDate(String(rawDate));
@@ -864,11 +933,31 @@ function extractFromSheets(sheets) {
         }
         if (!dateStr) return;                                 // label rows like "Q1 2026 TONS"
         rows.push({ date: dateStr, tons: tons });
+        ['generator', 'origin', 'facility', 'profile', 'wasteType'].forEach(function (kk) {
+          if (map[kk] && c[map[kk]] != null) cols[kk].push(String(c[map[kk]]).trim());
+        });
       });
     }
   });
 
-  return { meta: meta, rows: rows, ytdTotal: ytdTotal };
+  // Recognise the company + details from the delivery columns when the
+  // account block didn't already provide them.
+  var genInfo = mostCommon(cols.generator);
+  if (meta.generator == null && genInfo.value) {
+    var org = mostCommon(cols.origin).value;
+    meta.generator = org ? (genInfo.value + ' — ' + org) : genInfo.value;
+  }
+  if (meta.serviceLocation == null) { var o = mostCommon(cols.origin).value; if (o) meta.serviceLocation = o; }
+  if (meta.facility == null) { var f = mostCommon(cols.facility).value; if (f) meta.facility = f; }
+  if (meta.wasteProfile == null) { var pr = mostCommon(cols.profile).value; if (pr) meta.wasteProfile = pr; }
+  if (meta.serviceType == null) { var wt = mostCommon(cols.wasteType).value; if (wt) meta.serviceType = wt; }
+
+  // Derive the reporting period from the actual date range if not labelled.
+  if (meta.period == null && rows.length) {
+    meta.period = describePeriod(rows.map(function (r) { return r.date; }));
+  }
+
+  return { meta: meta, rows: rows, ytdTotal: ytdTotal, generatorInfo: genInfo };
 }
 
 async function importXlsx(arrayBuffer) {
@@ -938,9 +1027,19 @@ function applyImport(result, fileName) {
 
   renderMeta(); renderRows(); render(); saveState();
 
+  var genName = state.meta.generator || (result.generatorInfo && result.generatorInfo.value) || '';
+  var periodName = state.meta.period || '';
+  var msg = '✓ Loaded ' + result.rows.length + ' deliver' + (result.rows.length === 1 ? 'y' : 'ies');
+  if (genName) msg += ' for ' + genName;
+  if (periodName) msg += ' · ' + periodName;
+  msg += '. Everything below is populated.';
+  // If the file mixed several company names, say so — one report is one company.
+  if (result.generatorInfo && result.generatorInfo.distinct > 1) {
+    msg += ' Note: ' + result.generatorInfo.distinct + ' different generator names were found — using the most common one. ' +
+      'Split the file by company for separate reports.';
+  }
   status.className = 'dz-status ok';
-  status.textContent = '✓ Loaded ' + result.rows.length + ' deliver' + (result.rows.length === 1 ? 'y' : 'ies') +
-    (gotMeta ? ' and account details' : '') + ' from ' + fileName + '. Everything below is populated.';
+  status.textContent = msg;
 }
 
 async function handleFile(file) {
