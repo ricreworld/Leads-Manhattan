@@ -97,6 +97,12 @@
   .dz-status.ok { color:#159C8D; }
   .dz-status.err { color:#e0245e; }
 
+  .period-picker { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#EEF0FF; border:1px solid #C9CCEC; border-radius:8px; padding:12px 16px; margin-bottom:28px; }
+  .pp-label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:#2A1DBF; }
+  #period-select { font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:#15152B; background:#fff; border:1px solid #C9CCEC; border-radius:6px; padding:7px 10px; cursor:pointer; }
+  #period-select:focus { outline:none; border-color:#2A1DBF; }
+  .pp-detail { font-size:11.5px; color:#5B5B78; }
+
   @media (max-width:640px) {
     .account-grid, .metrics-grid { grid-template-columns:1fr; }
     .ytd-grid { grid-template-columns:1fr 1fr; }
@@ -140,6 +146,12 @@
     <div class="dz-main">Drop a delivery / report file here, or <span class="dz-link">browse</span></div>
     <div class="dz-sub">Excel <code>.xlsx</code> (like a Reworld delivery report) or <code>.csv</code>. Account details and every delivery populate automatically — all figures recalculate below.</div>
     <div id="dz-status" class="dz-status"></div>
+  </div>
+
+  <div id="period-picker" class="period-picker no-print" style="display:none;">
+    <span class="pp-label">Report on</span>
+    <select id="period-select"></select>
+    <span id="pp-detail" class="pp-detail"></span>
   </div>
 
   <div class="section-label">Account Details</div>
@@ -290,7 +302,12 @@ function defaultState() {
       period: '', generator: '', serviceLocation: '',
       facility: '', serviceType: '', wasteProfile: '', priorYtdTons: 0
     },
-    rows: [ { date: '', tons: 0 } ]
+    rows: [ { date: '', tons: 0 } ],
+    allRows: [],          // full imported delivery list (all periods)
+    periodSel: null,      // which period option is selected
+    importPeriodLabel: '',
+    importYtdTotal: null,
+    importExplicit: false
   };
 }
 
@@ -498,6 +515,9 @@ document.getElementById('btn-add').addEventListener('click', function () {
 document.getElementById('btn-reset').addEventListener('click', function () {
   if (!confirm('Clear all account details and deliveries?')) return;
   state = defaultState();
+  document.getElementById('period-picker').style.display = 'none';
+  document.getElementById('dz-status').textContent = '';
+  document.getElementById('dz-status').className = 'dz-status';
   renderMeta(); renderRows(); onChange();
 });
 
@@ -821,11 +841,14 @@ function classifyHeader(text) {
   var t = String(text).trim().toLowerCase();
   if (t === 'delivery date' || t === 'date' || t === 'ship date' || t === 'pickup date' || t === 'service date') return 'date';
   if (t === 'tons' || t === 'tonnage' || t === 'net tons' || t === 'tons processed' || t === 'weight (tons)' || t === 'qty (tons)' || t === 'quantity (tons)') return 'tons';
-  if (t === 'generator' || t === 'customer' || t === 'customer name' || t === 'account' || t === 'account name' || t === 'company' || t === 'client') return 'generator';
-  if (t === 'origin' || t === 'service location' || t === 'location' || t === 'address' || t === 'site' || t === 'origin address') return 'origin';
-  if (t === 'processing facility' || t === 'facility' || t === 'plant' || t === 'destination') return 'facility';
-  if (t === 'waste profile #' || t === 'waste profile' || t === 'profile #' || t === 'profile' || t === 'profile number') return 'profile';
-  if (t === 'waste type' || t === 'material' || t === 'material type' || t === 'waste stream' || t === 'waste') return 'wasteType';
+  if (t === 'generator' || t === 'customer' || t === 'customer name' || t === 'account name' || t === 'company' || t === 'client') return 'generator';
+  if (t === 'origin' || t === 'service location' || t === 'location' || t === 'site' || t === 'origin address') return 'origin';
+  if (t === 'generator address1' || t === 'generator address' || t === 'street address') return 'genAddress';
+  if (t === 'generator city') return 'genCity';
+  if (t === 'generator state') return 'genState';
+  if (t === 'processing facility' || t === 'facility' || t === 'plant' || t === 'destination' || t === 'business unit name') return 'facility';
+  if (t === 'waste profile #' || t === 'waste profile' || t === 'waste profile number' || t === 'profile #' || t === 'profile' || t === 'profile number') return 'profile';
+  if (t === 'waste type' || t === 'material' || t === 'material type' || t === 'waste stream') return 'wasteType';
   return null;
 }
 
@@ -869,7 +892,7 @@ function describePeriod(dates) {
 // Pull everything we can out of the parsed sheets.
 function extractFromSheets(sheets) {
   var meta = {}, rows = [], ytdTotal = null;
-  var cols = { generator: [], origin: [], facility: [], profile: [], wasteType: [] };
+  var cols = { generator: [], origin: [], genAddress: [], genCity: [], genState: [], facility: [], profile: [], wasteType: [] };
 
   sheets.forEach(function (grid) {
     var rowNums = Object.keys(grid).map(Number).sort(function (a, b) { return a - b; });
@@ -925,7 +948,7 @@ function extractFromSheets(sheets) {
         var rawTons = c[map.tons], rawDate = c[map.date];
         if (rawTons == null || rawDate == null) return;       // totals rows have no date
         var tons = parseFloat(String(rawTons).replace(/,/g, ''));
-        if (isNaN(tons)) return;
+        if (isNaN(tons) || tons <= 0) return;                 // skip $0 fee / zero-ton lines
         var dateStr = normalizeDate(String(rawDate));
         if (!dateStr) {
           var serial = parseFloat(rawDate);
@@ -933,8 +956,8 @@ function extractFromSheets(sheets) {
         }
         if (!dateStr) return;                                 // label rows like "Q1 2026 TONS"
         rows.push({ date: dateStr, tons: tons });
-        ['generator', 'origin', 'facility', 'profile', 'wasteType'].forEach(function (kk) {
-          if (map[kk] && c[map[kk]] != null) cols[kk].push(String(c[map[kk]]).trim());
+        ['generator', 'origin', 'genAddress', 'genCity', 'genState', 'facility', 'profile', 'wasteType'].forEach(function (kk) {
+          if (map[kk] && c[map[kk]] != null) cols[kk].push(String(c[map[kk]]).replace(/\s+/g, ' ').trim());
         });
       });
     }
@@ -943,21 +966,32 @@ function extractFromSheets(sheets) {
   // Recognise the company + details from the delivery columns when the
   // account block didn't already provide them.
   var genInfo = mostCommon(cols.generator);
+  var city = mostCommon(cols.genCity).value;
+  var st = mostCommon(cols.genState).value;
+  var addr = mostCommon(cols.genAddress).value;
+  var cityState = [city, st].filter(Boolean).join(', ');
+  var origin = mostCommon(cols.origin).value;
+  var locShort = cityState || origin || '';
+
   if (meta.generator == null && genInfo.value) {
-    var org = mostCommon(cols.origin).value;
-    meta.generator = org ? (genInfo.value + ' — ' + org) : genInfo.value;
+    meta.generator = locShort ? (genInfo.value + ' — ' + locShort) : genInfo.value;
   }
-  if (meta.serviceLocation == null) { var o = mostCommon(cols.origin).value; if (o) meta.serviceLocation = o; }
+  if (meta.serviceLocation == null) {
+    var full = [addr, cityState].filter(Boolean).join(', ') || origin || '';
+    if (full) meta.serviceLocation = full;
+  }
   if (meta.facility == null) { var f = mostCommon(cols.facility).value; if (f) meta.facility = f; }
   if (meta.wasteProfile == null) { var pr = mostCommon(cols.profile).value; if (pr) meta.wasteProfile = pr; }
   if (meta.serviceType == null) { var wt = mostCommon(cols.wasteType).value; if (wt) meta.serviceType = wt; }
 
   // Derive the reporting period from the actual date range if not labelled.
+  var explicitPeriod = meta.period != null;
   if (meta.period == null && rows.length) {
     meta.period = describePeriod(rows.map(function (r) { return r.date; }));
   }
 
-  return { meta: meta, rows: rows, ytdTotal: ytdTotal, generatorInfo: genInfo };
+  rows.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  return { meta: meta, rows: rows, ytdTotal: ytdTotal, generatorInfo: genInfo, explicitPeriod: explicitPeriod };
 }
 
 async function importXlsx(arrayBuffer) {
@@ -965,7 +999,7 @@ async function importXlsx(arrayBuffer) {
   var shared = parseSharedStrings(files['xl/sharedStrings.xml']);
   var sheets = [];
   Object.keys(files).forEach(function (name) {
-    if (/^xl\/worksheets\/sheet\d+\.xml$/i.test(name)) sheets.push(parseSheet(files[name], shared));
+    if (/^xl\/worksheets\/[^\/]+\.xml$/i.test(name)) sheets.push(parseSheet(files[name], shared));
   });
   if (!sheets.length) throw new Error('No worksheets found in the file.');
   return extractFromSheets(sheets);
@@ -1003,6 +1037,91 @@ function importCsv(text) {
   return { meta: meta, rows: rows, ytdTotal: null };
 }
 
+// --- Reporting-period selection over the full imported delivery list. -------
+
+// Build the list of period choices from the imported deliveries.
+function periodOptions() {
+  var all = state.allRows || [];
+  var opts = [];
+  if (state.importExplicit && state.importPeriodLabel) opts.push({ key: 'file', label: 'As in file — ' + state.importPeriodLabel });
+  var byYear = {};
+  all.forEach(function (r) {
+    var y = r.date.slice(0, 4), m = +r.date.slice(5, 7);
+    var info = byYear[y] = byYear[y] || { q: {}, mon: {}, last: '' };
+    info.q[Math.floor((m - 1) / 3) + 1] = true;
+    info.mon[m] = true;
+    if (r.date > info.last) info.last = r.date;
+  });
+  Object.keys(byYear).sort().reverse().forEach(function (y) {
+    var info = byYear[y];
+    opts.push({ key: y + '|year', label: info.mon[12] ? (y + ' — full year') : (y + ' — year to date (through ' + prettyDate(info.last) + ')') });
+    [1, 2, 3, 4].forEach(function (q) { if (info.q[q]) opts.push({ key: y + '|Q' + q, label: 'Q' + q + ' ' + y }); });
+  });
+  if (all.length) opts.push({ key: 'all', label: 'All deliveries in file' });
+  return opts;
+}
+
+// Apply a period choice: filter deliveries, set prior-YTD so year-to-date is
+// correct, and set the reporting-period label.
+function applyPeriod(key) {
+  var all = (state.allRows || []).slice();
+  var rows, prior = 0, label = '';
+  var yearTons = function (y) { return all.filter(function (r) { return r.date.slice(0, 4) === y; }); };
+
+  if (key === 'file') {
+    rows = all.slice();
+    label = state.importPeriodLabel || describePeriod(all.map(function (r) { return r.date; }));
+    var pt = rows.reduce(function (s, r) { return s + num(r.tons); }, 0);
+    if (state.importYtdTotal != null && state.importYtdTotal >= pt - 0.001) prior = Math.round((state.importYtdTotal - pt) * 100) / 100;
+  } else if (key === 'all') {
+    rows = all.slice();
+    label = describePeriod(all.map(function (r) { return r.date; }));
+  } else {
+    var parts = String(key).split('|'), y = parts[0], kind = parts[1];
+    if (kind === 'year') {
+      rows = yearTons(y);
+      label = rows.some(function (r) { return +r.date.slice(5, 7) === 12; }) ? (y + ' (full year)') : (y + ' year to date');
+    } else {
+      var q = +kind.slice(1), qs = (q - 1) * 3 + 1, qe = q * 3;
+      rows = all.filter(function (r) { var m = +r.date.slice(5, 7); return r.date.slice(0, 4) === y && m >= qs && m <= qe; });
+      prior = all.filter(function (r) { var m = +r.date.slice(5, 7); return r.date.slice(0, 4) === y && m < qs; })
+        .reduce(function (s, r) { return s + num(r.tons); }, 0);
+      var span = ['', 'January 1 – March 31', 'April 1 – June 30', 'July 1 – September 30', 'October 1 – December 31'][q];
+      label = 'Q' + q + ' ' + y + '  (' + span + ', ' + y + ')';
+    }
+  }
+
+  state.rows = rows.length ? rows.slice() : [{ date: '', tons: 0 }];
+  state.meta.priorYtdTons = Math.round(prior * 100) / 100;
+  state.meta.period = label;
+  state.periodSel = key;
+  renderMeta(); renderRows(); render(); saveState();
+  updatePeriodDetail();
+}
+
+function buildPeriodPicker(defaultKey) {
+  var picker = document.getElementById('period-picker');
+  var sel = document.getElementById('period-select');
+  var opts = periodOptions();
+  if (!state.allRows || !state.allRows.length || !opts.length) { picker.style.display = 'none'; return null; }
+  sel.innerHTML = '';
+  opts.forEach(function (o) { var el = document.createElement('option'); el.value = o.key; el.textContent = o.label; sel.appendChild(el); });
+  var key = (defaultKey && opts.some(function (o) { return o.key === defaultKey; })) ? defaultKey : opts[0].key;
+  sel.value = key;
+  picker.style.display = opts.length > 1 ? 'flex' : 'none';
+  return key;
+}
+
+function updatePeriodDetail() {
+  var d = document.getElementById('pp-detail');
+  if (!d) return;
+  var pt = (state.rows || []).reduce(function (s, r) { return s + num(r.tons); }, 0);
+  var yt = pt + num(state.meta.priorYtdTons);
+  d.textContent = '· ' + state.rows.length + ' deliveries · ' + fmt2(pt) + ' tons this period · ' + fmt2(yt) + ' tons YTD';
+}
+
+document.getElementById('period-select').addEventListener('change', function () { applyPeriod(this.value); });
+
 function applyImport(result, fileName) {
   var status = document.getElementById('dz-status');
   var gotMeta = Object.keys(result.meta || {}).length;
@@ -1012,31 +1131,26 @@ function applyImport(result, fileName) {
     return;
   }
 
-  // Merge account details (only overwrite fields the file actually provided).
-  Object.keys(result.meta || {}).forEach(function (k) { state.meta[k] = result.meta[k]; });
+  // Merge account details (period + priorYtd are driven by the picker below).
+  Object.keys(result.meta || {}).forEach(function (k) { if (k !== 'period') state.meta[k] = result.meta[k]; });
 
-  // Replace deliveries with the imported ones.
-  if (result.rows.length) state.rows = result.rows.slice();
-  else if (!state.rows.length) state.rows = [{ date: '', tons: 0 }];
+  // Store the full delivery list + import context, then let the picker choose.
+  state.allRows = (result.rows || []).slice();
+  state.importExplicit = !!result.explicitPeriod;
+  state.importPeriodLabel = result.explicitPeriod ? (result.meta.period || '') : '';
+  state.importYtdTotal = result.ytdTotal;
 
-  // Back out "prior YTD" so year-to-date figures match the source file.
-  var periodTons = state.rows.reduce(function (s, r) { return s + num(r.tons); }, 0);
-  if (result.ytdTotal != null && result.ytdTotal >= periodTons - 0.001) {
-    state.meta.priorYtdTons = Math.round((result.ytdTotal - periodTons) * 100) / 100;
-  }
+  var chosen = buildPeriodPicker(state.importExplicit ? 'file' : null);
+  applyPeriod(chosen || 'all');
 
-  renderMeta(); renderRows(); render(); saveState();
-
+  var pickerShown = document.getElementById('period-picker').style.display !== 'none';
   var genName = state.meta.generator || (result.generatorInfo && result.generatorInfo.value) || '';
-  var periodName = state.meta.period || '';
-  var msg = '✓ Loaded ' + result.rows.length + ' deliver' + (result.rows.length === 1 ? 'y' : 'ies');
+  var msg = '✓ Loaded ' + state.allRows.length + ' deliver' + (state.allRows.length === 1 ? 'y' : 'ies');
   if (genName) msg += ' for ' + genName;
-  if (periodName) msg += ' · ' + periodName;
-  msg += '. Everything below is populated.';
-  // If the file mixed several company names, say so — one report is one company.
+  msg += ' from ' + fileName + '. Showing ' + state.meta.period + '.';
+  if (pickerShown) msg += ' Use the “Report on” menu to switch between full year, year-to-date, or a quarter.';
   if (result.generatorInfo && result.generatorInfo.distinct > 1) {
-    msg += ' Note: ' + result.generatorInfo.distinct + ' different generator names were found — using the most common one. ' +
-      'Split the file by company for separate reports.';
+    msg += ' Note: ' + result.generatorInfo.distinct + ' different generator names were found — using the most common. Split the file by company for separate reports.';
   }
   status.className = 'dz-status ok';
   status.textContent = msg;
@@ -1086,6 +1200,11 @@ async function handleFile(file) {
 renderMeta();
 renderRows();
 render();
+// Restore the period picker if a file was imported in a previous session.
+if (state.allRows && state.allRows.length) {
+  buildPeriodPicker(state.periodSel);
+  updatePeriodDetail();
+}
 </script>
 </body>
 </html>
