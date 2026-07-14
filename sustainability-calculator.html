@@ -50,8 +50,19 @@
   .btn-add:hover { background:#c4f7f0; }
 
   .card-table { margin-bottom:8px; background:#fff; border:1px solid #E3E4F0; border-radius:8px; overflow:hidden; }
-  .card-table input[type=date] { border:none; background:transparent; font-size:11.5px; color:#15152B; font-family:'Inter',sans-serif; }
-  .card-table input.tons { border:none; background:transparent; font-size:11.5px; color:#15152B; text-align:right; width:90px; }
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; background:#fff; border:1px solid #E3E4F0; border-radius:8px; margin-bottom:8px; }
+  .table-scroll .card-table.wide { border:none; border-radius:0; margin-bottom:0; min-width:940px; }
+  .card-table th, .card-table td { white-space:nowrap; }
+  .card-table input { border:none; background:transparent; font-size:11px; color:#15152B; font-family:'Inter',sans-serif; }
+  .card-table input:hover { background:#F5F6FB; border-radius:3px; }
+  .card-table input.f-date { width:118px; }
+  .card-table input.f-gen { width:150px; }
+  .card-table input.f-origin { width:120px; }
+  .card-table input.f-facility { width:150px; }
+  .card-table input.f-profile { width:78px; }
+  .card-table input.f-wtype { width:130px; }
+  .card-table input.f-tons { width:64px; text-align:right; }
+  .dv-derived { color:#5B5B78; font-size:11px; white-space:nowrap; }
   .btn-remove { border:none; background:none; color:#5B5B78; cursor:pointer; font-size:13px; line-height:1; }
   .btn-remove:hover { color:#e0245e; }
 
@@ -110,11 +121,16 @@
   }
 
   @media print {
+    @page { size: landscape; }
     body { background:#fff; }
     .toolbar, .btn-add, .btn-remove, .no-print { display:none !important; }
     .wrap { max-width:100%; padding:0; }
     input { border:none !important; }
-    .metric, .card-table, .account-grid { break-inside:avoid; }
+    .metric, .account-grid { break-inside:avoid; }
+    .table-scroll { overflow:visible; border:1px solid #E3E4F0; }
+    .table-scroll .card-table.wide { min-width:0 !important; }
+    .card-table th, .card-table td { white-space:normal; font-size:8.5px; padding:3px 5px; }
+    .card-table input { width:auto !important; font-size:8.5px !important; }
   }
 </style>
 </head>
@@ -194,20 +210,29 @@
     </div>
   </div>
 
-  <table class="card-table">
+  <div class="table-scroll">
+  <table class="card-table wide">
     <thead>
       <tr>
         <th style="padding-left:16px;">Delivery Date</th>
+        <th>Month</th>
+        <th>Quarter</th>
+        <th>Generator</th>
+        <th>Origin</th>
+        <th>Processing Facility</th>
+        <th>Waste Profile #</th>
+        <th>Waste Type</th>
         <th style="text-align:right;">Tons</th>
-        <th style="width:40px;padding-right:16px;"></th>
+        <th style="width:34px;padding-right:16px;"></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
     <tfoot>
-      <tr><td style="padding-left:16px;">Period Tons</td><td style="text-align:right;" id="periodTons">0</td><td style="padding-right:16px;"></td></tr>
-      <tr><td style="padding-left:16px;">Year-to-Date Tons</td><td style="text-align:right;" id="ytdTons">0</td><td style="padding-right:16px;"></td></tr>
+      <tr><td colspan="8" style="padding-left:16px;">Period Tons</td><td style="text-align:right;" id="periodTons">0</td><td style="padding-right:16px;"></td></tr>
+      <tr><td colspan="8" style="padding-left:16px;">Year-to-Date Tons</td><td style="text-align:right;" id="ytdTons">0</td><td style="padding-right:16px;"></td></tr>
     </tfoot>
   </table>
+  </div>
 
   <div class="section-label teal" style="margin:26px 0 10px;">Environmental Impact — This Period</div>
 
@@ -295,6 +320,11 @@ var FACTORS = {
 
 var STORAGE_KEY = 'reworld-sustainability-report-v1';
 
+// A blank delivery row with every column present.
+function emptyRow() {
+  return { date: '', tons: 0, generator: '', origin: '', facility: '', profile: '', wasteType: '' };
+}
+
 // Default state — one empty delivery row, blank account details.
 function defaultState() {
   return {
@@ -302,7 +332,7 @@ function defaultState() {
       period: '', generator: '', serviceLocation: '',
       facility: '', serviceType: '', wasteProfile: '', priorYtdTons: 0
     },
-    rows: [ { date: '', tons: 0 } ],
+    rows: [ emptyRow() ],
     allRows: [],          // full imported delivery list (all periods)
     periodSel: null,      // which period option is selected
     importPeriodLabel: '',
@@ -360,36 +390,74 @@ function calc() {
   };
 }
 
-// Render the delivery rows table.
+// One editable text field cell.
+function fieldCell(row, i, key, cls, placeholder) {
+  var td = document.createElement('td');
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = cls;
+  input.value = row[key] || '';
+  if (placeholder) input.placeholder = placeholder;
+  input.addEventListener('input', function () { state.rows[i][key] = input.value; onChange(); });
+  td.appendChild(input);
+  return td;
+}
+
+// One read-only derived cell (Month / Quarter).
+function derivedCell(text) {
+  var td = document.createElement('td');
+  var span = document.createElement('span');
+  span.className = 'dv-derived';
+  span.textContent = text || '—';
+  td.appendChild(span);
+  return td;
+}
+
+// Render the delivery rows table (Date, Month, Quarter, Generator, Origin,
+// Processing Facility, Waste Profile #, Waste Type, Tons).
 function renderRows() {
   var tbody = document.getElementById('rows');
   tbody.innerHTML = '';
   state.rows.forEach(function (row, i) {
     var tr = document.createElement('tr');
 
+    // Delivery Date
     var tdDate = document.createElement('td');
     tdDate.style.paddingLeft = '16px';
     var dateInput = document.createElement('input');
     dateInput.type = 'date';
+    dateInput.className = 'f-date';
     dateInput.value = row.date || '';
-    dateInput.addEventListener('input', function () {
-      state.rows[i].date = dateInput.value; onChange();
-    });
+    // 'change' (not 'input') so Month/Quarter refresh once a full date is set.
+    dateInput.addEventListener('change', function () { state.rows[i].date = dateInput.value; renderRows(); onChange(); });
     tdDate.appendChild(dateInput);
+    tr.appendChild(tdDate);
 
+    // Month + Quarter (derived from the date)
+    tr.appendChild(derivedCell(monthLabel(row.date)));
+    tr.appendChild(derivedCell(quarterLabel(row.date)));
+
+    // Editable detail fields
+    tr.appendChild(fieldCell(row, i, 'generator', 'f-gen', 'Generator'));
+    tr.appendChild(fieldCell(row, i, 'origin', 'f-origin', 'City, State'));
+    tr.appendChild(fieldCell(row, i, 'facility', 'f-facility', 'Facility'));
+    tr.appendChild(fieldCell(row, i, 'profile', 'f-profile', '#'));
+    tr.appendChild(fieldCell(row, i, 'wasteType', 'f-wtype', 'Waste type'));
+
+    // Tons
     var tdTons = document.createElement('td');
     tdTons.style.textAlign = 'right';
     var tonsInput = document.createElement('input');
     tonsInput.type = 'number';
     tonsInput.step = '0.01';
-    tonsInput.className = 'tons';
-    tonsInput.value = (row.tons === 0 || row.tons === '0') ? '' : row.tons;
+    tonsInput.className = 'f-tons';
+    tonsInput.value = (num(row.tons) === 0) ? '' : row.tons;
     tonsInput.placeholder = '0';
-    tonsInput.addEventListener('input', function () {
-      state.rows[i].tons = num(tonsInput.value); onChange(true);
-    });
+    tonsInput.addEventListener('input', function () { state.rows[i].tons = num(tonsInput.value); onChange(); });
     tdTons.appendChild(tonsInput);
+    tr.appendChild(tdTons);
 
+    // Remove
     var tdDel = document.createElement('td');
     tdDel.style.textAlign = 'right';
     tdDel.style.paddingRight = '16px';
@@ -399,14 +467,12 @@ function renderRows() {
     del.title = 'Remove this delivery';
     del.addEventListener('click', function () {
       state.rows.splice(i, 1);
-      if (state.rows.length === 0) state.rows.push({ date: '', tons: 0 });
+      if (state.rows.length === 0) state.rows.push(emptyRow());
       renderRows(); onChange();
     });
     tdDel.appendChild(del);
-
-    tr.appendChild(tdDate);
-    tr.appendChild(tdTons);
     tr.appendChild(tdDel);
+
     tbody.appendChild(tr);
   });
 }
@@ -508,7 +574,7 @@ document.querySelectorAll('input[data-meta]').forEach(function (el) {
 
 // Add / reset / print buttons.
 document.getElementById('btn-add').addEventListener('click', function () {
-  state.rows.push({ date: '', tons: 0 });
+  state.rows.push(emptyRow());
   renderRows(); onChange();
 });
 
@@ -566,14 +632,24 @@ function exportExcel() {
   acct.forEach(function (r) { h.push('<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'); });
   h.push('<tr></tr>');
 
-  // Delivery detail
-  h.push('<tr><td colspan="5" style="font-weight:bold;">Waste Delivery Detail</td></tr>');
-  h.push('<tr><td style="font-weight:bold;">Delivery Date</td><td style="font-weight:bold;">Tons</td></tr>');
+  // Delivery detail (all columns)
+  h.push('<tr><td colspan="9" style="font-weight:bold;">Waste Delivery Detail</td></tr>');
+  var dh = ['Delivery Date', 'Month', 'Quarter', 'Generator', 'Origin', 'Processing Facility', 'Waste Profile #', 'Waste Type', 'Tons'];
+  h.push('<tr>' + dh.map(function (x) { return '<td style="font-weight:bold;">' + esc(x) + '</td>'; }).join('') + '</tr>');
   state.rows.forEach(function (r) {
-    h.push('<tr><td>' + esc(r.date) + '</td><td>' + num(r.tons) + '</td></tr>');
+    h.push('<tr>' +
+      '<td>' + esc(r.date) + '</td>' +
+      '<td>' + esc(monthLabel(r.date)) + '</td>' +
+      '<td>' + esc(quarterLabel(r.date)) + '</td>' +
+      '<td>' + esc(r.generator) + '</td>' +
+      '<td>' + esc(r.origin) + '</td>' +
+      '<td>' + esc(r.facility) + '</td>' +
+      '<td>' + esc(r.profile) + '</td>' +
+      '<td>' + esc(r.wasteType) + '</td>' +
+      '<td>' + num(r.tons) + '</td></tr>');
   });
-  h.push('<tr><td style="font-weight:bold;">Period Tons</td><td style="font-weight:bold;">' + c.periodTons + '</td></tr>');
-  h.push('<tr><td style="font-weight:bold;">Year-to-Date Tons</td><td style="font-weight:bold;">' + c.ytdTons + '</td></tr>');
+  h.push('<tr><td colspan="8" style="font-weight:bold;">Period Tons</td><td style="font-weight:bold;">' + c.periodTons + '</td></tr>');
+  h.push('<tr><td colspan="8" style="font-weight:bold;">Year-to-Date Tons</td><td style="font-weight:bold;">' + c.ytdTons + '</td></tr>');
   h.push('<tr></tr>');
 
   // Impact summary
@@ -836,20 +912,44 @@ var META_LABELS = [
   [/waste profile/i, 'wasteProfile']
 ];
 
-// Classify a delivery-table header cell into one of our known column kinds.
-function classifyHeader(text) {
-  var t = String(text).trim().toLowerCase();
-  if (t === 'delivery date' || t === 'date' || t === 'ship date' || t === 'pickup date' || t === 'service date') return 'date';
-  if (t === 'tons' || t === 'tonnage' || t === 'net tons' || t === 'tons processed' || t === 'weight (tons)' || t === 'qty (tons)' || t === 'quantity (tons)') return 'tons';
-  if (t === 'generator' || t === 'customer' || t === 'customer name' || t === 'account name' || t === 'company' || t === 'client') return 'generator';
-  if (t === 'origin' || t === 'service location' || t === 'location' || t === 'site' || t === 'origin address') return 'origin';
-  if (t === 'generator address1' || t === 'generator address' || t === 'street address') return 'genAddress';
-  if (t === 'generator city') return 'genCity';
-  if (t === 'generator state') return 'genState';
-  if (t === 'processing facility' || t === 'facility' || t === 'plant' || t === 'destination' || t === 'business unit name') return 'facility';
-  if (t === 'waste profile #' || t === 'waste profile' || t === 'waste profile number' || t === 'profile #' || t === 'profile' || t === 'profile number') return 'profile';
-  if (t === 'waste type' || t === 'material' || t === 'material type' || t === 'waste stream') return 'wasteType';
-  return null;
+// Dynamic column matching. For each target field, an ordered list of patterns
+// (best first) plus an optional exclusion, so we map whatever an arbitrary
+// spreadsheet happens to call these columns — not just fixed header names.
+var FIELD_RULES = {
+  date:       { pats: [/^delivery date$/, /^ship(ped)? date$/, /^pickup date$/, /^service date$/, /^haul date$/, /delivery date/, /^date$/, /\bdate\b/], not: /invoice|dashboard|\bbill\b|due|order|refresh/ },
+  tons:       { pats: [/^tons$/, /^net tons$/, /^tons processed$/, /^tonnage$/, /weight \(tons\)/, /^qty \(tons\)$/, /\btons\b/, /\bton\b/], not: /unit|price|fee|per ton/ },
+  generator:  { pats: [/^generator$/, /^customer name$/, /^customer$/, /^account name$/, /^company$/, /^client$/, /generator name/], not: /address|city|state|zip|\bid\b|origin|bill|sold/ },
+  origin:     { pats: [/^origin$/, /^origin address$/, /^service location$/, /^location$/, /^site$/] },
+  facility:   { pats: [/^processing facility$/, /^facility$/, /^business unit name$/, /^plant$/, /^destination$/, /facility/, /business unit name/], not: /^business unit$/ },
+  profile:    { pats: [/^waste profile ?#?$/, /^waste profile number$/, /^profile ?#?$/, /^profile number$/, /profile/] },
+  wasteType:  { pats: [/^waste type$/, /^market waste type$/, /^material type$/, /^material$/, /^waste stream$/, /waste type/], not: /category/ },
+  genAddress: { pats: [/^generator address ?1?$/, /^street address$/, /^address ?1?$/] },
+  genCity:    { pats: [/^generator city$/, /^gen city$/] },
+  genState:   { pats: [/^generator state$/, /^gen state$/] }
+};
+
+// Build {field: columnLetter} for a header row, choosing the best-scoring
+// header cell for each field.
+function mapColumns(cells) {
+  var map = {};
+  Object.keys(FIELD_RULES).forEach(function (field) {
+    var rule = FIELD_RULES[field], best = null, bestScore = 1e9;
+    Object.keys(cells).forEach(function (col) {
+      var t = String(cells[col]).trim().toLowerCase();
+      if (!t || (rule.not && rule.not.test(t))) return;
+      for (var i = 0; i < rule.pats.length; i++) {
+        if (rule.pats[i].test(t)) { if (i < bestScore) { bestScore = i; best = col; } break; }
+      }
+    });
+    if (best) map[field] = best;
+  });
+  return map;
+}
+
+// How many distinct fields a row's cells look like headers for.
+function headerHitCount(cells) {
+  var m = mapColumns(cells);
+  return Object.keys(m).length;
 }
 
 // Most frequent non-empty value in a list, plus how many distinct ones exist.
@@ -866,6 +966,8 @@ function mostCommon(arr) {
 }
 
 function prettyDate(iso) { var p = iso.split('-'); return MONTH_NAMES[+p[1]].slice(0, 3) + ' ' + (+p[2]); }
+function monthLabel(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? MONTH_NAMES[+iso.slice(5, 7)] + ' ' + iso.slice(0, 4) : ''; }
+function quarterLabel(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? 'Q' + (Math.floor((+iso.slice(5, 7) - 1) / 3) + 1) + ' ' + iso.slice(0, 4) : ''; }
 
 // Turn a set of delivery dates into a human reporting-period label:
 // one month, one quarter, a full year, or an explicit date range.
@@ -900,11 +1002,7 @@ function extractFromSheets(sheets) {
     // A row with 2+ recognisable column headers is a table header, not an
     // account-detail label/value pair — don't mine it for account fields.
     var isHeaderRow = {};
-    rowNums.forEach(function (rn) {
-      var hits = 0, cells = grid[rn];
-      Object.keys(cells).forEach(function (col) { if (classifyHeader(cells[col])) hits++; });
-      if (hits >= 2) isHeaderRow[rn] = true;
-    });
+    rowNums.forEach(function (rn) { if (headerHitCount(grid[rn]) >= 2) isHeaderRow[rn] = true; });
 
     // --- Account details: label in one cell, value in the next column. ---
     rowNums.forEach(function (rn) {
@@ -933,34 +1031,49 @@ function extractFromSheets(sheets) {
     //     then read EVERY data row below it (any length — month/quarter/year). ---
     var headerRow = null, map = null;
     for (var ri = 0; ri < rowNums.length; ri++) {
-      var cells2 = grid[rowNums[ri]];
-      var m = {};
-      Object.keys(cells2).forEach(function (col) {
-        var kind = classifyHeader(cells2[col]);
-        if (kind && !m[kind]) m[kind] = col;
-      });
-      if (m.date && m.tons) { headerRow = rowNums[ri]; map = m; break; }
+      var mm = mapColumns(grid[rowNums[ri]]);
+      if (mm.date && mm.tons) { headerRow = rowNums[ri]; map = mm; break; }
     }
-    if (headerRow != null) {
-      rowNums.forEach(function (rn) {
-        if (rn <= headerRow) return;
-        var c = grid[rn];
-        var rawTons = c[map.tons], rawDate = c[map.date];
-        if (rawTons == null || rawDate == null) return;       // totals rows have no date
-        var tons = parseFloat(String(rawTons).replace(/,/g, ''));
-        if (isNaN(tons) || tons <= 0) return;                 // skip $0 fee / zero-ton lines
-        var dateStr = normalizeDate(String(rawDate));
-        if (!dateStr) {
-          var serial = parseFloat(rawDate);
-          if (!isNaN(serial) && serial > 20000 && serial < 90000) dateStr = serialToDate(serial);
-        }
-        if (!dateStr) return;                                 // label rows like "Q1 2026 TONS"
-        rows.push({ date: dateStr, tons: tons });
-        ['generator', 'origin', 'genAddress', 'genCity', 'genState', 'facility', 'profile', 'wasteType'].forEach(function (kk) {
-          if (map[kk] && c[map[kk]] != null) cols[kk].push(String(c[map[kk]]).replace(/\s+/g, ' ').trim());
-        });
-      });
-    }
+    if (headerRow == null) return;
+
+    var get = function (c, field) {
+      return (map[field] && c[map[field]] != null) ? String(c[map[field]]).replace(/\s+/g, ' ').trim() : '';
+    };
+
+    rowNums.forEach(function (rn) {
+      if (rn <= headerRow) return;
+      var c = grid[rn];
+      var rawTons = c[map.tons], rawDate = c[map.date];
+      if (rawTons == null || rawDate == null) return;         // totals rows have no date
+      var tons = parseFloat(String(rawTons).replace(/,/g, ''));
+      if (isNaN(tons) || tons <= 0) return;                   // skip $0 fee / zero-ton lines
+      var dateStr = normalizeDate(String(rawDate));
+      if (!dateStr) {
+        var serial = parseFloat(rawDate);
+        if (!isNaN(serial) && serial > 20000 && serial < 90000) dateStr = serialToDate(serial);
+      }
+      if (!dateStr) return;                                   // label rows like "Q1 2026 TONS"
+
+      var city = get(c, 'genCity'), st = get(c, 'genState'), addr = get(c, 'genAddress');
+      var origin = get(c, 'origin') || [city, st].filter(Boolean).join(', ');
+      var rec = {
+        date: dateStr, tons: tons,
+        generator: get(c, 'generator'),
+        origin: origin,
+        facility: get(c, 'facility'),
+        profile: get(c, 'profile'),
+        wasteType: get(c, 'wasteType')
+      };
+      rows.push(rec);
+      if (rec.generator) cols.generator.push(rec.generator);
+      if (origin) cols.origin.push(origin);
+      if (rec.facility) cols.facility.push(rec.facility);
+      if (rec.profile) cols.profile.push(rec.profile);
+      if (rec.wasteType) cols.wasteType.push(rec.wasteType);
+      if (addr) cols.genAddress.push(addr);
+      if (city) cols.genCity.push(city);
+      if (st) cols.genState.push(st);
+    });
   });
 
   // Recognise the company + details from the delivery columns when the
@@ -971,7 +1084,7 @@ function extractFromSheets(sheets) {
   var addr = mostCommon(cols.genAddress).value;
   var cityState = [city, st].filter(Boolean).join(', ');
   var origin = mostCommon(cols.origin).value;
-  var locShort = cityState || origin || '';
+  var locShort = origin || cityState || '';
 
   if (meta.generator == null && genInfo.value) {
     meta.generator = locShort ? (genInfo.value + ' — ' + locShort) : genInfo.value;
