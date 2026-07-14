@@ -85,6 +85,18 @@
   .modal-actions button { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; border-radius:6px; padding:8px 16px; cursor:pointer; border:1px solid #E3E4F0; background:#fff; color:#15152B; }
   .modal-actions button.primary { background:#2A1DBF; color:#fff; border-color:#2A1DBF; }
 
+  .dropzone { background:#fff; border:1.5px dashed #B9BBD6; border-radius:10px; padding:22px 24px; margin-bottom:28px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
+  .dropzone:hover { border-color:#2A1DBF; }
+  .dropzone.dragover { border-color:#2A1DBF; background:#EEF0FF; }
+  .dz-icon { font-size:20px; color:#2A1DBF; margin-bottom:6px; }
+  .dz-main { font-size:13px; font-weight:600; color:#15152B; }
+  .dz-link { color:#159C8D; text-decoration:underline; }
+  .dz-sub { font-size:11px; color:#5B5B78; margin-top:6px; line-height:1.5; }
+  .dz-sub code { font-family:'IBM Plex Mono',monospace; font-size:10.5px; background:#F0F1F8; padding:1px 4px; border-radius:3px; }
+  .dz-status { font-size:11.5px; margin-top:10px; font-weight:600; }
+  .dz-status.ok { color:#159C8D; }
+  .dz-status.err { color:#e0245e; }
+
   @media (max-width:640px) {
     .account-grid, .metrics-grid { grid-template-columns:1fr; }
     .ytd-grid { grid-template-columns:1fr 1fr; }
@@ -119,6 +131,15 @@
     <button id="btn-excel">Save as Excel</button>
     <button id="btn-reset">Reset all fields</button>
     <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
+  </div>
+
+  <div class="section-label no-print">Import a Report File</div>
+  <div id="dropzone" class="dropzone no-print">
+    <input type="file" id="file-input" accept=".xlsx,.csv" style="display:none;">
+    <div class="dz-icon">⬆</div>
+    <div class="dz-main">Drop a delivery / report file here, or <span class="dz-link">browse</span></div>
+    <div class="dz-sub">Excel <code>.xlsx</code> (like a Reworld delivery report) or <code>.csv</code>. Account details and every delivery populate automatically — all figures recalculate below.</div>
+    <div id="dz-status" class="dz-status"></div>
   </div>
 
   <div class="section-label">Account Details</div>
@@ -659,6 +680,308 @@ function openPasteModal() {
 }
 
 document.getElementById('btn-paste').addEventListener('click', openPasteModal);
+
+/* --- File import (.xlsx / .csv) ---------------------------------------------
+   Reads an uploaded report file entirely in the browser — no library, no
+   network. .xlsx is a ZIP of XML: we read the ZIP central directory, inflate
+   each part with the browser's built-in deflate-raw decompressor, then pull
+   account details and deliveries straight out of the sheets.
+--------------------------------------------------------------------------- */
+
+// Inflate a raw DEFLATE stream using the built-in DecompressionStream.
+async function inflateRaw(bytes) {
+  var ds = new DecompressionStream('deflate-raw');
+  var writer = ds.writable.getWriter();
+  writer.write(bytes); writer.close();
+  var reader = ds.readable.getReader();
+  var chunks = [], total = 0;
+  while (true) {
+    var r = await reader.read();
+    if (r.done) break;
+    chunks.push(r.value); total += r.value.length;
+  }
+  var out = new Uint8Array(total), off = 0;
+  chunks.forEach(function (c) { out.set(c, off); off += c.length; });
+  return out;
+}
+
+// Read a ZIP (from the central directory, so it works with data-descriptor
+// files like the ones Excel writes). Returns { filename: Uint8Array }.
+async function unzip(arrayBuffer) {
+  var bytes = new Uint8Array(arrayBuffer);
+  var dv = new DataView(arrayBuffer);
+  // Find End Of Central Directory record (signature PK\x05\x06).
+  var eocd = -1;
+  for (var i = bytes.length - 22; i >= 0; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('Not a valid .xlsx/zip file.');
+  var count = dv.getUint16(eocd + 10, true);
+  var cdOffset = dv.getUint32(eocd + 16, true);
+
+  var files = {};
+  var td = new TextDecoder('utf-8');
+  var o = cdOffset;
+  for (var n = 0; n < count; n++) {
+    if (dv.getUint32(o, true) !== 0x02014b50) break;
+    var method   = dv.getUint16(o + 10, true);
+    var compSize = dv.getUint32(o + 20, true);
+    var fnLen    = dv.getUint16(o + 28, true);
+    var extraLen = dv.getUint16(o + 30, true);
+    var cmtLen   = dv.getUint16(o + 32, true);
+    var lho      = dv.getUint32(o + 42, true);
+    var name     = td.decode(bytes.subarray(o + 46, o + 46 + fnLen));
+    o += 46 + fnLen + extraLen + cmtLen;
+
+    // Jump to the local header to find where the data actually starts.
+    if (dv.getUint32(lho, true) !== 0x04034b50) continue;
+    var lFnLen    = dv.getUint16(lho + 26, true);
+    var lExtraLen = dv.getUint16(lho + 28, true);
+    var dataStart = lho + 30 + lFnLen + lExtraLen;
+    var data = bytes.subarray(dataStart, dataStart + compSize);
+    files[name] = (method === 0) ? data.slice() : await inflateRaw(data);
+  }
+  return files;
+}
+
+function xmlDoc(u8) { return new DOMParser().parseFromString(new TextDecoder().decode(u8), 'application/xml'); }
+
+function parseSharedStrings(u8) {
+  if (!u8) return [];
+  var doc = xmlDoc(u8);
+  return Array.prototype.map.call(doc.getElementsByTagName('si'), function (si) {
+    return Array.prototype.map.call(si.getElementsByTagName('t'), function (t) { return t.textContent; }).join('');
+  });
+}
+
+function colOf(ref) { return (ref.match(/^[A-Z]+/) || ['A'])[0]; }
+function rowOf(ref) { return parseInt((ref.match(/\d+$/) || ['1'])[0], 10); }
+function colNum(letters) {
+  var n = 0;
+  for (var i = 0; i < letters.length; i++) n = n * 26 + (letters.charCodeAt(i) - 64);
+  return n;
+}
+function colLetter(n) {
+  var s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+  return s;
+}
+
+// Turn a worksheet XML into { rowNumber: { COL: value } }.
+function parseSheet(u8, shared) {
+  var doc = xmlDoc(u8);
+  var grid = {};
+  Array.prototype.forEach.call(doc.getElementsByTagName('c'), function (c) {
+    var ref = c.getAttribute('r'); if (!ref) return;
+    var t = c.getAttribute('t');
+    var vEl = c.getElementsByTagName('v')[0];
+    var isEl = c.getElementsByTagName('is')[0];
+    var val = null;
+    if (t === 's' && vEl) val = shared[parseInt(vEl.textContent, 10)];
+    else if (t === 'inlineStr' && isEl) val = Array.prototype.map.call(isEl.getElementsByTagName('t'), function (x) { return x.textContent; }).join('');
+    else if (vEl) val = vEl.textContent;
+    if (val == null) return;
+    var row = rowOf(ref), col = colOf(ref);
+    (grid[row] = grid[row] || {})[col] = val;
+  });
+  return grid;
+}
+
+// Excel serial date -> YYYY-MM-DD (epoch 1899-12-30).
+function serialToDate(n) {
+  var ms = Math.round((n - 25569) * 86400000);
+  var d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+}
+
+// Labels we recognise in an account-details block -> our state.meta keys.
+var META_LABELS = [
+  [/reporting period/i, 'period'],
+  [/generator/i, 'generator'],
+  [/service location/i, 'serviceLocation'],
+  [/processing facility/i, 'facility'],
+  [/service type/i, 'serviceType'],
+  [/waste profile/i, 'wasteProfile']
+];
+
+// Pull everything we can out of the parsed sheets.
+function extractFromSheets(sheets) {
+  var meta = {}, rows = [], ytdTotal = null;
+
+  sheets.forEach(function (grid) {
+    var rowNums = Object.keys(grid).map(Number).sort(function (a, b) { return a - b; });
+
+    // --- Account details: label in one cell, value in the next column. ---
+    rowNums.forEach(function (rn) {
+      var cells = grid[rn];
+      Object.keys(cells).forEach(function (col) {
+        var text = String(cells[col]).trim();
+        META_LABELS.forEach(function (pair) {
+          if (pair[0].test(text) && text.length < 40) {
+            var nextCol = colLetter(colNum(col) + 1);
+            var v = cells[nextCol];
+            if (v != null && String(v).trim() && meta[pair[1]] == null) meta[pair[1]] = String(v).trim();
+          }
+        });
+        // Capture a "year-to-date tons" total so we can back out prior YTD.
+        if (/year[- ]?to[- ]?date tons/i.test(text)) {
+          var nc = colLetter(colNum(col) + 1);
+          for (var k = 0; k < 3; k++) {
+            var cand = cells[colLetter(colNum(col) + 1 + k)];
+            var f = parseFloat(String(cand).replace(/,/g, ''));
+            if (!isNaN(f)) { ytdTotal = f; break; }
+          }
+        }
+      });
+    });
+
+    // --- Delivery rows: find a header row with "Delivery Date" + "Tons". ---
+    var headerRow = null, dateCol = null, tonsCol = null;
+    for (var ri = 0; ri < rowNums.length; ri++) {
+      var cells2 = grid[rowNums[ri]];
+      var dc = null, tc = null;
+      Object.keys(cells2).forEach(function (col) {
+        var text = String(cells2[col]).trim().toLowerCase();
+        if (text === 'delivery date' || text === 'date') dc = col;
+        if (text === 'tons' || text === 'tonnage' || text === 'weight (tons)') tc = col;
+      });
+      if (dc && tc) { headerRow = rowNums[ri]; dateCol = dc; tonsCol = tc; break; }
+    }
+    if (headerRow != null) {
+      rowNums.forEach(function (rn) {
+        if (rn <= headerRow) return;
+        var cells3 = grid[rn];
+        var rawTons = cells3[tonsCol];
+        var rawDate = cells3[dateCol];
+        if (rawTons == null || rawDate == null) return;      // totals rows have no date
+        var tons = parseFloat(String(rawTons).replace(/,/g, ''));
+        if (isNaN(tons)) return;
+        var dateStr = normalizeDate(String(rawDate));
+        if (!dateStr) {
+          var serial = parseFloat(rawDate);
+          if (!isNaN(serial) && serial > 20000 && serial < 90000) dateStr = serialToDate(serial);
+        }
+        if (!dateStr) return;                                 // label rows like "Q1 2026 TONS"
+        rows.push({ date: dateStr, tons: tons });
+      });
+    }
+  });
+
+  return { meta: meta, rows: rows, ytdTotal: ytdTotal };
+}
+
+async function importXlsx(arrayBuffer) {
+  var files = await unzip(arrayBuffer);
+  var shared = parseSharedStrings(files['xl/sharedStrings.xml']);
+  var sheets = [];
+  Object.keys(files).forEach(function (name) {
+    if (/^xl\/worksheets\/sheet\d+\.xml$/i.test(name)) sheets.push(parseSheet(files[name], shared));
+  });
+  if (!sheets.length) throw new Error('No worksheets found in the file.');
+  return extractFromSheets(sheets);
+}
+
+// CSV import: reuse the same row parser, and look for account labels too.
+function importCsv(text) {
+  var meta = {}, rows = [];
+  var lines = text.split(/\r?\n/);
+  // Try to find a header with date + tons.
+  var headerIdx = -1, dateIdx = 0, tonsIdx = 1;
+  for (var i = 0; i < lines.length; i++) {
+    var low = lines[i].toLowerCase();
+    if (low.indexOf('tons') !== -1 && (low.indexOf('date') !== -1)) {
+      var cols = lines[i].split(/,|\t/).map(function (s) { return s.trim().toLowerCase(); });
+      cols.forEach(function (c, idx) {
+        if (c === 'delivery date' || c === 'date') dateIdx = idx;
+        if (c === 'tons' || c === 'tonnage') tonsIdx = idx;
+      });
+      headerIdx = i; break;
+    }
+  }
+  if (headerIdx >= 0) {
+    for (var j = headerIdx + 1; j < lines.length; j++) {
+      var parts = lines[j].split(/,|\t/).map(function (s) { return s.trim(); });
+      if (parts.length <= Math.max(dateIdx, tonsIdx)) continue;
+      var tons = toNum(parts[tonsIdx]);
+      var date = normalizeDate(parts[dateIdx]);
+      if (tons === null || !date) continue;
+      rows.push({ date: date, tons: tons });
+    }
+  } else {
+    rows = parsePasted(text); // fall back to the flexible line parser
+  }
+  return { meta: meta, rows: rows, ytdTotal: null };
+}
+
+function applyImport(result, fileName) {
+  var status = document.getElementById('dz-status');
+  var gotMeta = Object.keys(result.meta || {}).length;
+  if (!result.rows.length && !gotMeta) {
+    status.className = 'dz-status err';
+    status.textContent = 'Could not find deliveries or account details in that file. Make sure it has a "Delivery Date" / "Tons" table.';
+    return;
+  }
+
+  // Merge account details (only overwrite fields the file actually provided).
+  Object.keys(result.meta || {}).forEach(function (k) { state.meta[k] = result.meta[k]; });
+
+  // Replace deliveries with the imported ones.
+  if (result.rows.length) state.rows = result.rows.slice();
+  else if (!state.rows.length) state.rows = [{ date: '', tons: 0 }];
+
+  // Back out "prior YTD" so year-to-date figures match the source file.
+  var periodTons = state.rows.reduce(function (s, r) { return s + num(r.tons); }, 0);
+  if (result.ytdTotal != null && result.ytdTotal >= periodTons - 0.001) {
+    state.meta.priorYtdTons = Math.round((result.ytdTotal - periodTons) * 100) / 100;
+  }
+
+  renderMeta(); renderRows(); render(); saveState();
+
+  status.className = 'dz-status ok';
+  status.textContent = '✓ Loaded ' + result.rows.length + ' deliver' + (result.rows.length === 1 ? 'y' : 'ies') +
+    (gotMeta ? ' and account details' : '') + ' from ' + fileName + '. Everything below is populated.';
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  var status = document.getElementById('dz-status');
+  status.className = 'dz-status';
+  status.style.color = '#5B5B78';
+  status.textContent = 'Reading ' + file.name + '…';
+  var lower = file.name.toLowerCase();
+  try {
+    if (lower.endsWith('.csv')) {
+      applyImport(importCsv(await file.text()), file.name);
+    } else if (lower.endsWith('.xlsx')) {
+      if (typeof DecompressionStream === 'undefined') throw new Error('This browser can\'t unzip .xlsx. Try Chrome, Edge, or Safari 16.4+, or upload a .csv.');
+      applyImport(await importXlsx(await file.arrayBuffer()), file.name);
+    } else {
+      throw new Error('Unsupported file type. Upload a .xlsx or .csv.');
+    }
+  } catch (err) {
+    status.className = 'dz-status err';
+    status.textContent = '✕ ' + (err && err.message ? err.message : 'Could not read that file.');
+  }
+}
+
+// Wire up dropzone + file input.
+(function () {
+  var dz = document.getElementById('dropzone');
+  var input = document.getElementById('file-input');
+  dz.addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', function () { if (input.files[0]) handleFile(input.files[0]); input.value = ''; });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    dz.addEventListener(ev, function (e) { e.preventDefault(); if (ev === 'dragleave' && e.target !== dz) return; dz.classList.remove('dragover'); });
+  });
+  dz.addEventListener('drop', function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+})();
 
 // Initial paint.
 renderMeta();
