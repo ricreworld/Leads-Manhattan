@@ -63,6 +63,9 @@
   .card-table input.f-wtype { width:130px; }
   .card-table input.f-tons { width:64px; text-align:right; }
   .dv-derived { color:#5B5B78; font-size:11px; white-space:nowrap; }
+  .ghg-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; background:#fff; border:1px solid #E3E4F0; border-radius:8px; padding:10px 16px; margin-bottom:12px; }
+  .ghg-toggle label { font-size:12px; color:#15152B; display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+  .ghg-toggle input { accent-color:#2A1DBF; }
   .btn-remove { border:none; background:none; color:#5B5B78; cursor:pointer; font-size:13px; line-height:1; }
   .btn-remove:hover { color:#e0245e; }
 
@@ -284,15 +287,30 @@
     <tbody id="summaryBody"></tbody>
   </table>
 
-  <div class="section-label teal" style="margin:26px 0 6px;">Waste Stream Heating Values</div>
-  <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Energy recovered scales with the fuel value of each waste stream. Baseline: MSW at <b>5,000 BTU/lb → 550 kWh/ton</b> (NYSDEC permit design basis for Reworld Hempstead). Each delivery's Waste Type is matched to a stream below; edit any BTU/lb value and every figure recalculates. Streams found in the loaded data are highlighted.</div>
+  <div class="section-label teal" style="margin:26px 0 6px;">Waste Stream Factors</div>
+  <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Each waste stream differs in three ways: how hot it burns (<b>BTU/lb</b> → energy), whether it avoids landfill methane (<b>t CO₂e/ton</b> → climate benefit), and how much metal it holds (<b>lbs/ton</b>). Baseline: MSW at <b>5,000 BTU/lb → 550 kWh/ton</b> (NYSDEC permit basis, Reworld Hempstead). Edit any value; streams in the loaded data are highlighted.</div>
+
+  <div class="ghg-toggle no-print">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GHG &amp; metals basis:</span>
+    <label><input type="radio" name="ghgmode" value="blended"> Blended — MSW 2.4 t CO₂e / 50 lbs per ton (Reworld verified LCA)</label>
+    <label><input type="radio" name="ghgmode" value="stream"> Stream-specific — each stream's own factor</label>
+  </div>
+
   <div class="table-scroll">
-  <table class="card-table wide" style="min-width:560px;">
-    <thead><tr><th style="padding-left:16px;">Waste Stream</th><th style="text-align:right;">BTU / lb</th><th style="text-align:right;">kWh / ton</th><th style="text-align:right;padding-right:16px;">Tons (this period)</th></tr></thead>
+  <table class="card-table wide" style="min-width:720px;">
+    <thead><tr>
+      <th style="padding-left:16px;">Waste Stream</th>
+      <th style="text-align:right;">BTU / lb</th>
+      <th style="text-align:right;">kWh / ton</th>
+      <th style="text-align:right;">t CO₂e / ton</th>
+      <th style="text-align:right;">Metal lbs / ton</th>
+      <th style="text-align:right;padding-right:16px;">Tons (this period)</th>
+    </tr></thead>
     <tbody id="streamBody"></tbody>
   </table>
   </div>
-  <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:8px 0 20px;">Formula: kWh/ton = 550 × (BTU/lb ÷ 5,000). Default heating values are representative HHV figures (U.S. EPA WTE / medical-waste incineration references); adjust to your facility's measured values as needed.</p>
+  <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:8px 0 4px;">Formula: kWh/ton = 550 × (BTU/lb ÷ 5,000). Heating values are representative HHV figures (U.S. EPA WTE / medical-waste references).</p>
+  <p id="ghg-disclaimer" style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:0 0 20px;display:none;">⚠ Stream-specific GHG &amp; metal factors: <b>MSW (2.4 t CO₂e, 50 lbs) is Reworld's verified LCA figure; the others are directional estimates</b> reflecting that streams which don't decompose in a landfill (plastics, medical waste) avoid little methane, and fossil streams emit CO₂ when burned. Replace with Reworld's per-stream LCA values before any external or customer-facing use.</p>
 
   <div class="section-label">Conversion Factors (fixed)</div>
   <table class="card-table" style="margin-bottom:16px;">
@@ -336,23 +354,32 @@ var BASELINE_BTU = 5000;
 // Waste streams with representative higher-heating-values (BTU/lb) and the
 // keywords used to match a delivery's "Waste Type" to a stream. Ordered most
 // specific first. Defaults are editable in the UI (state.streamBtu overrides).
+// Per-stream factors:
+//   btu   = higher heating value (BTU/lb) -> drives renewable energy
+//   ghg   = tons CO2e AVOIDED per ton -> drives greenhouse-gas benefit
+//   metal = lbs metal recovered per ton
+// MSW ghg (2.4) & metal (50) are Reworld's verified LCA blended figures; the
+// other ghg/metal values are DIRECTIONAL ESTIMATES pending Reworld per-stream
+// LCA data (see disclaimer in the stream table). ghg reflects that streams
+// that don't rot in a landfill (plastics, medical) avoid little methane, and
+// fossil streams emit CO2 when burned, so their per-ton benefit is lower.
 var STREAMS = [
-  { key: 'plastics',   label: 'Plastics',                     btu: 14000, kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
-  { key: 'tires',      label: 'Rubber / Tires',               btu: 15000, kw: [/tire|rubber|elastomer/] },
-  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16000, kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
-  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
-  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
-  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
-  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
-  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 7000,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
-  { key: 'wood',       label: 'Wood / Pallets',               btu: 8000,  kw: [/wood|pallet|lumber|timber/] },
-  { key: 'textiles',   label: 'Textiles',                     btu: 8000,  kw: [/textile|fabric|cloth|apparel|garment/] },
-  { key: 'food',       label: 'Food / Organics',              btu: 2500,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
-  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  kw: [/sludge|biosolid|slurry/] },
-  { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
-  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  kw: [/construction|c&d|c and d|debris|demolition/] },
-  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  kw: [/industrial|manufactur|production|process waste/] },
-  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
+  { key: 'plastics',   label: 'Plastics',                     btu: 14000, ghg: 0.3, metal: 0,  kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
+  { key: 'tires',      label: 'Rubber / Tires',               btu: 15000, ghg: 0.4, metal: 20, kw: [/tire|rubber|elastomer/] },
+  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16000, ghg: 0.5, metal: 0,  kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
+  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  ghg: 1.2, metal: 10, kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
+  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  ghg: 0.8, metal: 10, kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
+  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, ghg: 0.6, metal: 15, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
+  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, ghg: 0.6, metal: 20, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
+  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 7000,  ghg: 2.2, metal: 5,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
+  { key: 'wood',       label: 'Wood / Pallets',               btu: 8000,  ghg: 1.8, metal: 5,  kw: [/wood|pallet|lumber|timber/] },
+  { key: 'textiles',   label: 'Textiles',                     btu: 8000,  ghg: 1.0, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
+  { key: 'food',       label: 'Food / Organics',              btu: 2500,  ghg: 2.6, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
+  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  ghg: 2.0, metal: 2,  kw: [/sludge|biosolid|slurry/] },
+  { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, ghg: 0.1, metal: 0,  kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
+  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  ghg: 0.5, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
+  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  ghg: 1.0, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
+  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  ghg: 2.4, metal: 50, kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
 ];
 var DEFAULT_STREAM = STREAMS[STREAMS.length - 1]; // unknown/blank -> MSW baseline
 
@@ -367,9 +394,17 @@ function btuFor(stream) {
   var o = state.streamBtu && state.streamBtu[stream.key];
   return (o != null && !isNaN(o)) ? o : stream.btu;
 }
+function ghgFor(stream) {
+  var o = state.streamGhg && state.streamGhg[stream.key];
+  return (o != null && !isNaN(o)) ? o : stream.ghg;
+}
+function metalFor(stream) {
+  var o = state.streamMetal && state.streamMetal[stream.key];
+  return (o != null && !isNaN(o)) ? o : stream.metal;
+}
 function kwhPerTon(btu) { return FACTORS.energyPerTon * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v2';
+var STORAGE_KEY = 'reworld-sustainability-report-v3';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -384,7 +419,10 @@ function defaultState() {
       facility: '', serviceType: '', wasteProfile: '', priorYtdTons: 0
     },
     rows: [ emptyRow() ],
+    ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
+    streamGhg: {},        // per-stream tCO2e/ton overrides
+    streamMetal: {},      // per-stream lbs/ton overrides
     allRows: [],          // full imported delivery list (all periods)
     periodSel: null,      // which period option is selected
     importPeriodLabel: '',
@@ -419,37 +457,50 @@ function num(v)  { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
 // delivery using each row's waste-stream heating value; a blended kWh/ton is
 // applied to any prior-YTD tonnage (which has no per-row stream detail).
 function calc() {
-  var periodTons = 0, energy = 0, streamTons = {};
+  var streamMode = state.ghgMode === 'stream';
+  var periodTons = 0, energy = 0, ghg = 0, metal = 0, streamTons = {};
   state.rows.forEach(function (r) {
     var t = num(r.tons);
     var s = streamFor(r.wasteType);
     periodTons += t;
     energy += t * kwhPerTon(btuFor(s));
+    if (streamMode) { ghg += t * ghgFor(s); metal += t * metalFor(s); }
     streamTons[s.key] = (streamTons[s.key] || 0) + t;
   });
+  if (!streamMode) { ghg = periodTons * FACTORS.ghgPerTon; metal = periodTons * FACTORS.metalPerTon; }
+
   var blended = periodTons > 0 ? energy / periodTons : FACTORS.energyPerTon;
+  var blendedGhg = periodTons > 0 ? ghg / periodTons : FACTORS.ghgPerTon;
+  var blendedMetal = periodTons > 0 ? metal / periodTons : FACTORS.metalPerTon;
 
   var priorYtd = num(state.meta.priorYtdTons);
   var ytdTons  = priorYtd + periodTons;
   var ytdEnergy = energy + priorYtd * blended;
+  // Prior-YTD tonnage has no per-row stream detail -> apply the period's
+  // blended per-ton rates (equals the flat factor in blended mode).
+  var ytdGhg = ghg + priorYtd * blendedGhg;
+  var ytdMetal = metal + priorYtd * blendedMetal;
 
   return {
     periodTons: periodTons,
     ytdTons: ytdTons,
     blended: blended,
+    blendedGhg: blendedGhg,
+    blendedMetal: blendedMetal,
+    streamMode: streamMode,
     streamTons: streamTons,
 
-    ghg:     periodTons * FACTORS.ghgPerTon,
+    ghg:     ghg,
     energy:  energy,
     homes:   energy / FACTORS.homeKwhMonth,
     coal:    energy / FACTORS.coalKwhTon,
     fuelOil: energy / FACTORS.fuelOilKwhGal,
-    metal:   periodTons * FACTORS.metalPerTon,
+    metal:   metal,
 
-    ytdGhg:     ytdTons * FACTORS.ghgPerTon,
+    ytdGhg:     ytdGhg,
     ytdEnergy:  ytdEnergy,
     ytdHomes:   ytdEnergy / FACTORS.homeKwhMonth,
-    ytdMetal:   ytdTons * FACTORS.metalPerTon,
+    ytdMetal:   ytdMetal,
     ytdCoal:    ytdEnergy / FACTORS.coalKwhTon,
     ytdFuelOil: ytdEnergy / FACTORS.fuelOilKwhGal
   };
@@ -595,8 +646,8 @@ function ytdHeadLabel(year) { return year + ' YTD'; }
 function buildMetrics(c) {
   return [
     { name: 'Renewable energy generated',        period: c.energy,  ytd: c.ytdEnergy,  unit: 'kWh',      basis: 'Tons × ' + fmt(c.blended) + ' kWh/ton (by heating value)' },
-    { name: 'Greenhouse gas emissions avoided',  period: c.ghg,     ytd: c.ytdGhg,     unit: 'tons CO₂e', basis: 'Tons × 2.4 t CO₂e/ton' },
-    { name: 'Metals recovered for recycling',    period: c.metal,   ytd: c.ytdMetal,   unit: 'lbs',      basis: 'Tons × 50 lbs/ton' },
+    { name: 'Greenhouse gas emissions avoided',  period: c.ghg,     ytd: c.ytdGhg,     unit: 'tons CO₂e', basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedGhg) + ' t CO₂e/ton (by stream)') : 'Tons × 2.4 t CO₂e/ton' },
+    { name: 'Metals recovered for recycling',    period: c.metal,   ytd: c.ytdMetal,   unit: 'lbs',      basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedMetal) + ' lbs/ton (by stream)') : 'Tons × 50 lbs/ton' },
     { name: 'Homes powered for one month',       period: c.homes,   ytd: c.ytdHomes,   unit: 'homes',    basis: 'kWh ÷ 893 kWh/home-month' },
     { name: 'Coal not needed',                   period: c.coal,    ytd: c.ytdCoal,    unit: 'tons',     basis: 'kWh ÷ 1,881 kWh/ton coal' },
     { name: 'Fuel oil not needed',               period: c.fuelOil, ytd: c.ytdFuelOil, unit: 'gallons',  basis: 'kWh ÷ 13.108 kWh/gallon' }
@@ -622,8 +673,13 @@ function renderSummary(c, year) {
   });
 }
 
-// Waste-stream heating-value table (editable BTU/lb per stream).
+// Waste-stream factor table (editable BTU/lb, tCO2e/ton, lbs metal/ton).
 var streamCells = {};
+function factorInput(getVal, setVal, width) {
+  var inp = document.createElement('input'); inp.type = 'number'; inp.className = 'f-tons'; inp.style.width = (width || 80) + 'px'; inp.value = getVal();
+  inp.addEventListener('input', function () { setVal(inp.value); render(); saveState(); });
+  return inp;
+}
 function buildStreamsTable() {
   var tb = document.getElementById('streamBody');
   if (!tb) return;
@@ -631,25 +687,33 @@ function buildStreamsTable() {
   STREAMS.forEach(function (s) {
     var tr = document.createElement('tr');
     var td1 = document.createElement('td'); td1.style.paddingLeft = '16px'; td1.textContent = s.label;
+
     var td2 = document.createElement('td'); td2.style.textAlign = 'right';
-    var inp = document.createElement('input'); inp.type = 'number'; inp.className = 'f-tons'; inp.style.width = '80px'; inp.value = btuFor(s);
-    inp.addEventListener('input', function () {
-      state.streamBtu = state.streamBtu || {};
-      var v = parseFloat(inp.value);
-      if (isNaN(v)) delete state.streamBtu[s.key]; else state.streamBtu[s.key] = v;
-      render(); saveState();
-    });
-    td2.appendChild(inp);
-    var td3 = document.createElement('td'); td3.style.textAlign = 'right';
-    var td4 = document.createElement('td'); td4.style.textAlign = 'right'; td4.style.paddingRight = '16px';
-    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+    var btuInp = factorInput(function () { return btuFor(s); }, function (v) { state.streamBtu = state.streamBtu || {}; var n = parseFloat(v); if (isNaN(n)) delete state.streamBtu[s.key]; else state.streamBtu[s.key] = n; });
+    td2.appendChild(btuInp);
+
+    var td3 = document.createElement('td'); td3.style.textAlign = 'right'; // derived kWh/ton
+
+    var td4 = document.createElement('td'); td4.style.textAlign = 'right';
+    var ghgInp = factorInput(function () { return ghgFor(s); }, function (v) { state.streamGhg = state.streamGhg || {}; var n = parseFloat(v); if (isNaN(n)) delete state.streamGhg[s.key]; else state.streamGhg[s.key] = n; }, 64);
+    ghgInp.step = '0.1';
+    td4.appendChild(ghgInp);
+
+    var td5 = document.createElement('td'); td5.style.textAlign = 'right';
+    var metalInp = factorInput(function () { return metalFor(s); }, function (v) { state.streamMetal = state.streamMetal || {}; var n = parseFloat(v); if (isNaN(n)) delete state.streamMetal[s.key]; else state.streamMetal[s.key] = n; }, 64);
+    td5.appendChild(metalInp);
+
+    var td6 = document.createElement('td'); td6.style.textAlign = 'right'; td6.style.paddingRight = '16px';
+
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6);
     tb.appendChild(tr);
-    streamCells[s.key] = { row: tr, label: td1, kwh: td3, tons: td4, input: inp };
+    streamCells[s.key] = { row: tr, label: td1, kwh: td3, tons: td6, btuInput: btuInp, ghgInput: ghgInp, metalInput: metalInp, ghgCell: td4, metalCell: td5 };
   });
 }
-// Update derived cells without rebuilding inputs (so BTU typing keeps focus).
+// Update derived/derived cells without rebuilding inputs (so typing keeps focus).
 function refreshStreams(c) {
   if (!Object.keys(streamCells).length) return;
+  var streamMode = state.ghgMode === 'stream';
   STREAMS.forEach(function (s) {
     var cell = streamCells[s.key]; if (!cell) return;
     var tons = (c.streamTons && c.streamTons[s.key]) || 0;
@@ -658,10 +722,12 @@ function refreshStreams(c) {
     cell.tons.style.color = tons > 0 ? '#159C8D' : '#5B5B78';
     cell.label.style.fontWeight = tons > 0 ? '700' : '400';
     cell.row.style.background = tons > 0 ? '#F0FBF9' : '';
-    if (document.activeElement !== cell.input) {
-      var want = String(btuFor(s));
-      if (cell.input.value !== want) cell.input.value = want;
-    }
+    // dim the GHG/metal columns when the blended basis ignores them
+    cell.ghgCell.style.opacity = streamMode ? '1' : '0.4';
+    cell.metalCell.style.opacity = streamMode ? '1' : '0.4';
+    [['btuInput', btuFor(s)], ['ghgInput', ghgFor(s)], ['metalInput', metalFor(s)]].forEach(function (p) {
+      var inp = cell[p[0]]; if (document.activeElement !== inp) { var w = String(p[1]); if (inp.value !== w) inp.value = w; }
+    });
   });
 }
 
@@ -1430,8 +1496,19 @@ async function handleFile(file) {
   });
 })();
 
+// GHG/metals basis toggle.
+function applyGhgMode() {
+  var disc = document.getElementById('ghg-disclaimer');
+  if (disc) disc.style.display = (state.ghgMode === 'stream') ? 'block' : 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'), function (r) { r.checked = (r.value === state.ghgMode); });
+}
+Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'), function (r) {
+  r.addEventListener('change', function () { if (r.checked) { state.ghgMode = r.value; applyGhgMode(); render(); saveState(); } });
+});
+
 // Initial paint.
 buildStreamsTable();
+applyGhgMode();
 renderMeta();
 renderRows();
 render();
