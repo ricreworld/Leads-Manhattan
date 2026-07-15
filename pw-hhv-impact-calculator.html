@@ -70,6 +70,9 @@
   .stream-cell { display:flex; flex-direction:column; gap:4px; }
   .stream-sel { border:1px solid #E3E4F0; border-radius:6px; padding:6px 8px; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; background:#fff; cursor:pointer; width:100%; }
   .stream-sel:focus { outline:none; border-color:#2A1DBF; }
+  .hhv-hint { font-size:9.5px; color:#5B5B78; margin-top:2px; }
+  .hhv-apply { color:#159C8D; cursor:pointer; text-decoration:underline; }
+  .hhv-apply:hover { color:#1B1385; }
   .io-grid .msw-row input { background:#F5F6FB; }
   .stream-x { border:none; background:none; color:#5B5B78; cursor:pointer; font-size:13px; align-self:center; }
   .stream-x:hover { color:#e0245e; }
@@ -330,7 +333,7 @@ function renderFacilities() {
     // PW streams
     (f.streams || []).forEach(function (s, si) {
       grid.appendChild(streamCell(s));
-      grid.appendChild(inputCell(s.hhv, '', function (v) { s.hhv = num(v); refresh(); save(); }, '1'));
+      grid.appendChild(hhvCell(s));
       grid.appendChild(inputCell(s.price, '', function (v) { s.price = num(v); refresh(); save(); }, '0.01'));
       grid.appendChild(inputCell(s.tpd, '', function (v) { s.tpd = num(v); refresh(); save(); }, '1'));
       var sx = el('button', 'stream-x no-print', '✕'); sx.title = 'Remove stream';
@@ -373,6 +376,31 @@ function renderFacilities() {
 
 function wrapInput(input) { var d = document.createElement('div'); d.appendChild(input); return d; }
 function labelWrap(lbl, input) { var s = document.createElement('span'); s.className = 'cap-wrap'; input.style.width = '64px'; s.appendChild(input); s.appendChild(el('span', 'caps-lbl', lbl)); return s; }
+
+// HHV cell: the row's working BTU/lb value, with a hint whenever it differs
+// from the library value for the selected stream ("library: X · apply").
+function hhvCell(s) {
+  var d = document.createElement('div');
+  var inp = document.createElement('input');
+  inp.type = 'number'; inp.step = '1'; inp.value = s.hhv;
+  var hint = el('div', 'hhv-hint');
+  function update() {
+    var m = matchStream(s.name);
+    var lib = m ? btuForKey(m.key) : null;
+    if (lib != null && Math.abs(num(s.hhv) - lib) > 0.5) {
+      hint.textContent = 'library: ' + big(lib) + ' · ';
+      var a = el('span', 'hhv-apply', 'apply');
+      a.title = 'Use the library heating value for ' + m.label;
+      a.addEventListener('click', function () { s.hhv = lib; inp.value = lib; update(); refresh(); save(); });
+      hint.appendChild(a);
+      hint.style.display = 'block';
+    } else { hint.style.display = 'none'; }
+  }
+  inp.addEventListener('input', function () { s.hhv = num(inp.value); update(); refresh(); save(); });
+  update();
+  d.appendChild(inp); d.appendChild(hint);
+  return d;
+}
 
 // Stream picker cell: a dropdown of all library streams + "Other / custom".
 // Picking a stream sets the name and auto-fills its BTU/lb; "Other" reveals a
@@ -524,7 +552,8 @@ function buildStreamReference() {
       var v = parseFloat(inp.value);
       if (isNaN(v)) delete state.streamBtu[s.key]; else state.streamBtu[s.key] = v;
       td3.textContent = (Math.round((btuForKey(s.key) / 5500) * 100) / 100) + '×';
-      save();
+      // keep facility dropdown labels and library hints in sync
+      renderFacilities(); refresh(); save();
     });
     td2.appendChild(inp);
     td3.textContent = (Math.round((btuForKey(s.key) / 5500) * 100) / 100) + '×';
