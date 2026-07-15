@@ -306,6 +306,31 @@
     <tbody id="summaryBody"></tbody>
   </table>
 
+  <div class="section-label teal" style="margin:26px 0 10px;">Facility &amp; Pit Context — Displacement Value</div>
+  <div class="ghg-panel">
+    <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The pit is mostly municipal solid waste (MSW) at ~5,000 BTU/lb. Higher-BTU waste does more work per ton: one ton at 11,000 BTU/lb delivers the energy of 2.2 tons of MSW. This shows each stream's <b>MSW-equivalent</b> displacement and how the loaded waste fits the facility's annual burn.</div>
+    <div class="ghg-assump no-print" style="margin:0 0 14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Facility annual throughput</span>
+      <input type="number" step="1000" id="annualTons" style="width:120px;"> <span style="font-size:10.5px;color:#5B5B78;">tons / year (mostly MSW)</span>
+    </div>
+    <div class="ghg-headline">
+      <div class="ghg-net"><div class="ghg-net-val pos" id="pitEquiv">0</div><div class="ghg-net-cap">MSW-equivalent tons of energy from this waste</div></div>
+      <div class="ghg-flow">
+        <div class="ghg-item"><span id="pitFactor">0×</span><small>average displacement (vs MSW)</small></div>
+        <div class="ghg-item"><span id="pitWasteBtu">0</span><small>this waste's avg heating value (BTU/lb)</small></div>
+        <div class="ghg-item"><span id="pitPitBtu">0</span><small>pit weighted-avg BTU/lb after blending</small></div>
+        <div class="ghg-item"><span class="ghg-plus" id="pitGhgAvoided">0</span><small>t CO₂e avoided by this waste</small></div>
+      </div>
+    </div>
+    <div id="pitNarrative" class="ghg-narrative"></div>
+    <div class="table-scroll" style="margin-top:12px;">
+      <table class="card-table wide" style="min-width:600px;">
+        <thead><tr><th style="padding-left:16px;">Stream</th><th style="text-align:right;">Tons</th><th style="text-align:right;">BTU/lb</th><th style="text-align:right;">× MSW</th><th style="text-align:right;">MSW-equiv tons</th><th style="text-align:right;padding-right:16px;">t CO₂e avoided</th></tr></thead>
+        <tbody id="pitBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
   <div class="ghg-panel">
     <div class="ghg-headline">
@@ -482,7 +507,7 @@ function metalFor(stream) {
 }
 function kwhPerTon(btu) { return FACTORS.energyPerTon * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v5';
+var STORAGE_KEY = 'reworld-sustainability-report-v6';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -498,6 +523,7 @@ function defaultState() {
     },
     rows: [ emptyRow() ],
     ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
+    annualTons: 900000,   // facility annual throughput (mostly MSW) for context
     gridKg: 0.40,         // grid carbon intensity (kg CO2e/kWh) for energy credit
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
     streamGhg: {},        // per-stream NET tCO2e/ton overrides
@@ -763,6 +789,67 @@ function render() {
   renderSummary(c, year);
   refreshStreams(c);
   renderGhgPanel();
+  renderPitContext(c);
+}
+
+// Facility & pit context: MSW-equivalent displacement + annual-burn framing.
+function renderPitContext(c) {
+  var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  var bd = ghgBreakdown();
+  var periodTons = c.periodTons;
+  var annual = num(state.annualTons) || 0;
+  // MSW-equivalent tons = energy / (MSW kWh/ton). Energy already = sum tons×BTU-scaled kWh.
+  var mswEquiv = c.energy / FACTORS.energyPerTon;
+  var avgFactor = periodTons > 0 ? mswEquiv / periodTons : 0;
+  // pit weighted-average BTU after blending this waste into the annual MSW base
+  var pitBtu = annual > 0 ? (mswEquiv * BASELINE_BTU + Math.max(annual - periodTons, 0) * BASELINE_BTU) / annual : BASELINE_BTU;
+  // simpler + correct: pit avg BTU = (period energy-equiv BTU + rest MSW BTU) / annual tons
+  pitBtu = annual > 0 ? ((periodTons * avgFactor * BASELINE_BTU) + Math.max(annual - periodTons, 0) * BASELINE_BTU) / annual : BASELINE_BTU;
+  var shareTons = annual > 0 ? periodTons / annual : 0;
+  var facilityAnnualGhg = annual * FACTORS.ghgPerTon;           // MSW-rate reference
+  var shareGhg = facilityAnnualGhg > 0 ? bd.avoided / facilityAnnualGhg : 0;
+
+  var wasteBtu = avgFactor * BASELINE_BTU;                      // avg heating value of this waste
+  var pctStr = function (v) { var pc = v * 100; if (pc <= 0) return '0%'; if (pc < 0.1) return '<0.1%'; return (Math.round(pc * 10) / 10) + '%'; };
+
+  set('pitEquiv', fmt(mswEquiv));
+  set('pitFactor', fmt2(avgFactor) + '×');
+  set('pitWasteBtu', fmt(wasteBtu));
+  set('pitPitBtu', fmt(pitBtu));
+  set('pitGhgAvoided', fmt(bd.avoided));
+
+  var narr = document.getElementById('pitNarrative');
+  if (narr) {
+    if (periodTons <= 0) narr.textContent = 'Enter tonnage above to see the facility & pit context.';
+    else narr.textContent = 'These ' + fmt2(periodTons) + ' tons of higher-BTU waste (avg ' + fmt(wasteBtu) +
+      ' BTU/lb) do the energy work of ' + fmt(mswEquiv) + ' tons of MSW — a ' + fmt2(avgFactor) +
+      '× displacement. Blended into the pit, where the facility burns about ' + fmt(annual) +
+      ' tons/year mostly MSW at ' + fmt(BASELINE_BTU) + ' BTU/lb, this material is ' + pctStr(shareTons) +
+      ' of the annual tonnage but delivers ' + fmt(bd.avoided) + ' tons CO₂e avoided (' + pctStr(shareGhg) +
+      ' of the facility’s annual GHG avoidance). The value of each stream is its heating value relative to the MSW it joins: the higher the BTU, the more MSW-equivalent energy — and displaced fossil power — it provides.';
+  }
+
+  var tb = document.getElementById('pitBody');
+  if (!tb) return;
+  tb.innerHTML = '';
+  var keys = Object.keys(c.streamTons || {});
+  if (!keys.length) { tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="6">No tonnage entered yet.</td></tr>'; return; }
+  keys.map(function (k) { return k; }).sort(function (a, b) { return (c.streamTons[b] || 0) - (c.streamTons[a] || 0); }).forEach(function (key) {
+    var s = STREAMS.filter(function (x) { return x.key === key; })[0]; if (!s) return;
+    var tons = c.streamTons[key] || 0;
+    var btu = btuFor(s);
+    var factor = btu / BASELINE_BTU;
+    var eq = tons * factor;
+    var ghg = bd.perStream[key] ? bd.perStream[key].net : 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="padding-left:16px;">' + s.label + '</td>' +
+      '<td style="text-align:right;">' + fmt2(tons) + '</td>' +
+      '<td style="text-align:right;">' + fmt(btu) + '</td>' +
+      '<td style="text-align:right;font-weight:600;color:#2A1DBF;">' + fmt2(factor) + '×</td>' +
+      '<td style="text-align:right;">' + fmt(eq) + '</td>' +
+      '<td style="text-align:right;padding-right:16px;color:' + (ghg >= 0 ? '#159C8D' : '#e0245e') + ';font-weight:600;">' + fmt(ghg) + '</td>';
+    tb.appendChild(tr);
+  });
 }
 
 // Render the GHG vs landfill analysis panel.
@@ -1683,6 +1770,13 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'),
   if (!gi) return;
   gi.value = (state.gridKg != null ? state.gridKg : GRID_KG_PER_KWH);
   gi.addEventListener('input', function () { var v = parseFloat(gi.value); state.gridKg = isNaN(v) ? GRID_KG_PER_KWH : v; render(); saveState(); });
+})();
+// Facility annual throughput input.
+(function () {
+  var ai = document.getElementById('annualTons');
+  if (!ai) return;
+  ai.value = (state.annualTons != null ? state.annualTons : 900000);
+  ai.addEventListener('input', function () { var v = parseFloat(ai.value); state.annualTons = isNaN(v) ? 0 : v; render(); saveState(); });
 })();
 
 // Initial paint.
