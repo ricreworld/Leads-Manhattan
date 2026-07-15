@@ -51,6 +51,15 @@
   .fac-name:focus { outline:none; border-bottom-color:#2A1DBF; }
   .btn-remove { border:none; background:none; color:#5B5B78; cursor:pointer; font-size:12px; font-weight:600; }
   .btn-remove:hover { color:#e0245e; }
+  .fac-profile { width:100%; border:none; background:transparent; font-size:11.5px; color:#5B5B78; padding:0 0 8px; margin-bottom:6px; }
+  .fac-profile:hover { color:#15152B; }
+  .fac-profile:focus { outline:none; color:#15152B; }
+  .caps { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .caps-lbl { font-size:10px; color:#5B5B78; }
+  .cap-wrap { display:inline-flex; align-items:center; gap:4px; }
+  .cap-in { border:1px solid #E3E4F0; border-radius:5px; padding:4px 6px; font-size:11px; font-family:'Inter',sans-serif; }
+  .cap-in:focus { outline:none; border-color:#2A1DBF; }
+  .warn { margin-top:12px; background:#FFF4E5; border:1px solid #F0C070; border-radius:8px; padding:9px 12px; font-size:11px; color:#8a5a00; line-height:1.5; }
 
   .io-grid { display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 34px; gap:6px 12px; align-items:end; }
   .io-grid .col-head { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:#5B5B78; padding-bottom:2px; }
@@ -153,7 +162,7 @@
    Pure vanilla JS. Edit DEFAULTS below to change starting facilities/values.
 --------------------------------------------------------------------------- */
 
-var STORAGE_KEY = 'reworld-pw-hhv-impact-v1';
+var STORAGE_KEY = 'reworld-pw-hhv-impact-v2';
 
 // Starting facilities, seeded from the HHV-impact spreadsheets. All editable.
 function defaults() {
@@ -161,10 +170,10 @@ function defaults() {
     processingDays: 30,
     deliveryDays: 22,
     facilities: [
-      { name: 'Haverhill',    msw: { hhv: 5500, price: 42, tpd: 2070 }, streams: [ { name: 'TMW',        hhv: 7250,  price: 160, tpd: 50 } ], benefits: 'Expanded relationship with key account; increase in EBITDA & operating revenue.', issues: 'SSR headwinds; must accept Town tons first.' },
-      { name: 'Bristol',      msw: { hhv: 5500, price: 78, tpd: 650 },  streams: [ { name: 'TMW',        hhv: 7250,  price: 150, tpd: 25 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
-      { name: 'Indianapolis', msw: { hhv: 5500, price: 42, tpd: 2070 }, streams: [ { name: 'TMW',        hhv: 8500,  price: 100, tpd: 50 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
-      { name: 'Babylon',      msw: { hhv: 5500, price: 74, tpd: 720 },  streams: [ { name: 'PW (low BTU)', hhv: 10400, price: 169, tpd: 50 } ], benefits: 'Uptick in monthly revenue; expanded relationship with key account.', issues: 'Must accept Town tons first; possible billing issues; need backup facility.' }
+      { name: 'Haverhill',    profile: 'Haverhill, MA · mass burn · 1,650 TPD · 45 MW · in service 1989', capTpd: 0,   capMaxTpd: 0,   msw: { hhv: 5500, price: 42, tpd: 1650 }, streams: [ { name: 'TMW',        hhv: 7250,  price: 160, tpd: 50 } ], benefits: 'Expanded relationship with key account; increase in EBITDA & operating revenue.', issues: 'SSR headwinds; must accept Town tons first.' },
+      { name: 'Bristol',      profile: 'Bristol, CT · mass burn (2 × 358 TPD, Martin reverse-acting stoker) · 716 TPD · 16.3 MW · ferrous/non-ferrous', capTpd: 57, capMaxTpd: 114, msw: { hhv: 5500, price: 78, tpd: 716 },  streams: [ { name: 'TMW',        hhv: 7250,  price: 150, tpd: 25 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
+      { name: 'Indianapolis', profile: 'Indianapolis, IN · mass burn · 2,175 TPD · ~6.5 MW + district steam (Citizens Thermal) · in service 1988', capTpd: 0, capMaxTpd: 0, msw: { hhv: 5500, price: 42, tpd: 2175 }, streams: [ { name: 'TMW',        hhv: 8500,  price: 100, tpd: 50 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
+      { name: 'Babylon',      profile: 'Babylon, NY · mass burn (2 × 375 TPD, Martin reverse-reciprocating grate) · 750 TPD · 17 MW · ferrous', capTpd: 0, capMaxTpd: 0, msw: { hhv: 5500, price: 74, tpd: 750 },  streams: [ { name: 'PW (low BTU)', hhv: 10400, price: 169, tpd: 50 } ], benefits: 'Uptick in monthly revenue; expanded relationship with key account.', issues: 'Must accept Town tons first; possible billing issues; need backup facility.' }
     ]
   };
 }
@@ -245,6 +254,22 @@ function renderFacilities() {
     head.appendChild(del);
     card.appendChild(head);
 
+    // facility profile subtitle (editable)
+    var prof = document.createElement('input');
+    prof.type = 'text'; prof.className = 'fac-profile'; prof.value = f.profile || ''; prof.placeholder = 'Facility profile (technology · TPD · MW · notes)';
+    prof.addEventListener('input', function () { f.profile = prof.value; save(); });
+    card.appendChild(prof);
+
+    // special-waste / profiled-waste capacity limits (optional)
+    var caps = el('div', 'caps no-print');
+    caps.appendChild(el('span', 'caps-lbl', 'Special-waste cap (TPD):'));
+    var cAvg = inputCell(f.capTpd || 0, 'cap-in', function (v) { f.capTpd = num(v); refresh(); save(); }, '1');
+    var cMax = inputCell(f.capMaxTpd || 0, 'cap-in', function (v) { f.capMaxTpd = num(v); refresh(); save(); }, '1');
+    caps.appendChild(labelWrap('avg', cAvg));
+    caps.appendChild(labelWrap('max', cMax));
+    caps.appendChild(el('span', 'caps-lbl', '(0 = no limit)'));
+    card.appendChild(caps);
+
     // io grid
     var grid = el('div', 'io-grid');
     ['Stream', 'HHV (BTU/lb)', 'Price ($/ton)', 'TPD', ''].forEach(function (h) { grid.appendChild(el('div', 'col-head', h)); });
@@ -286,6 +311,11 @@ function renderFacilities() {
     resBox('netMonthly', 'Net monthly revenue impact', 'net');
     resBox('netAnnual', 'Net annual revenue impact', 'net');
     card.appendChild(res);
+
+    var warn = el('div', 'warn'); warn.style.display = 'none';
+    card.appendChild(warn);
+    refs.warn = warn;
+
     facRefs.push(refs);
 
     // notes
@@ -299,6 +329,7 @@ function renderFacilities() {
 }
 
 function wrapInput(input) { var d = document.createElement('div'); d.appendChild(input); return d; }
+function labelWrap(lbl, input) { var s = document.createElement('span'); s.className = 'cap-wrap'; input.style.width = '64px'; s.appendChild(input); s.appendChild(el('span', 'caps-lbl', lbl)); return s; }
 function noteBox(label, val, oninput) {
   var l = document.createElement('label'); l.appendChild(document.createTextNode(label));
   var t = document.createElement('textarea'); t.value = val; t.addEventListener('input', function () { oninput(t.value); }); l.appendChild(t); return l;
@@ -321,6 +352,17 @@ function refresh() {
     r.netMonthly.className = 'v ' + (c.netMonthly >= 0 ? 'pos' : 'neg');
     r.netAnnual.textContent = money(c.netAnnual);
     r.netAnnual.className = 'v ' + (c.netAnnual >= 0 ? 'pos' : 'neg');
+
+    // Guardrails: HHV capacity + special-waste TPD cap
+    var pwTpdDay = (f.streams || []).reduce(function (s, x) { return s + num(x.tpd); }, 0);
+    var msgs = [];
+    if (c.newMswTons < 0) msgs.push('⚠ Proposed profiled waste exceeds this facility’s HHV (steam) capacity — the heat added is more than the plant can process. Reduce PW tonnage or BTU.');
+    if (num(f.capMaxTpd) > 0 && pwTpdDay > num(f.capMaxTpd)) msgs.push('⚠ PW volume (' + tons(pwTpdDay) + ' TPD) exceeds the facility maximum special-waste limit of ' + tons(f.capMaxTpd) + ' TPD.');
+    else if (num(f.capTpd) > 0 && pwTpdDay > num(f.capTpd)) msgs.push('⚠ PW volume (' + tons(pwTpdDay) + ' TPD) is above the average special-waste limit of ' + tons(f.capTpd) + ' TPD (peak up to ' + (num(f.capMaxTpd) > 0 ? tons(f.capMaxTpd) + ' TPD' : 'facility max') + ').');
+    if (r.warn) {
+      if (msgs.length) { r.warn.innerHTML = msgs.join('<br>'); r.warn.style.display = 'block'; }
+      else { r.warn.style.display = 'none'; }
+    }
 
     var tr = document.createElement('tr');
     tr.innerHTML = '<td>' + escapeHtml(f.name || 'Facility') + '</td>' +
