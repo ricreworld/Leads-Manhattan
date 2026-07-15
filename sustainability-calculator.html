@@ -63,6 +63,18 @@
   .card-table input.f-wtype { width:130px; }
   .card-table input.f-tons { width:64px; text-align:right; }
   .dv-derived { color:#5B5B78; font-size:11px; white-space:nowrap; }
+  .ghg-panel { background:#fff; border:1px solid #E3E4F0; border-radius:10px; padding:18px 20px; margin-bottom:24px; }
+  .ghg-headline { display:flex; gap:24px; flex-wrap:wrap; align-items:center; }
+  .ghg-net-val { font-family:'Poppins',sans-serif; font-weight:800; font-size:38px; line-height:1; }
+  .ghg-net-cap { font-size:11px; color:#5B5B78; margin-top:4px; max-width:150px; }
+  .ghg-flow { display:flex; flex-wrap:wrap; gap:14px; flex:1; }
+  .ghg-item { font-family:'Poppins',sans-serif; font-weight:700; font-size:16px; color:#15152B; display:flex; flex-direction:column; }
+  .ghg-item small { font-family:'Inter',sans-serif; font-weight:400; font-size:10px; color:#5B5B78; margin-top:2px; max-width:120px; }
+  .ghg-plus { color:#159C8D; } .ghg-minus { color:#e0245e; }
+  .ghg-narrative { font-size:12.5px; line-height:1.65; color:#15152B; margin-top:14px; padding-top:14px; border-top:1px dashed #E3E4F0; }
+  .ghg-assump { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .ghg-assump input { border:1px solid #E3E4F0; border-radius:6px; padding:5px 8px; font-size:12px; font-family:'Inter',sans-serif; }
+  .ghg-assump input:focus { outline:none; border-color:#2A1DBF; }
   .ghg-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; background:#fff; border:1px solid #E3E4F0; border-radius:8px; padding:10px 16px; margin-bottom:12px; }
   .ghg-toggle label { font-size:12px; color:#15152B; display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
   .ghg-toggle input { accent-color:#2A1DBF; }
@@ -287,6 +299,31 @@
     <tbody id="summaryBody"></tbody>
   </table>
 
+  <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
+  <div class="ghg-panel">
+    <div class="ghg-headline">
+      <div class="ghg-net"><div class="ghg-net-val" id="ghgNetVal">0</div><div class="ghg-net-cap">net tons CO₂e avoided vs landfill</div></div>
+      <div class="ghg-flow">
+        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMethane">0</span><small>landfill methane avoided</small></div>
+        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgEnergy">0</span><small>grid electricity displaced</small></div>
+        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMetalCr">0</span><small>metal recycled credit</small></div>
+        <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>direct CO₂ at the stack</small></div>
+      </div>
+    </div>
+    <div id="ghgNarrative" class="ghg-narrative"></div>
+    <div class="table-scroll" style="margin-top:12px;">
+      <table class="card-table wide" style="min-width:420px;">
+        <thead><tr><th style="padding-left:16px;">Stream in this period</th><th style="text-align:right;">Tons</th><th style="text-align:right;">Net t CO₂e / ton</th><th style="text-align:right;padding-right:16px;">Verdict vs landfill</th></tr></thead>
+        <tbody id="ghgStreamBody"></tbody>
+      </table>
+    </div>
+    <div class="ghg-assump no-print">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Grid carbon intensity</span>
+      <input type="number" step="0.01" id="gridKg" style="width:80px;"> <span style="font-size:10.5px;color:#5B5B78;">kg CO₂e / kWh (lower grid = less displacement credit)</span>
+    </div>
+    <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:10px 0 0;">⚠ MSW nets to Reworld's verified ~2.4 t CO₂e/ton avoided. The landfill-methane and stack-CO₂ splits for other streams are directional estimates — replace with Reworld's verified per-stream LCA before customer-facing use. Greenhouse gas is a comparison vs landfill, not an absolute; a fossil stream can be net-negative on GHG while still delivering energy and diversion benefits.</p>
+  </div>
+
   <div class="section-label teal" style="margin:26px 0 6px;">Waste Stream Factors</div>
   <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Each waste stream differs in three ways: how hot it burns (<b>BTU/lb</b> → energy), whether it avoids landfill methane (<b>t CO₂e/ton</b> → climate benefit), and how much metal it holds (<b>lbs/ton</b>). Baseline: MSW at <b>5,000 BTU/lb → 550 kWh/ton</b> (NYSDEC permit basis, Reworld Hempstead). Edit any value; streams in the loaded data are highlighted.</div>
 
@@ -354,33 +391,39 @@ var BASELINE_BTU = 5000;
 // Waste streams with representative higher-heating-values (BTU/lb) and the
 // keywords used to match a delivery's "Waste Type" to a stream. Ordered most
 // specific first. Defaults are editable in the UI (state.streamBtu overrides).
-// Per-stream factors:
-//   btu   = higher heating value (BTU/lb) -> drives renewable energy
-//   ghg   = tons CO2e AVOIDED per ton -> drives greenhouse-gas benefit
+// Per-stream factors. GHG is analysed as WTE-vs-LANDFILL (t CO2e per ton):
+//   lf    = landfill methane that WOULD be emitted if landfilled -> AVOIDED (+)
+//   comb  = direct fossil CO2 emitted at the stack when burned (-)  [biogenic CO2 = 0]
+//   (grid electricity displaced is added from BTU x grid factor; metal from metal x credit)
+//   Net avoided vs landfill = lf - comb + energy credit + metal credit
+//   btu   = higher heating value (BTU/lb) -> renewable energy
 //   metal = lbs metal recovered per ton
-// MSW ghg (2.4) & metal (50) are Reworld's verified LCA blended figures; the
-// other ghg/metal values are DIRECTIONAL ESTIMATES pending Reworld per-stream
-// LCA data (see disclaimer in the stream table). ghg reflects that streams
-// that don't rot in a landfill (plastics, medical) avoid little methane, and
-// fossil streams emit CO2 when burned, so their per-ton benefit is lower.
+// MSW nets to Reworld's verified ~2.4 t CO2e/ton avoided. Other lf/comb values
+// are DIRECTIONAL ESTIMATES (biogenic streams rot -> high methane avoided;
+// fossil streams like plastics emit CO2 and avoid little methane -> can be net
+// negative). Replace with Reworld per-stream LCA before external use.
 var STREAMS = [
-  { key: 'plastics',   label: 'Plastics',                     btu: 14000, ghg: 0.3, metal: 0,  kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
-  { key: 'tires',      label: 'Rubber / Tires',               btu: 15000, ghg: 0.4, metal: 20, kw: [/tire|rubber|elastomer/] },
-  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16000, ghg: 0.5, metal: 0,  kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
-  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  ghg: 1.2, metal: 10, kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
-  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  ghg: 0.8, metal: 10, kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
-  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, ghg: 0.6, metal: 15, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
-  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, ghg: 0.6, metal: 20, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
-  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 7000,  ghg: 2.2, metal: 5,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
-  { key: 'wood',       label: 'Wood / Pallets',               btu: 8000,  ghg: 1.8, metal: 5,  kw: [/wood|pallet|lumber|timber/] },
-  { key: 'textiles',   label: 'Textiles',                     btu: 8000,  ghg: 1.0, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
-  { key: 'food',       label: 'Food / Organics',              btu: 2500,  ghg: 2.6, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
-  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  ghg: 2.0, metal: 2,  kw: [/sludge|biosolid|slurry/] },
-  { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, ghg: 0.1, metal: 0,  kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
-  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  ghg: 0.5, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
-  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  ghg: 1.0, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
-  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  ghg: 2.4, metal: 50, kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
+  { key: 'plastics',   label: 'Plastics',                     btu: 14000, lf: 0.00, comb: 2.90, metal: 0,  kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
+  { key: 'tires',      label: 'Rubber / Tires',               btu: 15000, lf: 0.00, comb: 2.40, metal: 20, kw: [/tire|rubber|elastomer/] },
+  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16000, lf: 0.00, comb: 3.10, metal: 0,  kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
+  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  lf: 0.50, comb: 0.80, metal: 10, kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
+  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  lf: 0.30, comb: 1.30, metal: 10, kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
+  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, lf: 0.10, comb: 2.20, metal: 15, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
+  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, lf: 0.10, comb: 2.20, metal: 20, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
+  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 7000,  lf: 2.55, comb: 0.00, metal: 5,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
+  { key: 'wood',       label: 'Wood / Pallets',               btu: 8000,  lf: 1.35, comb: 0.00, metal: 5,  kw: [/wood|pallet|lumber|timber/] },
+  { key: 'textiles',   label: 'Textiles',                     btu: 8000,  lf: 0.80, comb: 0.90, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
+  { key: 'food',       label: 'Food / Organics',              btu: 2500,  lf: 2.90, comb: 0.00, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
+  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  lf: 2.15, comb: 0.00, metal: 2,  kw: [/sludge|biosolid|slurry/] },
+  { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, lf: 0.00, comb: 0.10, metal: 0,  kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
+  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  lf: 0.20, comb: 0.20, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
+  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  lf: 0.60, comb: 0.60, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
+  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  lf: 2.50, comb: 0.35, metal: 50, kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
 ];
+// grid electricity carbon intensity (kg CO2e/kWh) and metal recycling credit
+// (t CO2e per lb recovered) used for the displacement credits.
+var GRID_KG_PER_KWH = 0.40;
+var METAL_CREDIT_T_PER_LB = 0.00075;
 var DEFAULT_STREAM = STREAMS[STREAMS.length - 1]; // unknown/blank -> MSW baseline
 
 function streamFor(wasteType) {
@@ -394,9 +437,15 @@ function btuFor(stream) {
   var o = state.streamBtu && state.streamBtu[stream.key];
   return (o != null && !isNaN(o)) ? o : stream.btu;
 }
+function gridTPerKwh() { var g = state.gridKg; return ((g != null && !isNaN(g)) ? g : GRID_KG_PER_KWH) / 1000; }
+function lfFor(s)   { var o = state.streamLf   && state.streamLf[s.key];   return (o != null && !isNaN(o)) ? o : s.lf; }
+function combFor(s) { var o = state.streamComb && state.streamComb[s.key]; return (o != null && !isNaN(o)) ? o : s.comb; }
+// Net CO2e avoided vs landfill per ton = methane avoided − stack CO2 + energy
+// displaced + metal recycled. A streamGhg override (if set) wins.
 function ghgFor(stream) {
   var o = state.streamGhg && state.streamGhg[stream.key];
-  return (o != null && !isNaN(o)) ? o : stream.ghg;
+  if (o != null && !isNaN(o)) return o;
+  return lfFor(stream) - combFor(stream) + kwhPerTon(btuFor(stream)) * gridTPerKwh() + metalFor(stream) * METAL_CREDIT_T_PER_LB;
 }
 function metalFor(stream) {
   var o = state.streamMetal && state.streamMetal[stream.key];
@@ -404,7 +453,7 @@ function metalFor(stream) {
 }
 function kwhPerTon(btu) { return FACTORS.energyPerTon * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v3';
+var STORAGE_KEY = 'reworld-sustainability-report-v4';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -420,8 +469,11 @@ function defaultState() {
     },
     rows: [ emptyRow() ],
     ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
+    gridKg: 0.40,         // grid carbon intensity (kg CO2e/kWh) for energy credit
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
-    streamGhg: {},        // per-stream tCO2e/ton overrides
+    streamGhg: {},        // per-stream NET tCO2e/ton overrides
+    streamLf: {},         // per-stream landfill-methane-avoided overrides
+    streamComb: {},       // per-stream stack CO2 overrides
     streamMetal: {},      // per-stream lbs/ton overrides
     allRows: [],          // full imported delivery list (all periods)
     periodSel: null,      // which period option is selected
@@ -504,6 +556,54 @@ function calc() {
     ytdCoal:    ytdEnergy / FACTORS.coalKwhTon,
     ytdFuelOil: ytdEnergy / FACTORS.fuelOilKwhGal
   };
+}
+
+// Greenhouse-gas vs landfill breakdown for the current period's mix.
+function ghgBreakdown() {
+  var methaneAvoided = 0, stackCO2 = 0, energyAvoided = 0, metalAvoided = 0, tons = 0;
+  var perStream = {};
+  var g = gridTPerKwh();
+  state.rows.forEach(function (r) {
+    var t = num(r.tons); if (t <= 0) return;
+    var s = streamFor(r.wasteType);
+    var ma = t * lfFor(s), sc = t * combFor(s), ea = t * kwhPerTon(btuFor(s)) * g, mm = t * metalFor(s) * METAL_CREDIT_T_PER_LB;
+    methaneAvoided += ma; stackCO2 += sc; energyAvoided += ea; metalAvoided += mm; tons += t;
+    var ps = perStream[s.key] || (perStream[s.key] = { label: s.label, tons: 0, net: 0 });
+    ps.tons += t; ps.net += (ma - sc + ea + mm);
+  });
+  return {
+    tons: tons, methaneAvoided: methaneAvoided, stackCO2: stackCO2,
+    energyAvoided: energyAvoided, metalAvoided: metalAvoided,
+    net: methaneAvoided - stackCO2 + energyAvoided + metalAvoided, perStream: perStream
+  };
+}
+
+// Plain-language qualitative analysis of the mix's GHG story.
+function ghgNarrative(bd) {
+  if (bd.tons <= 0) return 'Enter deliveries or tonnage above to generate the greenhouse-gas analysis.';
+  var per = bd.net / bd.tons;
+  var out = [];
+  if (bd.net > 0) {
+    out.push('Across ' + fmt2(bd.tons) + ' tons, recovering this waste at Reworld avoids a net ' + fmt(bd.net) +
+      ' tons of CO₂e versus landfilling it — a net climate benefit of about ' + fmt2(per) + ' t CO₂e per ton. ' +
+      'The facility does emit CO₂ at the stack (' + fmt(bd.stackCO2) + ' t), but that is more than offset by the landfill methane it prevents and the fossil power it displaces.');
+  } else {
+    out.push('Across ' + fmt2(bd.tons) + ' tons, the ' + fmt(bd.stackCO2) + ' t of CO₂ released at the stack is not fully offset by avoided landfill methane and displaced energy, so on greenhouse gas alone this mix is roughly carbon-neutral to net-negative (' + fmt2(per) + ' t CO₂e per ton).');
+  }
+  out.push('It works in three parts: methane kept out of the atmosphere by not landfilling (' + fmt(bd.methaneAvoided) +
+    ' t CO₂e avoided), fossil grid electricity displaced by the energy recovered (' + fmt(bd.energyAvoided) +
+    ' t CO₂e avoided), and metal recovered for recycling (' + fmt(bd.metalAvoided) + ' t CO₂e) — set against the ' +
+    fmt(bd.stackCO2) + ' t of stack CO₂.');
+  var neg = Object.keys(bd.perStream).map(function (k) { return bd.perStream[k]; }).filter(function (s) { return s.net < -0.001; });
+  if (neg.length) {
+    var names = neg.map(function (s) { return s.label; }).join(', ');
+    var plural = neg.length > 1;
+    out.push('One nuance for a fair claim: ' + names + ' ' + (plural ? 'are' : 'is') +
+      ' fossil-derived and ' + (plural ? "don't" : "doesn't") + ' decompose in a landfill, so on greenhouse gas alone ' +
+      (plural ? 'they add' : 'it adds') + ' little methane-avoidance benefit. ' + (plural ? 'Their' : 'Its') +
+      ' environmental value is in energy recovery, 90%+ volume reduction, and permanent diversion from landfill (no leachate, no microplastic escape, no long-term liability) — not in avoided methane.');
+  }
+  return out.join(' ');
 }
 
 // One editable text field cell.
@@ -632,6 +732,42 @@ function render() {
 
   renderSummary(c, year);
   refreshStreams(c);
+  renderGhgPanel();
+}
+
+// Render the GHG vs landfill analysis panel.
+function renderGhgPanel() {
+  var bd = ghgBreakdown();
+  var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  var nv = document.getElementById('ghgNetVal');
+  if (nv) { nv.textContent = fmt(bd.net); nv.className = 'ghg-net-val ' + (bd.net >= 0 ? 'pos' : 'neg'); }
+  set('ghgMethane', fmt(bd.methaneAvoided));
+  set('ghgEnergy', fmt(bd.energyAvoided));
+  set('ghgMetalCr', fmt(bd.metalAvoided));
+  set('ghgStack', fmt(bd.stackCO2));
+  var narr = document.getElementById('ghgNarrative'); if (narr) narr.textContent = ghgNarrative(bd);
+
+  var tb = document.getElementById('ghgStreamBody');
+  if (tb) {
+    tb.innerHTML = '';
+    var keys = Object.keys(bd.perStream);
+    if (!keys.length) {
+      tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="4">No tonnage entered yet.</td></tr>';
+    } else {
+      keys.map(function (k) { return bd.perStream[k]; }).sort(function (a, b) { return b.tons - a.tons; }).forEach(function (s) {
+        var perTon = s.tons > 0 ? s.net / s.tons : 0;
+        var benefit = perTon >= 0.05, cost = perTon <= -0.05;
+        var verdict = benefit ? '✓ Net benefit' : (cost ? '✕ Net cost (offset by energy/diversion)' : '~ Roughly neutral');
+        var col = benefit ? '#159C8D' : (cost ? '#e0245e' : '#5B5B78');
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td style="padding-left:16px;">' + s.label + '</td>' +
+          '<td style="text-align:right;">' + fmt2(s.tons) + '</td>' +
+          '<td style="text-align:right;color:' + col + ';font-weight:600;">' + fmt2(perTon) + '</td>' +
+          '<td style="text-align:right;padding-right:16px;color:' + col + ';">' + verdict + '</td>';
+        tb.appendChild(tr);
+      });
+    }
+  }
 }
 
 // Column labels for the summary table (and Excel export).
@@ -695,7 +831,7 @@ function buildStreamsTable() {
     var td3 = document.createElement('td'); td3.style.textAlign = 'right'; // derived kWh/ton
 
     var td4 = document.createElement('td'); td4.style.textAlign = 'right';
-    var ghgInp = factorInput(function () { return ghgFor(s); }, function (v) { state.streamGhg = state.streamGhg || {}; var n = parseFloat(v); if (isNaN(n)) delete state.streamGhg[s.key]; else state.streamGhg[s.key] = n; }, 64);
+    var ghgInp = factorInput(function () { return Math.round(ghgFor(s) * 100) / 100; }, function (v) { state.streamGhg = state.streamGhg || {}; var n = parseFloat(v); if (isNaN(n)) delete state.streamGhg[s.key]; else state.streamGhg[s.key] = n; }, 64);
     ghgInp.step = '0.1';
     td4.appendChild(ghgInp);
 
@@ -725,7 +861,7 @@ function refreshStreams(c) {
     // dim the GHG/metal columns when the blended basis ignores them
     cell.ghgCell.style.opacity = streamMode ? '1' : '0.4';
     cell.metalCell.style.opacity = streamMode ? '1' : '0.4';
-    [['btuInput', btuFor(s)], ['ghgInput', ghgFor(s)], ['metalInput', metalFor(s)]].forEach(function (p) {
+    [['btuInput', btuFor(s)], ['ghgInput', Math.round(ghgFor(s) * 100) / 100], ['metalInput', metalFor(s)]].forEach(function (p) {
       var inp = cell[p[0]]; if (document.activeElement !== inp) { var w = String(p[1]); if (inp.value !== w) inp.value = w; }
     });
   });
@@ -1505,6 +1641,14 @@ function applyGhgMode() {
 Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'), function (r) {
   r.addEventListener('change', function () { if (r.checked) { state.ghgMode = r.value; applyGhgMode(); render(); saveState(); } });
 });
+
+// Grid carbon intensity input.
+(function () {
+  var gi = document.getElementById('gridKg');
+  if (!gi) return;
+  gi.value = (state.gridKg != null ? state.gridKg : GRID_KG_PER_KWH);
+  gi.addEventListener('input', function () { var v = parseFloat(gi.value); state.gridKg = isNaN(v) ? GRID_KG_PER_KWH : v; render(); saveState(); });
+})();
 
 // Initial paint.
 buildStreamsTable();
