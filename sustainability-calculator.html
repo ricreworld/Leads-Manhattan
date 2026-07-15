@@ -535,18 +535,22 @@ function metalFor(stream) {
 // Hempstead's verified 550 by each plant's nameplate MW ÷ TPD). grid = kg
 // CO2e/kWh of the regional grid the facility displaces (EPA eGRID region,
 // approximate — editable). All values are estimates except Hempstead's 550.
+// Specs from Reworld Facility Fact Sheets (2024). Net kWh/ton is scaled from
+// Reworld Hempstead's verified 550 by each plant's turbine MW ÷ boiler TPD.
+// Grid = approximate EPA eGRID regional carbon intensity (editable estimate).
 var FACILITIES = [
-  { key: 'hempstead',    label: 'Reworld Hempstead — Westbury, NY',       kwh: 550, grid: 0.30, annual: 914000, note: '2,505 TPD · 80 MW · NY Long Island grid (NYLI) · ferrous/non-ferrous · 550 kWh/ton is Reworld-verified.' },
-  { key: 'haverhill',    label: 'Reworld Haverhill — Haverhill, MA',       kwh: 470, grid: 0.25, annual: 602000, note: '1,650 TPD · 45 MW · ISO-New England grid · energy rate scaled from Hempstead (estimate).' },
-  { key: 'babylon',      label: 'Reworld Babylon — West Babylon, NY',      kwh: 400, grid: 0.30, annual: 274000, note: '750 TPD · 17 MW · NY Long Island grid · ferrous only · energy rate estimate.' },
-  { key: 'bristol',      label: 'Reworld Bristol — Bristol, CT',           kwh: 400, grid: 0.25, annual: 261000, note: '716 TPD · 16.3 MW · ISO-New England grid · energy rate estimate.' },
-  { key: 'indianapolis', label: 'Reworld Indianapolis — Indianapolis, IN', kwh: 51,  grid: 0.45, annual: 794000, note: '2,175 TPD · steam-dominant (~6.5 MW electric) · coal-heavy Indiana grid (MISO) · the electric kWh/ton UNDERSTATES this plant — it sells district steam. Use Reworld’s steam-credit figure.' },
+  { key: 'hempstead',    label: 'Reworld Hempstead — Westbury, NY',       kwh: 550, grid: 0.30, annual: 986000, note: '3 boilers · 2,900 TPD · 80 MW turbine · roller-grate mass burn (1989) · NY Long Island grid · ferrous/non-ferrous · 550 kWh/ton is Reworld-verified.' },
+  { key: 'haverhill',    label: 'Reworld Haverhill — Haverhill, MA',       kwh: 545, grid: 0.25, annual: 561000, note: '2 boilers · 1,650 TPD · 45 MW turbine · Martin mass burn (1989) · ISO-New England grid · kWh/ton scaled from Hempstead.' },
+  { key: 'huntington',   label: 'Reworld Huntington — East Northport, NY', kwh: 640, grid: 0.30, annual: 255000, note: '750 TPD · 24 MW turbine · mass burn · NY Long Island grid · most efficient (kWh/ton scaled from Hempstead).' },
+  { key: 'babylon',      label: 'Reworld Babylon — West Babylon, NY',      kwh: 450, grid: 0.30, annual: 255000, note: '750 TPD · 17 MW turbine · mass burn · NY Long Island grid · ferrous only · kWh/ton scaled from Hempstead.' },
+  { key: 'bristol',      label: 'Reworld Bristol — Bristol, CT',           kwh: 490, grid: 0.25, annual: 221000, note: '2 boilers · 650 TPD · 16 MW turbine · Martin mass burn (1988) · ISO-New England grid · kWh/ton scaled from Hempstead.' },
+  { key: 'indianapolis', label: 'Reworld Indianapolis — Indianapolis, IN', kwh: 53,  grid: 0.45, annual: 803000, note: '3 boilers · 2,362 TPD · 6.25 MW turbine · Martin mass burn (1988) · STEAM-DOMINANT: supplies ~50% of downtown Indianapolis steam loop (Citizens Thermal). The 53 kWh/ton electric UNDERSTATES this plant — add steam credit.' },
   { key: 'custom',       label: 'Custom / other facility',                 kwh: 550, grid: 0.40, annual: 900000, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
 ];
 function facilityKwh() { var v = state.facilityKwhPerTon; return (v != null && !isNaN(v)) ? v : FACTORS.energyPerTon; }
 function kwhPerTon(btu) { return facilityKwh() * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v7';
+var STORAGE_KEY = 'reworld-sustainability-report-v8';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -564,7 +568,7 @@ function defaultState() {
     ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
     facility: 'hempstead',        // selected facility
     facilityKwhPerTon: 550,       // net kWh recovered per ton of MSW (facility-specific)
-    annualTons: 914000,   // facility annual throughput (mostly MSW) for context
+    annualTons: 986000,   // facility annual throughput (mostly MSW) for context
     gridKg: 0.30,         // grid carbon intensity (kg CO2e/kWh) for energy credit
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
     streamGhg: {},        // per-stream NET tCO2e/ton overrides
