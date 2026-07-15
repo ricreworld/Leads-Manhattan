@@ -71,6 +71,13 @@
   .ghg-item { font-family:'Poppins',sans-serif; font-weight:700; font-size:16px; color:#15152B; display:flex; flex-direction:column; }
   .ghg-item small { font-family:'Inter',sans-serif; font-weight:400; font-size:10px; color:#5B5B78; margin-top:2px; max-width:120px; }
   .ghg-plus { color:#159C8D; } .ghg-minus { color:#e0245e; }
+  .ghg-item.hero span:not(small) { color:#159C8D; }
+  .ghg-item.hero { padding:4px 10px; background:#F0FBF9; border-radius:6px; }
+  .ghg-netline { font-size:11.5px; color:#5B5B78; margin-top:12px; }
+  .ghg-netval { font-weight:700; }
+  .ghg-netval.pos { color:#159C8D; } .ghg-netval.neg { color:#e0245e; }
+  .alt-sel { border:1px solid #E3E4F0; border-radius:5px; padding:3px 6px; font-size:11px; font-family:'Inter',sans-serif; background:#fff; cursor:pointer; }
+  .alt-sel:focus { outline:none; border-color:#2A1DBF; }
   .ghg-narrative { font-size:12.5px; line-height:1.65; color:#15152B; margin-top:14px; padding-top:14px; border-top:1px dashed #E3E4F0; }
   .ghg-assump { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
   .ghg-assump input { border:1px solid #E3E4F0; border-radius:6px; padding:5px 8px; font-size:12px; font-family:'Inter',sans-serif; }
@@ -302,18 +309,22 @@
   <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
   <div class="ghg-panel">
     <div class="ghg-headline">
-      <div class="ghg-net"><div class="ghg-net-val" id="ghgNetVal">0</div><div class="ghg-net-cap">net tons CO₂e avoided vs landfill</div></div>
+      <div class="ghg-net">
+        <div class="ghg-net-val pos" id="ghgAvoidedVal">0</div>
+        <div class="ghg-net-cap">tons CO₂e <b>avoided</b> — the reduction this waste delivers</div>
+      </div>
       <div class="ghg-flow">
-        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMethane">0</span><small>landfill methane avoided</small></div>
+        <div class="ghg-item hero"><span class="ghg-plus">+</span> <span id="ghgMethane">0</span><small>landfill methane avoided</small></div>
         <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgEnergy">0</span><small>grid electricity displaced</small></div>
         <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMetalCr">0</span><small>metal recycled credit</small></div>
-        <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>direct CO₂ at the stack</small></div>
+        <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>stack CO₂ (vs-landfill streams only)</small></div>
       </div>
     </div>
+    <div class="ghg-netline">Net after stack CO₂: <span class="ghg-netval" id="ghgNetVal">0</span> tons CO₂e vs the alternative.</div>
     <div id="ghgNarrative" class="ghg-narrative"></div>
     <div class="table-scroll" style="margin-top:12px;">
-      <table class="card-table wide" style="min-width:420px;">
-        <thead><tr><th style="padding-left:16px;">Stream in this period</th><th style="text-align:right;">Tons</th><th style="text-align:right;">Net t CO₂e / ton</th><th style="text-align:right;padding-right:16px;">Verdict vs landfill</th></tr></thead>
+      <table class="card-table wide" style="min-width:520px;">
+        <thead><tr><th style="padding-left:16px;">Stream in this period</th><th style="text-align:right;">Tons</th><th style="text-align:right;">Net t CO₂e / ton</th><th>Alternative</th><th style="text-align:right;padding-right:16px;">Verdict</th></tr></thead>
         <tbody id="ghgStreamBody"></tbody>
       </table>
     </div>
@@ -424,6 +435,20 @@ var STREAMS = [
 // (t CO2e per lb recovered) used for the displacement credits.
 var GRID_KG_PER_KWH = 0.40;
 var METAL_CREDIT_T_PER_LB = 0.00075;
+
+// The counterfactual — what would happen to this waste WITHOUT Reworld:
+//   'landfill'   -> would be landfilled (avoids methane; net vs landfill)
+//   'incinerate' -> can't be landfilled; alternative is a dedicated incinerator
+//                   with NO energy recovery, so stack CO2 is a wash and Reworld
+//                   adds the energy + metal recovery credit (net positive).
+// Reworld's profiled/regulated waste (pharma, medical, product destruction) is
+// typically the 'incinerate' case. Editable per stream.
+var ALT_DEFAULT = { pharma: 'incinerate', hba: 'incinerate', tmw: 'incinerate', rmw: 'incinerate', solvents: 'incinerate' };
+function altFor(s) {
+  var o = state.streamAlt && state.streamAlt[s.key];
+  if (o === 'landfill' || o === 'incinerate') return o;
+  return ALT_DEFAULT[s.key] || 'landfill';
+}
 var DEFAULT_STREAM = STREAMS[STREAMS.length - 1]; // unknown/blank -> MSW baseline
 
 function streamFor(wasteType) {
@@ -445,7 +470,11 @@ function combFor(s) { var o = state.streamComb && state.streamComb[s.key]; retur
 function ghgFor(stream) {
   var o = state.streamGhg && state.streamGhg[stream.key];
   if (o != null && !isNaN(o)) return o;
-  return lfFor(stream) - combFor(stream) + kwhPerTon(btuFor(stream)) * gridTPerKwh() + metalFor(stream) * METAL_CREDIT_T_PER_LB;
+  var energyMetal = kwhPerTon(btuFor(stream)) * gridTPerKwh() + metalFor(stream) * METAL_CREDIT_T_PER_LB;
+  // vs incineration: stack CO2 is a wash and there is no landfill methane, so
+  // only the energy + metal recovery credit remains (net positive).
+  if (altFor(stream) === 'incinerate') return energyMetal;
+  return lfFor(stream) - combFor(stream) + energyMetal;
 }
 function metalFor(stream) {
   var o = state.streamMetal && state.streamMetal[stream.key];
@@ -453,7 +482,7 @@ function metalFor(stream) {
 }
 function kwhPerTon(btu) { return FACTORS.energyPerTon * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v4';
+var STORAGE_KEY = 'reworld-sustainability-report-v5';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -475,6 +504,7 @@ function defaultState() {
     streamLf: {},         // per-stream landfill-methane-avoided overrides
     streamComb: {},       // per-stream stack CO2 overrides
     streamMetal: {},      // per-stream lbs/ton overrides
+    streamAlt: {},        // per-stream counterfactual overrides ('landfill'|'incinerate')
     allRows: [],          // full imported delivery list (all periods)
     periodSel: null,      // which period option is selected
     importPeriodLabel: '',
@@ -504,6 +534,7 @@ function saveState() {
 function fmt(n)  { return Math.round(n).toLocaleString('en-US'); }
 function fmt2(n) { return (Math.round(n * 100) / 100).toLocaleString('en-US'); }
 function num(v)  { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
 
 // The whole calculation — pure function of state. Energy is summed per
 // delivery using each row's waste-stream heating value; a blended kWh/ton is
@@ -566,14 +597,19 @@ function ghgBreakdown() {
   state.rows.forEach(function (r) {
     var t = num(r.tons); if (t <= 0) return;
     var s = streamFor(r.wasteType);
-    var ma = t * lfFor(s), sc = t * combFor(s), ea = t * kwhPerTon(btuFor(s)) * g, mm = t * metalFor(s) * METAL_CREDIT_T_PER_LB;
+    var incin = altFor(s) === 'incinerate';
+    // vs incineration: no landfill methane, and stack CO2 is a wash (both burn).
+    var ma = incin ? 0 : t * lfFor(s);
+    var sc = incin ? 0 : t * combFor(s);
+    var ea = t * kwhPerTon(btuFor(s)) * g, mm = t * metalFor(s) * METAL_CREDIT_T_PER_LB;
     methaneAvoided += ma; stackCO2 += sc; energyAvoided += ea; metalAvoided += mm; tons += t;
-    var ps = perStream[s.key] || (perStream[s.key] = { label: s.label, tons: 0, net: 0 });
+    var ps = perStream[s.key] || (perStream[s.key] = { label: s.label, tons: 0, net: 0, alt: altFor(s) });
     ps.tons += t; ps.net += (ma - sc + ea + mm);
   });
   return {
     tons: tons, methaneAvoided: methaneAvoided, stackCO2: stackCO2,
     energyAvoided: energyAvoided, metalAvoided: metalAvoided,
+    avoided: methaneAvoided + energyAvoided + metalAvoided,     // total reductions (positive)
     net: methaneAvoided - stackCO2 + energyAvoided + metalAvoided, perStream: perStream
   };
 }
@@ -581,27 +617,21 @@ function ghgBreakdown() {
 // Plain-language qualitative analysis of the mix's GHG story.
 function ghgNarrative(bd) {
   if (bd.tons <= 0) return 'Enter deliveries or tonnage above to generate the greenhouse-gas analysis.';
-  var per = bd.net / bd.tons;
   var out = [];
-  if (bd.net > 0) {
-    out.push('Across ' + fmt2(bd.tons) + ' tons, recovering this waste at Reworld avoids a net ' + fmt(bd.net) +
-      ' tons of CO₂e versus landfilling it — a net climate benefit of about ' + fmt2(per) + ' t CO₂e per ton. ' +
-      'The facility does emit CO₂ at the stack (' + fmt(bd.stackCO2) + ' t), but that is more than offset by the landfill methane it prevents and the fossil power it displaces.');
-  } else {
-    out.push('Across ' + fmt2(bd.tons) + ' tons, the ' + fmt(bd.stackCO2) + ' t of CO₂ released at the stack is not fully offset by avoided landfill methane and displaced energy, so on greenhouse gas alone this mix is roughly carbon-neutral to net-negative (' + fmt2(per) + ' t CO₂e per ton).');
-  }
-  out.push('It works in three parts: methane kept out of the atmosphere by not landfilling (' + fmt(bd.methaneAvoided) +
-    ' t CO₂e avoided), fossil grid electricity displaced by the energy recovered (' + fmt(bd.energyAvoided) +
-    ' t CO₂e avoided), and metal recovered for recycling (' + fmt(bd.metalAvoided) + ' t CO₂e) — set against the ' +
-    fmt(bd.stackCO2) + ' t of stack CO₂.');
-  var neg = Object.keys(bd.perStream).map(function (k) { return bd.perStream[k]; }).filter(function (s) { return s.net < -0.001; });
-  if (neg.length) {
-    var names = neg.map(function (s) { return s.label; }).join(', ');
-    var plural = neg.length > 1;
-    out.push('One nuance for a fair claim: ' + names + ' ' + (plural ? 'are' : 'is') +
-      ' fossil-derived and ' + (plural ? "don't" : "doesn't") + ' decompose in a landfill, so on greenhouse gas alone ' +
-      (plural ? 'they add' : 'it adds') + ' little methane-avoidance benefit. ' + (plural ? 'Their' : 'Its') +
-      ' environmental value is in energy recovery, 90%+ volume reduction, and permanent diversion from landfill (no leachate, no microplastic escape, no long-term liability) — not in avoided methane.');
+  // Lead with the reduction (the positive story).
+  out.push('Across ' + fmt2(bd.tons) + ' tons, recovering this waste at Reworld avoids ' + fmt(bd.avoided) +
+    ' tons of CO₂e — that is the greenhouse-gas reduction this material delivers. It comes from three places: ' +
+    fmt(bd.methaneAvoided) + ' t of landfill methane kept out of the atmosphere, ' + fmt(bd.energyAvoided) +
+    ' t from the fossil grid electricity the recovered energy displaces, and ' + fmt(bd.metalAvoided) +
+    ' t from metal recovered for recycling.');
+  // The honest offset + net.
+  out.push('Combustion does release ' + fmt(bd.stackCO2) + ' t of fossil CO₂ at the stack — higher-BTU waste burns hotter and emits more — but netting that against the avoided emissions still leaves a ' +
+    (bd.net >= 0 ? 'net reduction of ' + fmt(bd.net) + ' tons CO₂e' : 'small net figure of ' + fmt(bd.net) + ' tons CO₂e') + ' versus the alternative.');
+  // Counterfactual explanation for incineration streams.
+  var incin = Object.keys(bd.perStream).map(function (k) { return bd.perStream[k]; }).filter(function (s) { return s.alt === 'incinerate'; });
+  if (incin.length) {
+    out.push('For ' + incin.map(function (s) { return s.label; }).join(', ') +
+      ', landfill is not the alternative — this material must be destroyed by incineration regardless, so the stack CO₂ happens either way. Reworld’s value there is the energy and metal it recovers that a dedicated incinerator does not, which is a pure net reduction.');
   }
   return out.join(' ');
 }
@@ -739,35 +769,40 @@ function render() {
 function renderGhgPanel() {
   var bd = ghgBreakdown();
   var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
-  var nv = document.getElementById('ghgNetVal');
-  if (nv) { nv.textContent = fmt(bd.net); nv.className = 'ghg-net-val ' + (bd.net >= 0 ? 'pos' : 'neg'); }
+  set('ghgAvoidedVal', fmt(bd.avoided));
   set('ghgMethane', fmt(bd.methaneAvoided));
   set('ghgEnergy', fmt(bd.energyAvoided));
   set('ghgMetalCr', fmt(bd.metalAvoided));
   set('ghgStack', fmt(bd.stackCO2));
+  var nv = document.getElementById('ghgNetVal');
+  if (nv) { nv.textContent = fmt(bd.net); nv.className = 'ghg-netval ' + (bd.net >= 0 ? 'pos' : 'neg'); }
   var narr = document.getElementById('ghgNarrative'); if (narr) narr.textContent = ghgNarrative(bd);
 
   var tb = document.getElementById('ghgStreamBody');
-  if (tb) {
-    tb.innerHTML = '';
-    var keys = Object.keys(bd.perStream);
-    if (!keys.length) {
-      tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="4">No tonnage entered yet.</td></tr>';
-    } else {
-      keys.map(function (k) { return bd.perStream[k]; }).sort(function (a, b) { return b.tons - a.tons; }).forEach(function (s) {
-        var perTon = s.tons > 0 ? s.net / s.tons : 0;
-        var benefit = perTon >= 0.05, cost = perTon <= -0.05;
-        var verdict = benefit ? '✓ Net benefit' : (cost ? '✕ Net cost (offset by energy/diversion)' : '~ Roughly neutral');
-        var col = benefit ? '#159C8D' : (cost ? '#e0245e' : '#5B5B78');
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td style="padding-left:16px;">' + s.label + '</td>' +
-          '<td style="text-align:right;">' + fmt2(s.tons) + '</td>' +
-          '<td style="text-align:right;color:' + col + ';font-weight:600;">' + fmt2(perTon) + '</td>' +
-          '<td style="text-align:right;padding-right:16px;color:' + col + ';">' + verdict + '</td>';
-        tb.appendChild(tr);
-      });
-    }
-  }
+  if (!tb) return;
+  tb.innerHTML = '';
+  var keys = Object.keys(bd.perStream);
+  if (!keys.length) { tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="5">No tonnage entered yet.</td></tr>'; return; }
+  keys.map(function (k) { return { key: k, s: bd.perStream[k] }; }).sort(function (a, b) { return b.s.tons - a.s.tons; }).forEach(function (row) {
+    var s = row.s, key = row.key;
+    var perTon = s.tons > 0 ? s.net / s.tons : 0;
+    var benefit = perTon >= 0.05, cost = perTon <= -0.05;
+    var verdict = benefit ? '✓ Net benefit' : (cost ? '✕ Net cost (offset by energy / diversion)' : '~ Roughly neutral');
+    var col = benefit ? '#159C8D' : (cost ? '#e0245e' : '#5B5B78');
+    var tr = document.createElement('tr');
+    var td1 = el('td', null, s.label); td1.style.paddingLeft = '16px';
+    var td2 = el('td'); td2.style.textAlign = 'right'; td2.textContent = fmt2(s.tons);
+    var td3 = el('td'); td3.style.textAlign = 'right'; td3.style.color = col; td3.style.fontWeight = '600'; td3.textContent = fmt2(perTon);
+    var td4 = el('td'); // alternative selector
+    var sel = document.createElement('select'); sel.className = 'alt-sel';
+    [['landfill', 'vs Landfill'], ['incinerate', 'vs Incineration']].forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); });
+    sel.value = s.alt;
+    sel.addEventListener('change', function () { state.streamAlt = state.streamAlt || {}; state.streamAlt[key] = sel.value; render(); saveState(); });
+    td4.appendChild(sel);
+    var td5 = el('td', null, verdict); td5.style.textAlign = 'right'; td5.style.paddingRight = '16px'; td5.style.color = col;
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); tr.appendChild(td5);
+    tb.appendChild(tr);
+  });
 }
 
 // Column labels for the summary table (and Excel export).
