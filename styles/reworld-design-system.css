@@ -1,0 +1,273 @@
+/* ============================================================
+   REWORLD DESIGN SYSTEM
+   Grounded in Reworld's official "All Solutions" sell sheet.
+   Hex values are visually approximated from that document, not
+   sampled pixel-exact from reworldwaste.com — swap the token
+   values below if you have exact brand-guideline hex/Pantone.
+
+   Usage:
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+     <link rel="stylesheet" href="styles/reworld-design-system.css">
+   ============================================================ */
+
+:root{
+  /* ---- color: primary (Reworld Blue) ---- */
+  --rw-blue-dark:   #1B1385;
+  --rw-blue:        #2A1DBF;
+  --rw-blue-light:  #4F42E0;
+  --rw-blue-muted:  #8B83EC;
+  --rw-blue-tint:   #E4E1FA;
+
+  /* ---- color: accent (Reworld Teal) ---- */
+  --rw-teal-dark:   #159C8D;
+  --rw-teal:        #22D9C4;
+  --rw-teal-light:  #6EE9DA;
+  --rw-teal-soft:   #D8FBF6;
+  --rw-teal-whisper:#F0FDFB;
+
+  /* ---- color: neutrals (cool, not warm) ---- */
+  --rw-ink:         #15152B;
+  --rw-ink-muted:   #5B5B78;
+  --rw-border:      #E3E4F0;
+  --rw-surface-alt: #F5F6FB;
+  --rw-surface:     #FFFFFF;
+
+  /* ---- color: support (inferred, standard convention) ---- */
+  --rw-info:        #4B7CC7;
+  --rw-info-bg:     #E6EEFA;
+  --rw-alert:       #D64545;
+  --rw-alert-bg:    #FBE7E7;
+
+  /* ---- type ---- */
+  --rw-font-display: 'Poppins', sans-serif;
+  --rw-font-body:     'Inter', sans-serif;
+  --rw-font-mono:     'IBM Plex Mono', monospace;
+
+  /* ---- spacing (4px base) ---- */
+  --rw-space-1: 4px;
+  --rw-space-2: 8px;
+  --rw-space-3: 12px;
+  --rw-space-4: 16px;
+  --rw-space-6: 24px;
+  --rw-space-8: 32px;
+  --rw-space-12: 48px;
+  --rw-space-16: 64px;
+  --rw-space-24: 96px;
+
+  /* ---- radius ---- */
+  --rw-radius-sm: 6px;
+  --rw-radius-md: 12px;
+  --rw-radius-lg: 16px;
+  --rw-radius-full: 9999px;
+
+  /* ---- layout ---- */
+  --rw-container: 1140px;
+  --rw-gutter: 24px;
+}
+
+/* ============================================================
+   RESET / BASE
+   ============================================================ */
+*{ box-sizing:border-box; }
+body{
+  background: var(--rw-surface);
+  color: var(--rw-ink);
+  font-family: var(--rw-font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.rw-container{ max-width: var(--rw-container); margin: 0 auto; padding: 0 var(--rw-gutter); }
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.rw-h1{
+  font-family: var(--rw-font-display); font-weight: 800;
+  font-size: clamp(30px, 4.4vw, 44px); line-height: 1.15; color: var(--rw-blue);
+}
+.rw-h1-rule{
+  display:block; width:140px; height:6px; margin-top:14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='6'%3E%3Cpath d='M0 4 Q7.5 0 15 4 T30 4 T45 4 T60 4' stroke='%2322D9C4' stroke-width='2.6' fill='none'/%3E%3C/svg%3E") repeat-x;
+  background-size: 30px 6px;
+}
+.rw-h2{ font-family: var(--rw-font-display); font-weight:700; font-size:28px; line-height:1.15; color:var(--rw-blue); }
+.rw-h3{ font-family: var(--rw-font-display); font-weight:600; font-size:19px; line-height:1.2; color:var(--rw-blue); }
+.rw-h4{ font-family: var(--rw-font-display); font-weight:600; font-size:15px; line-height:1.3; color:var(--rw-blue); }
+.rw-body{ font-family: var(--rw-font-body); font-size:16px; line-height:1.6; }
+.rw-body-muted{ font-family: var(--rw-font-body); font-size:14px; line-height:1.6; color:var(--rw-ink-muted); }
+.rw-eyebrow{
+  font-family: var(--rw-font-mono); font-weight:500; font-size:12px;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--rw-teal-dark);
+}
+.rw-logotype{ font-family: var(--rw-font-display); font-weight:700; font-size:20px; color:var(--rw-blue); }
+
+/* ============================================================
+   BRAND MARK
+   ============================================================ */
+.rw-wordmark{ display:flex; align-items:center; gap:4px; font-family:var(--rw-font-display); font-weight:800; font-size:20px; color:var(--rw-blue); }
+.rw-wordmark.on-dark{ color:#fff; }
+.rw-trail{ display:flex; gap:4px; margin-left:6px; }
+.rw-trail span{ width:5px; height:5px; border-radius:50%; background: var(--rw-teal); }
+.rw-trail span:nth-child(2){ width:4px; height:4px; opacity:.75; }
+.rw-trail span:nth-child(3){ width:3px; height:3px; opacity:.5; }
+
+/* ============================================================
+   BUTTONS
+   Pill-shaped throughout — matches the rounded geometry of the
+   icon hoods, nameplates, and product logotypes.
+   ============================================================ */
+.rw-btn{
+  font-family: var(--rw-font-body); font-weight:600; font-size:14.5px;
+  border-radius: var(--rw-radius-full); padding:12px 24px; cursor:pointer;
+  border:1.5px solid transparent; display:inline-flex; align-items:center; gap:8px;
+  text-decoration:none; transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.rw-btn.rw-btn-sm{ font-size:12.5px; padding:8px 18px; }
+.rw-btn.rw-btn-lg{ font-size:16px; padding:15px 30px; }
+.rw-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+.rw-btn-primary{ background: var(--rw-blue); color:#fff; }
+.rw-btn-primary:hover{ background: var(--rw-blue-dark); box-shadow: 0 6px 18px rgba(42,29,191,.28); }
+
+.rw-btn-teal{ background: var(--rw-teal); color: var(--rw-blue-dark); }
+.rw-btn-teal:hover{ background: #3EE6D2; }
+
+.rw-btn-outline{ background: transparent; border-color: var(--rw-blue); color: var(--rw-blue); }
+.rw-btn-outline:hover{ background: rgba(42,29,191,.06); }
+
+.rw-btn-ghost{ background: transparent; color: var(--rw-teal-dark); padding-left:4px; padding-right:4px; border-radius: var(--rw-radius-sm); }
+.rw-btn-ghost:hover{ color: var(--rw-blue); }
+
+/* ============================================================
+   BADGES / TAGS / NAMEPLATES
+   ============================================================ */
+.rw-pill{ font-size:12.5px; font-weight:600; padding:6px 14px; border-radius: var(--rw-radius-full); display:inline-flex; align-items:center; gap:6px; }
+.rw-pill .rw-dot{ width:6px; height:6px; border-radius:50%; background: currentColor; }
+.rw-pill-blue{ background: var(--rw-blue-tint); color: var(--rw-blue); }
+.rw-pill-teal{ background: var(--rw-teal-soft); color: var(--rw-teal-dark); }
+.rw-pill-info{ background: var(--rw-info-bg); color: var(--rw-info); }
+.rw-pill-alert{ background: var(--rw-alert-bg); color: var(--rw-alert); }
+
+.rw-pill-solid{ font-family: var(--rw-font-display); font-weight:600; font-size:12px; color:#fff; background: var(--rw-blue); padding:6px 14px; border-radius: var(--rw-radius-full); }
+
+.rw-tag{
+  font-family: var(--rw-font-mono); font-size:11px; font-weight:500; letter-spacing:.03em;
+  padding:5px 10px; border-radius: var(--rw-radius-sm); border:1px solid var(--rw-border);
+  color: var(--rw-ink-muted); background: var(--rw-surface);
+}
+
+/* ============================================================
+   SOLUTION CARD
+   Signature 3-part pattern from the sell sheet: teal icon hood
+   (overlapping) -> white pill nameplate -> solid blue description panel.
+   ============================================================ */
+.rw-sol-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px 16px; }
+@media (max-width: 720px){ .rw-sol-grid{ grid-template-columns: 1fr; } }
+
+.rw-sol-card{ position:relative; padding-top:34px; }
+.rw-sol-hood{
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:78px; height:56px; background: var(--rw-teal); border-radius:39px 39px 0 0;
+  display:flex; align-items:flex-start; justify-content:center; padding-top:12px; z-index:1;
+}
+.rw-sol-hood svg{ width:22px; height:22px; stroke: var(--rw-blue); fill:none; stroke-width:2; }
+.rw-sol-nameplate{
+  position:relative; z-index:2; background:#fff; border:1px solid var(--rw-border); border-radius: var(--rw-radius-full);
+  padding:10px 18px; text-align:center; margin:0 10px; box-shadow: 0 2px 6px rgba(21,21,43,.06);
+}
+.rw-sol-nameplate .rw-name{ font-family: var(--rw-font-display); font-weight:700; font-size:15px; color: var(--rw-blue); }
+.rw-sol-nameplate .rw-sub{ font-size:9.5px; font-weight:600; letter-spacing:.03em; color: var(--rw-ink-muted); text-transform:uppercase; margin-top:1px; }
+.rw-sol-desc{
+  background: var(--rw-blue); color:#fff; border-radius: var(--rw-radius-lg); margin-top:-14px;
+  padding:26px 18px 16px; font-size:12.5px; line-height:1.55; text-align:center; color: rgba(255,255,255,.9); min-height:110px;
+}
+
+/* ============================================================
+   STAT CARD
+   ============================================================ */
+.rw-stat-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+@media (max-width: 720px){ .rw-stat-grid{ grid-template-columns: 1fr; } }
+.rw-stat-card{ background: var(--rw-surface-alt); border:1px solid var(--rw-border); border-radius: var(--rw-radius-md); padding:22px; }
+.rw-stat-card .rw-num{ font-family: var(--rw-font-display); font-weight:800; font-size:32px; color: var(--rw-blue); }
+.rw-stat-card .rw-label{ font-size:12.5px; color: var(--rw-ink-muted); margin-top:6px; }
+.rw-stat-card .rw-bar{ height:4px; border-radius:2px; background: var(--rw-teal); margin-top:14px; }
+
+/* ============================================================
+   ICON LIST
+   Two-column list: circular teal icon, blue heading, muted
+   description, hairline divider. Used for named solution categories.
+   ============================================================ */
+.rw-icon-list{ display:grid; grid-template-columns: 1fr 1fr; gap:0 40px; }
+@media (max-width: 720px){ .rw-icon-list{ grid-template-columns: 1fr; } }
+.rw-icon-item{ display:flex; gap:16px; padding:18px 0; border-bottom:1px solid var(--rw-border); }
+.rw-icon-item:last-child{ border-bottom:none; }
+.rw-icon-badge{ flex:none; width:46px; height:46px; border-radius:50%; background: var(--rw-teal); display:flex; align-items:center; justify-content:center; }
+.rw-icon-badge svg{ width:20px; height:20px; stroke: var(--rw-blue); fill:none; stroke-width:2; }
+.rw-icon-item h4{ font-family: var(--rw-font-display); font-weight:600; font-size:14.5px; color: var(--rw-blue); margin-bottom:4px; }
+.rw-icon-item p{ font-size:12.5px; color: var(--rw-ink-muted); line-height:1.5; margin:0; }
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+.rw-nav{
+  display:flex; align-items:center; justify-content:space-between;
+  background:#fff; border:1px solid var(--rw-border); border-radius: var(--rw-radius-md); padding:14px 20px;
+}
+.rw-nav-links{ display:flex; gap:26px; }
+.rw-nav-links a{ font-size:14px; font-weight:500; color: var(--rw-ink); text-decoration:none; }
+.rw-nav-links a:hover{ color: var(--rw-blue); }
+.rw-nav-cta{ background: var(--rw-blue); color:#fff; font-weight:600; font-size:13.5px; padding:10px 20px; border-radius: var(--rw-radius-full); text-decoration:none; }
+
+/* ============================================================
+   FOOTER
+   Palette flip: solid blue band, white wordmark + teal dot-trail.
+   ============================================================ */
+.rw-footer{
+  background: var(--rw-blue); color:#fff; border-radius: var(--rw-radius-md);
+  padding:20px 26px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.rw-footer a{ color:#fff; text-decoration:underline; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.rw-hero{ position:relative; overflow:hidden; padding:80px 56px 64px; }
+@media (max-width:720px){ .rw-hero{ padding:56px 24px 44px; } }
+.rw-hero-dots{
+  position:absolute; top:0; right:0; width:220px; height:170px;
+  background-image: radial-gradient(var(--rw-teal) 2.5px, transparent 2.5px); background-size:16px 16px; opacity:.7;
+  -webkit-mask: linear-gradient(120deg, transparent 25%, black 65%);
+  mask: linear-gradient(120deg, transparent 25%, black 65%);
+}
+.rw-hero-inner{ position:relative; max-width:680px; }
+.rw-hero-stats{ margin-top:52px; display:grid; grid-template-columns: repeat(3,1fr); border-top:1px solid var(--rw-border); padding-top:22px; gap:20px; max-width:560px; }
+.rw-hero-stats .rw-num{ font-family: var(--rw-font-display); font-weight:800; font-size:26px; color: var(--rw-blue); }
+.rw-hero-stats .rw-label{ font-size:11.5px; color: var(--rw-ink-muted); margin-top:4px; }
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.rw-form-card{ background: var(--rw-surface-alt); border:1px solid var(--rw-border); border-radius: var(--rw-radius-lg); padding:26px; }
+.rw-field{ margin-bottom:18px; }
+.rw-field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color: var(--rw-ink); }
+.rw-field input[type=text],
+.rw-field input[type=email],
+.rw-field select,
+.rw-field textarea{
+  width:100%; font-family: var(--rw-font-body); font-size:14px; padding:11px 13px;
+  border:1.5px solid var(--rw-border); border-radius: var(--rw-radius-sm); background:#fff; color: var(--rw-ink);
+}
+.rw-field input:focus, .rw-field select:focus, .rw-field textarea:focus{
+  outline:none; border-color: var(--rw-blue); box-shadow: 0 0 0 3px rgba(42,29,191,.12);
+}
+.rw-field textarea{ resize:vertical; min-height:80px; }
+.rw-check{ display:flex; align-items:center; gap:8px; font-size:13px; color: var(--rw-ink-muted); }
+.rw-check input{ accent-color: var(--rw-blue); width:16px; height:16px; }
+.rw-submit{
+  width:100%; background: var(--rw-blue); color:#fff; border:none; border-radius: var(--rw-radius-full);
+  padding:13px; font-weight:600; font-size:14.5px; cursor:pointer;
+}
+.rw-submit:hover{ background: var(--rw-blue-dark); }
