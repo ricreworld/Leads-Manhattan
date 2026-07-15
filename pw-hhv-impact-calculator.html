@@ -67,6 +67,9 @@
   .io-grid input { border:1px solid #E3E4F0; border-radius:6px; padding:6px 8px; font-size:12px; font-family:'Inter',sans-serif; width:100%; }
   .io-grid input:focus { outline:none; border-color:#2A1DBF; }
   .io-grid input.name { font-weight:600; }
+  .stream-cell { display:flex; flex-direction:column; gap:4px; }
+  .stream-sel { border:1px solid #E3E4F0; border-radius:6px; padding:6px 8px; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; background:#fff; cursor:pointer; width:100%; }
+  .stream-sel:focus { outline:none; border-color:#2A1DBF; }
   .io-grid .msw-row input { background:#F5F6FB; }
   .stream-x { border:none; background:none; color:#5B5B78; cursor:pointer; font-size:13px; align-self:center; }
   .stream-x:hover { color:#e0245e; }
@@ -171,7 +174,7 @@
    Pure vanilla JS. Edit DEFAULTS below to change starting facilities/values.
 --------------------------------------------------------------------------- */
 
-var STORAGE_KEY = 'reworld-pw-hhv-impact-v3';
+var STORAGE_KEY = 'reworld-pw-hhv-impact-v4';
 
 // Shared waste-stream heating-value library (same BTU/lb values as the Reworld
 // sustainability calculator). Picking a stream name auto-fills its BTU/lb;
@@ -325,16 +328,8 @@ function renderFacilities() {
 
     // PW streams
     (f.streams || []).forEach(function (s, si) {
-      var nm = document.createElement('input'); nm.type = 'text'; nm.className = 'name'; nm.value = s.name; nm.placeholder = 'Pick or type a stream'; nm.setAttribute('list', 'stream-list');
-      var hhvInput = inputCell(s.hhv, '', function (v) { s.hhv = num(v); refresh(); save(); }, '1');
-      nm.addEventListener('input', function () { s.name = nm.value; refresh(); save(); });
-      // When the name matches a library stream, auto-fill its BTU/lb.
-      nm.addEventListener('change', function () {
-        var m = matchStream(nm.value);
-        if (m) { s.hhv = btuForKey(m.key); hhvInput.value = s.hhv; refresh(); save(); }
-      });
-      grid.appendChild(nm);
-      grid.appendChild(hhvInput);
+      grid.appendChild(streamCell(s));
+      grid.appendChild(inputCell(s.hhv, '', function (v) { s.hhv = num(v); refresh(); save(); }, '1'));
       grid.appendChild(inputCell(s.price, '', function (v) { s.price = num(v); refresh(); save(); }, '0.01'));
       grid.appendChild(inputCell(s.tpd, '', function (v) { s.tpd = num(v); refresh(); save(); }, '1'));
       var sx = el('button', 'stream-x no-print', '✕'); sx.title = 'Remove stream';
@@ -344,7 +339,7 @@ function renderFacilities() {
     card.appendChild(grid);
 
     var addBtn = el('button', 'add-stream no-print', '+ Add profiled-waste stream');
-    addBtn.addEventListener('click', function () { (f.streams = f.streams || []).push({ name: 'PW', hhv: 10000, price: 150, tpd: 25 }); renderFacilities(); refresh(); save(); });
+    addBtn.addEventListener('click', function () { (f.streams = f.streams || []).push({ name: '', hhv: 10000, price: 150, tpd: 25 }); renderFacilities(); refresh(); save(); });
     card.appendChild(addBtn);
 
     // results
@@ -377,6 +372,37 @@ function renderFacilities() {
 
 function wrapInput(input) { var d = document.createElement('div'); d.appendChild(input); return d; }
 function labelWrap(lbl, input) { var s = document.createElement('span'); s.className = 'cap-wrap'; input.style.width = '64px'; s.appendChild(input); s.appendChild(el('span', 'caps-lbl', lbl)); return s; }
+
+// Stream picker cell: a dropdown of all library streams + "Other / custom".
+// Picking a stream sets the name and auto-fills its BTU/lb; "Other" reveals a
+// text box for a custom name.
+function streamCell(s) {
+  var wrap = document.createElement('div'); wrap.className = 'stream-cell';
+  var sel = document.createElement('select'); sel.className = 'stream-sel';
+  var ph = document.createElement('option'); ph.value = ''; ph.textContent = '— Select waste stream —'; sel.appendChild(ph);
+  STREAMS.forEach(function (st) { var o = document.createElement('option'); o.value = st.key; o.textContent = st.label + '  (' + big(btuForKey(st.key)) + ' BTU/lb)'; sel.appendChild(o); });
+  var oc = document.createElement('option'); oc.value = '__custom__'; oc.textContent = 'Other / custom…'; sel.appendChild(oc);
+
+  var matched = matchStream(s.name);
+  var isCustom = s.custom || (s.name && !matched);
+  sel.value = isCustom ? '__custom__' : (matched ? matched.key : '');
+
+  sel.addEventListener('change', function () {
+    var v = sel.value;
+    if (v === '__custom__') { s.custom = true; if (!s.name) s.name = 'Custom PW'; }
+    else if (v === '') { s.custom = false; s.name = ''; }
+    else { s.custom = false; var st = STREAMS.filter(function (x) { return x.key === v; })[0]; s.name = st.label; s.hhv = btuForKey(v); }
+    renderFacilities(); refresh(); save();
+  });
+  wrap.appendChild(sel);
+
+  if (isCustom) {
+    var txt = document.createElement('input'); txt.type = 'text'; txt.className = 'name'; txt.value = s.name; txt.placeholder = 'Custom stream name';
+    txt.addEventListener('input', function () { s.name = txt.value; refresh(); save(); });
+    wrap.appendChild(txt);
+  }
+  return wrap;
+}
 function noteBox(label, val, oninput) {
   var l = document.createElement('label'); l.appendChild(document.createTextNode(label));
   var t = document.createElement('textarea'); t.value = val; t.addEventListener('input', function () { oninput(t.value); }); l.appendChild(t); return l;
@@ -437,7 +463,7 @@ gp.addEventListener('input', function () { state.processingDays = num(gp.value);
 gd.addEventListener('input', function () { state.deliveryDays = num(gd.value); refresh(); save(); });
 
 document.getElementById('btn-add-fac').addEventListener('click', function () {
-  state.facilities.push({ name: 'New facility', msw: { hhv: 5500, price: 60, tpd: 1000 }, streams: [ { name: 'PW', hhv: 10000, price: 150, tpd: 25 } ], benefits: '', issues: '' });
+  state.facilities.push({ name: 'New facility', profile: '', capTpd: 0, capMaxTpd: 0, msw: { hhv: 5500, price: 60, tpd: 1000 }, streams: [ { name: '', hhv: 10000, price: 150, tpd: 25 } ], benefits: '', issues: '' });
   renderFacilities(); refresh(); save();
 });
 document.getElementById('btn-reset').addEventListener('click', function () {
