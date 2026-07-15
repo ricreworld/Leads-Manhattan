@@ -156,7 +156,7 @@
   <datalist id="stream-list"></datalist>
 
   <div class="section-label teal" style="margin:28px 0 10px;">Waste Stream Reference — Heating Values (BTU/lb)</div>
-  <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Shared library of representative heating values. In any facility's profiled-waste rows, type or pick a stream name and its BTU/lb auto-fills from this table. Edit a value here to change it everywhere. "Displaces MSW" shows how many tons of 5,500 BTU/lb MSW one ton of that stream displaces on a heat basis.</div>
+  <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Shared library of representative heating values. In any facility's profiled-waste rows, type or pick a stream name and its BTU/lb auto-fills from this table. Edit a value here to change it everywhere. "Displaces MSW" shows how many tons of 5,500 BTU/lb MSW one ton of that stream displaces on a heat basis (the actual calculation uses each facility's own MSW baseline — e.g. Hempstead's NYSDEC permit basis is 5,000 BTU/lb).</div>
   <table class="compare" style="margin-bottom:16px;">
     <thead><tr><th>Waste Stream</th><th class="num">BTU / lb</th><th class="num">Displaces MSW (× tons)</th></tr></thead>
     <tbody id="refBody"></tbody>
@@ -174,7 +174,7 @@
    Pure vanilla JS. Edit DEFAULTS below to change starting facilities/values.
 --------------------------------------------------------------------------- */
 
-var STORAGE_KEY = 'reworld-pw-hhv-impact-v4';
+var STORAGE_KEY = 'reworld-pw-hhv-impact-v5';
 
 // Shared waste-stream heating-value library (same BTU/lb values as the Reworld
 // sustainability calculator). Picking a stream name auto-fills its BTU/lb;
@@ -214,6 +214,7 @@ function defaults() {
     deliveryDays: 22,
     streamBtu: {},
     facilities: [
+      { name: 'Hempstead',    profile: 'Westbury, NY · mass burn (3 × 835 TPD Deutsche Babcock, Düsseldorf roller grate) · 2,505 TPD · 80 MW · ferrous/non-ferrous', capTpd: 0, capMaxTpd: 0, msw: { hhv: 5000, price: 75, tpd: 2505 }, streams: [ { name: 'Pharmaceutical', hhv: 8200, price: 600, tpd: 10 } ], benefits: 'High profiled-waste tip fees (delivery records show ~$450–670/ton); pharma, witnessed destruction, CoD/CoD capabilities.', issues: 'RMW not accepted; NYSDEC Part 364 hauling permit required; confirm MSW price and PW volume.' },
       { name: 'Haverhill',    profile: 'Haverhill, MA · mass burn · 1,650 TPD · 45 MW · in service 1989', capTpd: 0,   capMaxTpd: 0,   msw: { hhv: 5500, price: 42, tpd: 1650 }, streams: [ { name: 'TMW',        hhv: 7250,  price: 160, tpd: 50 } ], benefits: 'Expanded relationship with key account; increase in EBITDA & operating revenue.', issues: 'SSR headwinds; must accept Town tons first.' },
       { name: 'Bristol',      profile: 'Bristol, CT · mass burn (2 × 358 TPD, Martin reverse-acting stoker) · 716 TPD · 16.3 MW · ferrous/non-ferrous', capTpd: 57, capMaxTpd: 114, msw: { hhv: 5500, price: 78, tpd: 716 },  streams: [ { name: 'TMW',        hhv: 7250,  price: 150, tpd: 25 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
       { name: 'Indianapolis', profile: 'Indianapolis, IN · mass burn · 2,175 TPD · ~6.5 MW + district steam (Citizens Thermal) · in service 1988', capTpd: 0, capMaxTpd: 0, msw: { hhv: 5500, price: 42, tpd: 2175 }, streams: [ { name: 'TMW',        hhv: 8500,  price: 100, tpd: 50 } ], benefits: 'Increase in EBITDA & operating revenue.', issues: 'Must accept Town waste first; need backup facility; possible billing challenges.' },
