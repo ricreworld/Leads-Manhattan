@@ -86,6 +86,12 @@
   .ghg-assump { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
   .ghg-assump input { border:1px solid #E3E4F0; border-radius:6px; padding:5px 8px; font-size:12px; font-family:'Inter',sans-serif; }
   .ghg-assump input:focus { outline:none; border-color:#2A1DBF; }
+  .facility-bar { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 18px; background:#fff; border:1px solid #E3E4F0; border-radius:8px; padding:14px 18px; margin-bottom:8px; }
+  .facility-bar #facilitySel { font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#15152B; background:#fff; border:1px solid #E3E4F0; border-radius:6px; padding:8px 10px; cursor:pointer; min-width:240px; }
+  .facility-bar #facilitySel:focus { outline:none; border-color:#2A1DBF; }
+  .facility-bar .fb-num { display:flex; flex-direction:column; gap:3px; font-size:10.5px; color:#5B5B78; }
+  .facility-bar .fb-num input { border:1px solid #E3E4F0; border-radius:6px; padding:6px 8px; font-size:12.5px; font-weight:600; font-family:'Inter',sans-serif; width:130px; }
+  .facility-bar .fb-num input:focus { outline:none; border-color:#2A1DBF; }
   .ghg-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; background:#fff; border:1px solid #E3E4F0; border-radius:8px; padding:10px 16px; margin-bottom:12px; }
   .ghg-toggle label { font-size:12px; color:#15152B; display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
   .ghg-toggle input { accent-color:#2A1DBF; }
@@ -180,6 +186,17 @@
     <button id="btn-reset">Reset all fields</button>
     <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
   </div>
+
+  <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:9px 13px;margin:0 0 20px;">⚠ <b>The greenhouse-gas figures here are a transparent, editable working model for illustration — not Reworld's official proprietary LCA.</b> Energy per ton, grid factors, and per-stream splits are estimates you can edit. For figures tied to Reworld's certified methodology use the <b>“Blended — Reworld verified”</b> GHG basis (2.4 t CO₂e/ton). Replace all estimates with Reworld's per-facility, per-stream LCA data before any external or customer-facing claim.</p>
+
+  <div class="section-label">Facility</div>
+  <div class="facility-bar no-print">
+    <select id="facilitySel"></select>
+    <label class="fb-num"><span>Energy (net kWh / ton)</span><input type="number" step="1" id="facilityKwh"></label>
+    <label class="fb-num"><span>Grid factor (kg CO₂e / kWh)</span><input type="number" step="0.01" id="gridKg"></label>
+    <label class="fb-num"><span>Annual throughput (tons/yr)</span><input type="number" step="1000" id="annualTons"></label>
+  </div>
+  <div id="facilityProfile" style="font-size:11px;color:#5B5B78;margin:-4px 0 24px;line-height:1.5;"></div>
 
   <div class="section-label no-print">Import a Report File</div>
   <div id="dropzone" class="dropzone no-print">
@@ -313,10 +330,6 @@
   <div class="section-label teal" style="margin:26px 0 10px;">Facility &amp; Pit Context — Displacement Value</div>
   <div class="ghg-panel">
     <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The pit is mostly municipal solid waste (MSW) at ~5,000 BTU/lb. Higher-BTU waste does more work per ton: one ton at 11,000 BTU/lb delivers the energy of 2.2 tons of MSW. This shows each stream's <b>MSW-equivalent</b> displacement and how the loaded waste fits the facility's annual burn.</div>
-    <div class="ghg-assump no-print" style="margin:0 0 14px;">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Facility annual throughput</span>
-      <input type="number" step="1000" id="annualTons" style="width:120px;"> <span style="font-size:10.5px;color:#5B5B78;">tons / year (mostly MSW)</span>
-    </div>
     <div class="ghg-headline">
       <div class="ghg-net"><div class="ghg-net-val pos" id="pitEquiv">0</div><div class="ghg-net-cap">MSW-equivalent tons of energy from this waste</div></div>
       <div class="ghg-flow">
@@ -357,11 +370,7 @@
         <tbody id="ghgStreamBody"></tbody>
       </table>
     </div>
-    <div class="ghg-assump no-print">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Grid carbon intensity</span>
-      <input type="number" step="0.01" id="gridKg" style="width:80px;"> <span style="font-size:10.5px;color:#5B5B78;">kg CO₂e / kWh (lower grid = less displacement credit)</span>
-    </div>
-    <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:10px 0 0;">⚠ MSW nets to Reworld's verified ~2.4 t CO₂e/ton avoided. The landfill-methane and stack-CO₂ splits for other streams are directional estimates — replace with Reworld's verified per-stream LCA before customer-facing use. Greenhouse gas is a comparison vs landfill, not an absolute; a fossil stream can be net-negative on GHG while still delivering energy and diversion benefits.</p>
+    <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:10px 0 0;">⚠ Energy rate and grid factor are set by the facility selector at the top. MSW nets to Reworld's verified ~2.4 t CO₂e/ton avoided. The landfill-methane and stack-CO₂ splits for other streams are directional estimates — replace with Reworld's verified per-stream LCA before customer-facing use. Greenhouse gas is a comparison vs landfill, not an absolute; a fossil stream can be net-negative on GHG while still delivering energy and diversion benefits.</p>
   </div>
 
   <div class="section-label teal" style="margin:26px 0 10px;">Landfill vs Reworld — The Full Picture</div>
@@ -521,9 +530,23 @@ function metalFor(stream) {
   var o = state.streamMetal && state.streamMetal[stream.key];
   return (o != null && !isNaN(o)) ? o : stream.metal;
 }
-function kwhPerTon(btu) { return FACTORS.energyPerTon * btu / BASELINE_BTU; }
+// Facility-specific energy recovery rate + regional grid carbon intensity.
+// kwh = net kWh recovered per ton of 5,000-BTU MSW (scaled from Reworld
+// Hempstead's verified 550 by each plant's nameplate MW ÷ TPD). grid = kg
+// CO2e/kWh of the regional grid the facility displaces (EPA eGRID region,
+// approximate — editable). All values are estimates except Hempstead's 550.
+var FACILITIES = [
+  { key: 'hempstead',    label: 'Reworld Hempstead — Westbury, NY',       kwh: 550, grid: 0.30, annual: 914000, note: '2,505 TPD · 80 MW · NY Long Island grid (NYLI) · ferrous/non-ferrous · 550 kWh/ton is Reworld-verified.' },
+  { key: 'haverhill',    label: 'Reworld Haverhill — Haverhill, MA',       kwh: 470, grid: 0.25, annual: 602000, note: '1,650 TPD · 45 MW · ISO-New England grid · energy rate scaled from Hempstead (estimate).' },
+  { key: 'babylon',      label: 'Reworld Babylon — West Babylon, NY',      kwh: 400, grid: 0.30, annual: 274000, note: '750 TPD · 17 MW · NY Long Island grid · ferrous only · energy rate estimate.' },
+  { key: 'bristol',      label: 'Reworld Bristol — Bristol, CT',           kwh: 400, grid: 0.25, annual: 261000, note: '716 TPD · 16.3 MW · ISO-New England grid · energy rate estimate.' },
+  { key: 'indianapolis', label: 'Reworld Indianapolis — Indianapolis, IN', kwh: 51,  grid: 0.45, annual: 794000, note: '2,175 TPD · steam-dominant (~6.5 MW electric) · coal-heavy Indiana grid (MISO) · the electric kWh/ton UNDERSTATES this plant — it sells district steam. Use Reworld’s steam-credit figure.' },
+  { key: 'custom',       label: 'Custom / other facility',                 kwh: 550, grid: 0.40, annual: 900000, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
+];
+function facilityKwh() { var v = state.facilityKwhPerTon; return (v != null && !isNaN(v)) ? v : FACTORS.energyPerTon; }
+function kwhPerTon(btu) { return facilityKwh() * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v6';
+var STORAGE_KEY = 'reworld-sustainability-report-v7';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -539,8 +562,10 @@ function defaultState() {
     },
     rows: [ emptyRow() ],
     ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
-    annualTons: 900000,   // facility annual throughput (mostly MSW) for context
-    gridKg: 0.40,         // grid carbon intensity (kg CO2e/kWh) for energy credit
+    facility: 'hempstead',        // selected facility
+    facilityKwhPerTon: 550,       // net kWh recovered per ton of MSW (facility-specific)
+    annualTons: 914000,   // facility annual throughput (mostly MSW) for context
+    gridKg: 0.30,         // grid carbon intensity (kg CO2e/kWh) for energy credit
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
     streamGhg: {},        // per-stream NET tCO2e/ton overrides
     streamLf: {},         // per-stream landfill-methane-avoided overrides
@@ -872,8 +897,8 @@ function renderPitContext(c) {
   var bd = ghgBreakdown();
   var periodTons = c.periodTons;
   var annual = num(state.annualTons) || 0;
-  // MSW-equivalent tons = energy / (MSW kWh/ton). Energy already = sum tons×BTU-scaled kWh.
-  var mswEquiv = c.energy / FACTORS.energyPerTon;
+  // MSW-equivalent tons = energy / (this facility's MSW kWh/ton).
+  var mswEquiv = c.energy / facilityKwh();
   var avgFactor = periodTons > 0 ? mswEquiv / periodTons : 0;
   // pit weighted-average BTU after blending this waste into the annual MSW base
   var pitBtu = annual > 0 ? (mswEquiv * BASELINE_BTU + Math.max(annual - periodTons, 0) * BASELINE_BTU) / annual : BASELINE_BTU;
@@ -1838,18 +1863,35 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'),
   r.addEventListener('change', function () { if (r.checked) { state.ghgMode = r.value; applyGhgMode(); render(); saveState(); } });
 });
 
-// Grid carbon intensity input.
+// Facility selector + its editable knobs (energy rate, grid factor, annual).
 (function () {
+  var sel = document.getElementById('facilitySel');
+  var kwh = document.getElementById('facilityKwh');
   var gi = document.getElementById('gridKg');
-  if (!gi) return;
-  gi.value = (state.gridKg != null ? state.gridKg : GRID_KG_PER_KWH);
-  gi.addEventListener('input', function () { var v = parseFloat(gi.value); state.gridKg = isNaN(v) ? GRID_KG_PER_KWH : v; render(); saveState(); });
-})();
-// Facility annual throughput input.
-(function () {
   var ai = document.getElementById('annualTons');
-  if (!ai) return;
-  ai.value = (state.annualTons != null ? state.annualTons : 900000);
+  var prof = document.getElementById('facilityProfile');
+  if (!sel || !kwh || !gi || !ai) return;
+
+  FACILITIES.forEach(function (f) { var o = document.createElement('option'); o.value = f.key; o.textContent = f.label; sel.appendChild(o); });
+
+  function syncInputs() {
+    sel.value = state.facility || 'hempstead';
+    kwh.value = (state.facilityKwhPerTon != null ? state.facilityKwhPerTon : 550);
+    gi.value = (state.gridKg != null ? state.gridKg : GRID_KG_PER_KWH);
+    ai.value = (state.annualTons != null ? state.annualTons : 900000);
+    var f = FACILITIES.filter(function (x) { return x.key === state.facility; })[0];
+    if (prof) prof.textContent = f ? f.note : '';
+  }
+  syncInputs();
+
+  sel.addEventListener('change', function () {
+    var f = FACILITIES.filter(function (x) { return x.key === sel.value; })[0];
+    state.facility = sel.value;
+    if (f && f.key !== 'custom') { state.facilityKwhPerTon = f.kwh; state.gridKg = f.grid; state.annualTons = f.annual; }
+    syncInputs(); render(); saveState();
+  });
+  kwh.addEventListener('input', function () { var v = parseFloat(kwh.value); state.facilityKwhPerTon = isNaN(v) ? 550 : v; state.facility = 'custom'; sel.value = 'custom'; render(); saveState(); });
+  gi.addEventListener('input', function () { var v = parseFloat(gi.value); state.gridKg = isNaN(v) ? GRID_KG_PER_KWH : v; state.facility = 'custom'; sel.value = 'custom'; render(); saveState(); });
   ai.addEventListener('input', function () { var v = parseFloat(ai.value); state.annualTons = isNaN(v) ? 0 : v; render(); saveState(); });
 })();
 
