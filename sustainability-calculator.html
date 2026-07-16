@@ -187,7 +187,7 @@
     <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
   </div>
 
-  <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:9px 13px;margin:0 0 20px;">⚠ <b>The greenhouse-gas figures here are a transparent, editable working model for illustration — not Reworld's official proprietary LCA.</b> Energy per ton, grid factors, and per-stream splits are estimates you can edit. For figures tied to Reworld's certified methodology use the <b>“Blended — Reworld verified”</b> GHG basis (2.4 t CO₂e/ton). Replace all estimates with Reworld's per-facility, per-stream LCA data before any external or customer-facing claim.</p>
+  <p style="font-size:10.5px;line-height:1.6;color:#1a6b5c;background:#E9FBF7;border:1px solid #22D9C4;border-radius:6px;padding:9px 13px;margin:0 0 20px;">✓ <b>Greenhouse-gas figures are built on Reworld's verified Lifecycle Assessment</b> (Sept 2024, ISO 14040/44 + ISO 14067, third-party verified by WAP Sustainability). Average MSW reproduces Reworld's certified net factor — <b>2.4 t CO₂e/ton (20-yr GWP)</b> or 0.65 (100-yr) — decomposed into the LCA's own source terms. Individual non-MSW streams are <b>scaled from that verified anchor</b> using the LCA's sensitivity levers (biogenic content, fossil-carbon content, heating value, metals); they are transparent model estimates, editable per facility, not separately verified per-stream LCAs.</p>
 
   <div class="section-label">Facility</div>
   <div class="facility-bar no-print">
@@ -349,21 +349,27 @@
   </div>
 
   <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
+  <div class="ghg-toggle no-print" style="margin-bottom:12px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GWP timeframe (per Reworld LCA):</span>
+    <label><input type="radio" name="gwp" value="20"> 20-year — <b>net 2.4 t CO₂e / ton MSW</b> (Reworld default; NY/NJ/WRI basis)</label>
+    <label><input type="radio" name="gwp" value="100"> 100-year — net 0.65 t CO₂e / ton MSW</label>
+  </div>
   <div class="ghg-panel">
     <div class="ghg-headline">
       <div class="ghg-net">
         <div class="ghg-net-val pos" id="ghgAvoidedVal">0</div>
-        <div class="ghg-net-cap">tons CO₂e <b>avoided</b> — the reduction this waste delivers</div>
+        <div class="ghg-net-cap">tons CO₂e <b>avoided (net vs landfill)</b> — Reworld verified LCA basis</div>
       </div>
       <div class="ghg-flow">
         <div class="ghg-item hero"><span class="ghg-plus">+</span> <span id="ghgMethane">0</span><small>landfill methane avoided</small></div>
-        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgEnergy">0</span><small>grid electricity displaced</small></div>
+        <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgEnergy">0</span><small>net grid electricity displaced</small></div>
         <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMetalCr">0</span><small>metal recycled credit</small></div>
         <div class="ghg-item" id="ghgSteamItem" style="display:none;"><span class="ghg-plus">+</span> <span id="ghgSteam">0</span><small>district steam displacing gas heat</small></div>
-        <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>stack CO₂ (vs-landfill streams only)</small></div>
+        <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>fossil stack CO₂</small></div>
+        <div class="ghg-item" id="ghgBioItem"><span class="ghg-minus">−</span> <span id="ghgBio">0</span><small>biogenic CO₂ balance vs landfill</small></div>
       </div>
     </div>
-    <div class="ghg-netline">Net after stack CO₂: <span class="ghg-netval" id="ghgNetVal">0</span> tons CO₂e vs the alternative.</div>
+    <div class="ghg-netline">Gross reductions <span id="ghgGross">0</span> t − CO₂ released <span id="ghgDebits">0</span> t = <span class="ghg-netval" id="ghgNetVal">0</span> tons CO₂e net vs landfill.</div>
     <div id="ghgNarrative" class="ghg-narrative"></div>
     <div class="table-scroll" style="margin-top:12px;">
       <table class="card-table wide" style="min-width:520px;">
@@ -371,7 +377,7 @@
         <tbody id="ghgStreamBody"></tbody>
       </table>
     </div>
-    <p style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:10px 0 0;">⚠ Energy rate and grid factor are set by the facility selector at the top. MSW nets to Reworld's verified ~2.4 t CO₂e/ton avoided. The landfill-methane and stack-CO₂ splits for other streams are directional estimates — replace with Reworld's verified per-stream LCA before customer-facing use. Greenhouse gas is a comparison vs landfill, not an absolute; a fossil stream can be net-negative on GHG while still delivering energy and diversion benefits.</p>
+    <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:10px 0 0;">Method: <b>Reworld's verified LCA</b> (Sept 2024, ISO 14040/44 + 14067, WAP-verified). Average MSW reproduces the certified net factor of <b>2.4 t CO₂e/ton (20-yr GWP)</b> / 0.65 (100-yr), decomposed into Reworld's own source terms (Tables 35/36/39): landfill methane avoided, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity, steam, and metals. Other streams are <b>scaled from that verified MSW anchor</b> using the LCA's sensitivity levers (biogenic/methane-generation content, fossil-carbon content, heating value, metal content) — model estimates, not separately verified per-stream LCAs. GHG is a comparison vs landfill: a high-BTU fossil stream can be net-negative on GHG alone while still delivering energy, volume and diversion benefits; Reworld's verified band across all streams is −1.7 to −3.0 t CO₂e/ton (20-yr).</p>
   </div>
 
   <div class="section-label teal" style="margin:26px 0 10px;">Landfill vs Reworld — The Full Picture</div>
@@ -391,8 +397,8 @@
 
   <div class="ghg-toggle no-print">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GHG &amp; metals basis:</span>
-    <label><input type="radio" name="ghgmode" value="blended"> Blended — MSW 2.4 t CO₂e / 50 lbs per ton (Reworld verified LCA)</label>
-    <label><input type="radio" name="ghgmode" value="stream"> Stream-specific — each stream's own factor</label>
+    <label><input type="radio" name="ghgmode" value="blended"> Blended — Reworld verified net factor (2.4 / 0.65) &amp; 50 lbs per ton, applied to all tonnage</label>
+    <label><input type="radio" name="ghgmode" value="stream"> Stream-specific — each stream scaled from the verified MSW anchor</label>
   </div>
 
   <div class="table-scroll">
@@ -409,21 +415,21 @@
   </table>
   </div>
   <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:8px 0 4px;">Formula: kWh/ton = 550 × (BTU/lb ÷ 5,000). Heating values are representative HHV figures (U.S. EPA WTE / medical-waste references).</p>
-  <p id="ghg-disclaimer" style="font-size:10.5px;line-height:1.6;color:#8a5a00;background:#FFF4E5;border:1px solid #F0C070;border-radius:6px;padding:8px 12px;margin:0 0 20px;display:none;">⚠ Stream-specific GHG &amp; metal factors: <b>MSW (2.4 t CO₂e, 50 lbs) is Reworld's verified LCA figure; the others are directional estimates</b> reflecting that streams which don't decompose in a landfill (plastics, medical waste) avoid little methane, and fossil streams emit CO₂ when burned. Replace with Reworld's per-stream LCA values before any external or customer-facing use.</p>
+  <p id="ghg-disclaimer" style="font-size:10.5px;line-height:1.6;color:#1a6b5c;background:#E9FBF7;border:1px solid #22D9C4;border-radius:6px;padding:8px 12px;margin:0 0 20px;display:none;">✓ Stream-specific GHG &amp; metal factors: <b>MSW reproduces Reworld's verified LCA net factor (2.4 t CO₂e / 50 lbs per ton, 20-yr)</b>; other streams are <b>scaled from that anchor</b> using the LCA's sensitivity levers — biogenic/methane-generation content (streams that don't decompose in a landfill, like plastics, avoid little methane), fossil-carbon content (fossil streams emit CO₂ when burned), heating value and metals. These are transparent model estimates you can edit; they are not separately verified per-stream LCAs.</p>
 
   <div class="section-label">Conversion Factors (fixed)</div>
   <table class="card-table" style="margin-bottom:16px;">
     <thead><tr><th style="padding-left:16px;">Factor</th><th style="text-align:right;">Value</th><th style="padding-right:16px;">Unit</th></tr></thead>
     <tbody>
       <tr><td style="padding-left:16px;">Renewable energy generated (MSW baseline, 5,000 BTU/lb)</td><td style="text-align:right;">550</td><td style="padding-right:16px;">kWh / ton</td></tr>
-      <tr><td style="padding-left:16px;">Greenhouse gases avoided</td><td style="text-align:right;">2.4</td><td style="padding-right:16px;">tons CO₂e / ton</td></tr>
+      <tr><td style="padding-left:16px;">Greenhouse gases avoided (MSW, 20-yr GWP · 100-yr = 0.65)</td><td style="text-align:right;">2.4</td><td style="padding-right:16px;">tons CO₂e / ton</td></tr>
       <tr><td style="padding-left:16px;">Metals recovered for recycling</td><td style="text-align:right;">50</td><td style="padding-right:16px;">lbs / ton</td></tr>
       <tr><td style="padding-left:16px;">Avg. U.S. household electricity use</td><td style="text-align:right;">893</td><td style="padding-right:16px;">kWh / home-month</td></tr>
       <tr><td style="padding-left:16px;">Coal electricity content</td><td style="text-align:right;">1,881</td><td style="padding-right:16px;">kWh / ton coal</td></tr>
       <tr><td style="padding-left:16px;">Fuel oil electricity content</td><td style="text-align:right;">13.108</td><td style="padding-right:16px;">kWh / gallon</td></tr>
     </tbody>
   </table>
-  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, 20-yr GWP, third-party verified by WAP Sustainability Consulting. Renewable energy scales with each waste stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW permit baseline; greenhouse-gas and metals figures use blended per-ton factors. Every impact figure above is a live formula.</p>
+  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula.</p>
 
 </div>
 
@@ -453,39 +459,72 @@ var BASELINE_BTU = 5000;
 // Waste streams with representative higher-heating-values (BTU/lb) and the
 // keywords used to match a delivery's "Waste Type" to a stream. Ordered most
 // specific first. Defaults are editable in the UI (state.streamBtu overrides).
-// Per-stream factors. GHG is analysed as WTE-vs-LANDFILL (t CO2e per ton):
-//   lf    = landfill methane that WOULD be emitted if landfilled -> AVOIDED (+)
-//   comb  = direct fossil CO2 emitted at the stack when burned (-)  [biogenic CO2 = 0]
-//   (grid electricity displaced is added from BTU x grid factor; metal from metal x credit)
-//   Net avoided vs landfill = lf - comb + energy credit + metal credit
-//   btu   = higher heating value (BTU/lb) -> renewable energy
-//   metal = lbs metal recovered per ton
-// MSW nets to Reworld's verified ~2.4 t CO2e/ton avoided. Other lf/comb values
-// are DIRECTIONAL ESTIMATES (biogenic streams rot -> high methane avoided;
-// fossil streams like plastics emit CO2 and avoid little methane -> can be net
-// negative). Replace with Reworld per-stream LCA before external use.
+//
+// GHG METHODOLOGY — grounded in Reworld's verified LCA (Sept 2024, ISO
+// 14040/44 + ISO 14067, third-party verified by WAP Sustainability). The LCA
+// establishes, for average U.S. MSW, a NET GHG factor of 2.4 t CO2e/ton MSW
+// (20-yr GWP) / 0.65 (100-yr), diverted from landfill to a Reworld TTF. It
+// decomposes into (Tables 35/36/39, ton CO2e per ton MSW, 20-yr):
+//     + 2.72  landfill methane avoided        (0.033 t CH4 x 82.5 GWP)
+//     - 0.32  extra biogenic CO2 from combustion vs landfill storage
+//     - 0.41  fossil CO2 at the TTF stack
+//     + 0.28  net grid electricity displaced  (0.34 TTF - 0.06 landfill LFG credit)
+//     + 0.03  district steam displacing gas
+//     + 0.086 ferrous (0.058) + non-ferrous (0.028) metals recycled
+//     = 2.38 ~ 2.4
+// Per-stream factors below re-anchor MSW to those exact verified values; other
+// streams are SCALED from that anchor using the LCA's own sensitivity levers
+// (biogenic/methane-generation content, fossil-carbon content, heating value,
+// metal content). They are transparent model estimates, not separately
+// verified per-stream LCAs.
+//   lf    = landfill methane avoided, 20-yr basis (t CO2e/ton). MSW=2.72.
+//           Scales with biogenic / methane-generation content. 100-yr = x0.361.
+//   comb  = fossil CO2 emitted at the stack (t CO2e/ton). MSW=0.41 (40.3% fossil).
+//           Biogenic combustion CO2 is handled separately (carbon-cycle neutral).
+//   btu   = higher heating value (BTU/lb) -> renewable energy (grid displacement)
+//   metal = lbs metal recovered per ton -> recycling credit
+// BTU/lb defaults are Reworld's own reference values (Reworld BTU Calculator —
+// "Material Values": mixed plastic 10,250 · rubber 13,500 · mixed paper 6,230 /
+// cardboard 7,100 · wood 6,000 · textiles 6,850 · food 2,600 · leather 7,200).
+// MSW stays at the 5,000 BTU/lb NYSDEC permit basis. All editable per stream.
 var STREAMS = [
-  { key: 'plastics',   label: 'Plastics',                     btu: 14000, lf: 0.00, comb: 2.90, metal: 0,  kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
-  { key: 'tires',      label: 'Rubber / Tires',               btu: 15000, lf: 0.00, comb: 2.40, metal: 20, kw: [/tire|rubber|elastomer/] },
-  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16000, lf: 0.00, comb: 3.10, metal: 0,  kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
-  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  lf: 0.50, comb: 0.80, metal: 10, kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
-  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  lf: 0.30, comb: 1.30, metal: 10, kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
-  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, lf: 0.10, comb: 2.20, metal: 15, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
-  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, lf: 0.10, comb: 2.20, metal: 20, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
-  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 7000,  lf: 2.55, comb: 0.00, metal: 5,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
-  { key: 'wood',       label: 'Wood / Pallets',               btu: 8000,  lf: 1.35, comb: 0.00, metal: 5,  kw: [/wood|pallet|lumber|timber/] },
-  { key: 'textiles',   label: 'Textiles',                     btu: 8000,  lf: 0.80, comb: 0.90, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
-  { key: 'food',       label: 'Food / Organics',              btu: 2500,  lf: 2.90, comb: 0.00, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
-  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  lf: 2.15, comb: 0.00, metal: 2,  kw: [/sludge|biosolid|slurry/] },
+  { key: 'plastics',   label: 'Plastics (mixed)',             btu: 10250, lf: 0.00, comb: 2.70, metal: 0,  kw: [/plastic|resin|polymer|hdpe|ldpe|\bpet\b|pvc|polypro|polyeth|polystyr/] },
+  { key: 'tires',      label: 'Rubber / Tires',               btu: 13500, lf: 0.00, comb: 2.40, metal: 20, kw: [/tire|rubber|elastomer/] },
+  { key: 'solvents',   label: 'Solvents / Oils / Liquids',    btu: 16900, lf: 0.00, comb: 3.10, metal: 0,  kw: [/solvent|paint|\bink\b|\boil\b|petroleum|flammable|\bfuel\b|lubricant|alcohol/] },
+  { key: 'pharma',     label: 'Pharmaceutical',               btu: 8200,  lf: 0.55, comb: 0.80, metal: 10, kw: [/pharmaceutic|pharma|\bdrug|tablet|capsule|medicine|\bapi\b/] },
+  { key: 'hba',        label: 'Consumer / Health & Beauty',   btu: 9000,  lf: 0.35, comb: 1.30, metal: 10, kw: [/consumer|health and beauty|health & beauty|cosmetic|personal care|\bhba\b|aerosol/] },
+  { key: 'tmw',        label: 'Treated Medical Waste (TMW)',  btu: 11000, lf: 0.15, comb: 2.20, metal: 15, kw: [/\btmw\b|treated medical|treated regulated|treated rmw|autoclav|sterilized medical/] },
+  { key: 'rmw',        label: 'Regulated Medical Waste (RMW)', btu: 10500, lf: 0.15, comb: 2.20, metal: 20, kw: [/medical|\brmw\b|infectious|biohazard|sharps|red bag|patholog|biomedical/] },
+  { key: 'paper',      label: 'Paper / Cardboard / Fiber',    btu: 6500,  lf: 3.60, comb: 0.00, metal: 5,  kw: [/cardboard|\bocc\b|fiber|paper|carton|packaging/] },
+  { key: 'wood',       label: 'Wood / Pallets',               btu: 6000,  lf: 1.80, comb: 0.00, metal: 5,  kw: [/wood|pallet|lumber|timber/] },
+  { key: 'textiles',   label: 'Textiles',                     btu: 6850,  lf: 1.10, comb: 0.90, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
+  { key: 'food',       label: 'Food / Organics',              btu: 2600,  lf: 4.60, comb: 0.00, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
+  { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  lf: 3.00, comb: 0.00, metal: 2,  kw: [/sludge|biosolid|slurry/] },
   { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, lf: 0.00, comb: 0.10, metal: 0,  kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
-  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  lf: 0.20, comb: 0.20, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
-  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  lf: 0.60, comb: 0.60, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
-  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  lf: 2.50, comb: 0.35, metal: 50, kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
+  { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  lf: 0.25, comb: 0.20, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
+  { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  lf: 0.70, comb: 0.60, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
+  { key: 'msw',        label: 'Municipal Solid Waste (MSW)',  btu: 5000,  lf: 2.72, comb: 0.41, metal: 50, kw: [/msw|municipal|solid waste|refuse|trash|garbage|mixed/] }
 ];
-// grid electricity carbon intensity (kg CO2e/kWh) and metal recycling credit
-// (t CO2e per lb recovered) used for the displacement credits.
-var GRID_KG_PER_KWH = 0.40;
-var METAL_CREDIT_T_PER_LB = 0.00075;
+// --- Reworld verified LCA anchors (Sept 2024, waste basis, ton CO2e/ton MSW) --
+// Grid: eGRID2022 U.S. national NON-BASELOAD marginal factor 1,405 lb CO2e/MWh
+// = 0.637 kg/kWh (LCA Eq. 19). Regional non-baseload alternatives from the LCA
+// sensitivity analysis: NY 922 lb (0.418) / IN 1,860 lb (0.844). Editable.
+var GRID_KG_PER_KWH = 0.637;
+// Metals recycling credit: LCA gives 0.058 (ferrous) + 0.028 (non-ferrous) =
+// 0.086 t CO2e/ton MSW at the 50 lb/ton headline recovery -> 0.00172 t CO2e/lb.
+var METAL_CREDIT_T_PER_LB = 0.00172;
+// 20-yr methane (CH4 GWP 82.5) -> 100-yr (29.8): scale the landfill-methane term.
+var CH4_GWP_RATIO = 29.8 / 82.5;         // = 0.3612
+var MSW_METHANE20 = 2.72;                // Reworld landfill CH4 avoided, MSW, 20-yr
+var BIO_BALANCE_MSW = 0.32;              // extra biogenic CO2 from combustion vs landfill (MSW)
+var LFG_ELEC_CREDIT_MSW = 0.06;          // grid electricity a landfill would make from MSW's LFG
+function isGwp100() { return state.gwp === '100'; }
+function ch4Scale() { return isGwp100() ? CH4_GWP_RATIO : 1; }
+// Relative biogenic / methane-generation content of a stream vs MSW (0..~1.7),
+// used to scale the biogenic-CO2 balance and landfill's lost LFG credit.
+function bioProxy(s) { return lfFor(s) / MSW_METHANE20; }
+// Reworld's verified net GHG factor for average MSW at the current GWP timeframe.
+function mswNetFactor() { return isGwp100() ? 0.65 : 2.4; }
 
 // The counterfactual — what would happen to this waste WITHOUT Reworld:
 //   'landfill'   -> would be landfilled (avoids methane; net vs landfill)
@@ -513,74 +552,94 @@ function btuFor(stream) {
   var o = state.streamBtu && state.streamBtu[stream.key];
   return (o != null && !isNaN(o)) ? o : stream.btu;
 }
-function gridTPerKwh() { var g = state.gridKg; return ((g != null && !isNaN(g)) ? g : GRID_KG_PER_KWH) / 1000; }
+// Reworld's LCA reports on a SHORT-ton basis (ton CO2e per ton MSW; they convert
+// metric->short via /0.907). Convert kg CO2e to short tons so the electricity and
+// steam credits sit on the same basis as the methane/stack/metal terms.
+var KG_PER_SHORT_TON = 907.185;
+function gridTPerKwh() { var g = state.gridKg; return ((g != null && !isNaN(g)) ? g : GRID_KG_PER_KWH) / KG_PER_SHORT_TON; }
 function lfFor(s)   { var o = state.streamLf   && state.streamLf[s.key];   return (o != null && !isNaN(o)) ? o : s.lf; }
 function combFor(s) { var o = state.streamComb && state.streamComb[s.key]; return (o != null && !isNaN(o)) ? o : s.comb; }
-// Net CO2e avoided vs landfill per ton = methane avoided − stack CO2 + energy
-// displaced + metal recycled. A streamGhg override (if set) wins.
+// Net CO2e avoided vs landfill per ton, decomposed per Reworld's verified LCA:
+//   + landfill methane avoided (GWP-scaled)  + net grid electricity displaced
+//   + metals recycled                        - fossil stack CO2
+//   - extra biogenic CO2 from combustion vs landfill storage
+// (District steam is facility-wide and added in calc()/ghgBreakdown(), not here.)
+// A streamGhg override (if set) wins. MSW reproduces the verified 2.4 (20-yr) /
+// 0.65 (100-yr) at the national LCA grid/energy basis.
 function ghgFor(stream) {
   var o = state.streamGhg && state.streamGhg[stream.key];
   if (o != null && !isNaN(o)) return o;
-  var energyMetal = kwhPerTon(btuFor(stream)) * gridTPerKwh() + metalFor(stream) * METAL_CREDIT_T_PER_LB;
-  // vs incineration: stack CO2 is a wash and there is no landfill methane, so
+  var energy = kwhPerTon(btuFor(stream)) * gridTPerKwh();
+  var metal  = metalFor(stream) * METAL_CREDIT_T_PER_LB;
+  // vs incineration: no landfill methane and stack CO2 is a wash (both burn), so
   // only the energy + metal recovery credit remains (net positive).
-  if (altFor(stream) === 'incinerate') return energyMetal;
-  return lfFor(stream) - combFor(stream) + energyMetal;
+  if (altFor(stream) === 'incinerate') return energy + metal;
+  var methane = lfFor(stream) * ch4Scale();
+  var bp = bioProxy(stream);
+  var bioBalance = BIO_BALANCE_MSW * bp;          // extra biogenic CO2 from combustion
+  var lfgCredit  = LFG_ELEC_CREDIT_MSW * bp;      // landfill's lost LFG electricity
+  return methane - bioBalance - combFor(stream) + (energy - lfgCredit) + metal;
 }
 function metalFor(stream) {
   var o = state.streamMetal && state.streamMetal[stream.key];
   return (o != null && !isNaN(o)) ? o : stream.metal;
 }
-// Facility-specific energy recovery rate + regional grid carbon intensity.
-// kwh = net kWh recovered per ton of 5,000-BTU MSW (scaled from Reworld
-// Hempstead's verified 550 by each plant's nameplate MW ÷ TPD). grid = kg
-// CO2e/kWh of the regional grid the facility displaces (EPA eGRID region,
-// approximate — editable). All values are estimates except Hempstead's 550.
-// Specs from Reworld Facility Fact Sheets (2024). Net kWh/ton is scaled from
-// Reworld Hempstead's verified 550 by each plant's turbine MW ÷ boiler TPD.
-// Grid = approximate EPA eGRID regional carbon intensity (editable estimate).
+// Facility-specific energy recovery rate + grid carbon intensity.
+// kwh  = net kWh recovered per ton of 5,000-BTU MSW (scaled from Reworld
+//        Hempstead's verified 550 by each plant's nameplate MW ÷ TPD; specs
+//        from Reworld Facility Fact Sheets 2024).
+// grid = kg CO2e/kWh displaced. DEFAULT is Reworld's verified LCA basis: the
+//        eGRID2022 U.S. national NON-BASELOAD marginal factor, 1,405 lb/MWh =
+//        0.637 kg/kWh, so every facility reproduces Reworld's certified net
+//        factor for MSW (2.4 t CO2e/ton, 20-yr). Editable — regional non-
+//        baseload alternatives from the LCA sensitivity: NY 0.418 / IN 0.844.
+//        Canadian plants sit on overwhelmingly hydro grids, so their marginal
+//        displacement (and thus grid credit) is genuinely far lower.
 var FACILITIES = [
-  { key: 'hempstead', label: 'Reworld Hempstead', kwh: 550, grid: 0.30, annual: 986000, steamLb: 0, note: '2900 TPD · 80 MW · NY Long Island grid · ferrous/non-ferrous · 550 kWh/ton Reworld-verified' },
-  { key: 'haverhill', label: 'Reworld Haverhill', kwh: 544, grid: 0.25, annual: 561000, steamLb: 0, note: '1650 TPD · 45 MW · ISO-NE grid' },
-  { key: 'huntington', label: 'Reworld Huntington', kwh: 638, grid: 0.30, annual: 255000, steamLb: 0, note: '750 TPD · 24 MW · NY Long Island grid · most efficient' },
-  { key: 'babylon', label: 'Reworld Babylon', kwh: 452, grid: 0.30, annual: 255000, steamLb: 0, note: '750 TPD · 17 MW · NY Long Island grid · ferrous only' },
-  { key: 'bristol', label: 'Reworld Bristol', kwh: 491, grid: 0.25, annual: 221000, steamLb: 0, note: '650 TPD · 16 MW · ISO-NE grid' },
-  { key: 'indianapolis', label: 'Reworld Indianapolis', kwh: 53, grid: 0.45, annual: 803000, steamLb: 4500, note: '2362 TPD · 6.25 MW · Indiana coal grid · STEAM-DOMINANT · 4,500 lb steam/ton to Citizens Thermal' },
-  { key: 'niagara', label: 'Reworld Niagara', kwh: 459, grid: 0.20, annual: 738000, steamLb: 0, note: '2170 TPD · 50 MW · upstate NY grid · also sells steam' },
-  { key: 'alexandria', label: 'Reworld Alexandria', kwh: 450, grid: 0.28, annual: 332000, steamLb: 0, note: '975 TPD · 22 MW · PJM-VA grid' },
-  { key: 'camden', label: 'Reworld Camden', kwh: 498, grid: 0.28, annual: 408000, steamLb: 0, note: '1200 TPD · 30 MW · PJM-NJ grid' },
-  { key: 'delawarevalley', label: 'Reworld Delaware Valley', kwh: 498, grid: 0.30, annual: 1224000, steamLb: 0, note: '3600 TPD · 90 MW · PJM-PA grid' },
-  { key: 'essex', label: 'Reworld Essex', kwh: 576, grid: 0.28, annual: 777000, steamLb: 0, note: '2286 TPD · 66 MW · PJM-NJ grid' },
-  { key: 'fairfax', label: 'Reworld Fairfax', kwh: 618, grid: 0.28, annual: 1020000, steamLb: 0, note: '3000 TPD · 93 MW · PJM-VA grid' },
-  { key: 'hillsborough', label: 'Reworld Hillsborough', kwh: 510, grid: 0.40, annual: 612000, steamLb: 0, note: '1800 TPD · 46 MW · Florida grid' },
-  { key: 'honolulu', label: 'Reworld Honolulu', kwh: 598, grid: 0.60, annual: 1020000, steamLb: 0, note: '3000 TPD · 90 MW · Hawaii grid · oil-heavy grid' },
-  { key: 'huntsville', label: 'Reworld Huntsville', kwh: 433, grid: 0.40, annual: 235000, steamLb: 0, note: '690 TPD · 15 MW · Alabama grid' },
-  { key: 'lake', label: 'Reworld Lake', kwh: 566, grid: 0.40, annual: 180000, steamLb: 0, note: '528 TPD · 15 MW · Florida grid' },
-  { key: 'macarthur', label: 'Reworld MacArthur', kwh: 492, grid: 0.30, annual: 165000, steamLb: 0, note: '486 TPD · 12 MW · NY Long Island grid' },
-  { key: 'marion', label: 'Reworld Marion', kwh: 471, grid: 0.30, annual: 187000, steamLb: 0, note: '550 TPD · 13 MW · Oregon grid' },
-  { key: 'montgomery', label: 'Reworld Montgomery', kwh: 698, grid: 0.30, annual: 612000, steamLb: 0, note: '1800 TPD · 63 MW · PJM-MD grid' },
-  { key: 'plymouth', label: 'Reworld Plymouth', kwh: 525, grid: 0.25, annual: 413000, steamLb: 0, note: '1216 TPD · 32 MW · ISO-NE grid' },
-  { key: 'semass', label: 'Reworld SEMASS', kwh: 486, grid: 0.25, annual: 1088000, steamLb: 0, note: '3200 TPD · 78 MW · ISO-NE grid' },
-  { key: 'stanislaus', label: 'Reworld Stanislaus', kwh: 548, grid: 0.21, annual: 272000, steamLb: 0, note: '800 TPD · 22 MW · California grid' },
-  { key: 'tulsa', label: 'Reworld Tulsa', kwh: 298, grid: 0.40, annual: 382000, steamLb: 0, note: '1125 TPD · 16.8 MW · Oklahoma grid · also sells steam' },
-  { key: 'union', label: 'Reworld Union', kwh: 582, grid: 0.28, annual: 490000, steamLb: 0, note: '1440 TPD · 42 MW · PJM-NJ grid' },
-  { key: 'burnaby', label: 'Reworld Burnaby', kwh: 563, grid: 0.02, annual: 289000, steamLb: 0, note: '850 TPD · 24 MW · BC Hydro grid' },
-  { key: 'durhamyork', label: 'Reworld Durham York', kwh: 705, grid: 0.03, annual: 164000, steamLb: 0, note: '481 TPD · 17 MW · Ontario grid' },
-  { key: 'custom', label: 'Custom / other facility', kwh: 550, grid: 0.40, annual: 900000, steamLb: 0, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
+  { key: 'hempstead', label: 'Reworld Hempstead', kwh: 550, grid: 0.637, annual: 986000, steamLb: 0, note: '2900 TPD · 80 MW · ferrous/non-ferrous · 550 kWh/ton Reworld-verified · NY non-baseload grid alt ≈ 0.42' },
+  { key: 'haverhill', label: 'Reworld Haverhill', kwh: 544, grid: 0.637, annual: 561000, steamLb: 0, note: '1650 TPD · 45 MW · ISO-NE' },
+  { key: 'huntington', label: 'Reworld Huntington', kwh: 638, grid: 0.637, annual: 255000, steamLb: 0, note: '750 TPD · 24 MW · most efficient · NY non-baseload grid alt ≈ 0.42' },
+  { key: 'babylon', label: 'Reworld Babylon', kwh: 452, grid: 0.637, annual: 255000, steamLb: 0, note: '750 TPD · 17 MW · ferrous only · NY non-baseload grid alt ≈ 0.42' },
+  { key: 'bristol', label: 'Reworld Bristol', kwh: 491, grid: 0.637, annual: 221000, steamLb: 0, note: '650 TPD · 16 MW · ISO-NE' },
+  { key: 'indianapolis', label: 'Reworld Indianapolis', kwh: 53, grid: 0.844, annual: 803000, steamLb: 4500, note: '2362 TPD · 6.25 MW · STEAM-DOMINANT · 4,500 lb steam/ton to Citizens Thermal · IN non-baseload grid 0.844' },
+  { key: 'niagara', label: 'Reworld Niagara', kwh: 459, grid: 0.637, annual: 738000, steamLb: 0, note: '2170 TPD · 50 MW · upstate NY · also sells steam' },
+  { key: 'alexandria', label: 'Reworld Alexandria', kwh: 450, grid: 0.637, annual: 332000, steamLb: 0, note: '975 TPD · 22 MW · PJM-VA' },
+  { key: 'camden', label: 'Reworld Camden', kwh: 498, grid: 0.637, annual: 408000, steamLb: 0, note: '1200 TPD · 30 MW · PJM-NJ' },
+  { key: 'delawarevalley', label: 'Reworld Delaware Valley', kwh: 498, grid: 0.637, annual: 1224000, steamLb: 0, note: '3600 TPD · 90 MW · PJM-PA' },
+  { key: 'essex', label: 'Reworld Essex', kwh: 576, grid: 0.637, annual: 777000, steamLb: 0, note: '2286 TPD · 66 MW · PJM-NJ' },
+  { key: 'fairfax', label: 'Reworld Fairfax', kwh: 618, grid: 0.637, annual: 1020000, steamLb: 0, note: '3000 TPD · 93 MW · PJM-VA' },
+  { key: 'hillsborough', label: 'Reworld Hillsborough', kwh: 510, grid: 0.637, annual: 612000, steamLb: 0, note: '1800 TPD · 46 MW · Florida' },
+  { key: 'honolulu', label: 'Reworld Honolulu', kwh: 598, grid: 0.844, annual: 1020000, steamLb: 0, note: '3000 TPD · 90 MW · Hawaii oil-heavy grid — higher marginal displacement' },
+  { key: 'huntsville', label: 'Reworld Huntsville', kwh: 433, grid: 0.637, annual: 235000, steamLb: 0, note: '690 TPD · 15 MW · Alabama' },
+  { key: 'lake', label: 'Reworld Lake', kwh: 566, grid: 0.637, annual: 180000, steamLb: 0, note: '528 TPD · 15 MW · Florida' },
+  { key: 'macarthur', label: 'Reworld MacArthur', kwh: 492, grid: 0.637, annual: 165000, steamLb: 0, note: '486 TPD · 12 MW · NY non-baseload grid alt ≈ 0.42' },
+  { key: 'marion', label: 'Reworld Marion', kwh: 471, grid: 0.637, annual: 187000, steamLb: 0, note: '550 TPD · 13 MW · Oregon' },
+  { key: 'montgomery', label: 'Reworld Montgomery', kwh: 698, grid: 0.637, annual: 612000, steamLb: 0, note: '1800 TPD · 63 MW · PJM-MD' },
+  { key: 'plymouth', label: 'Reworld Plymouth', kwh: 525, grid: 0.637, annual: 413000, steamLb: 0, note: '1216 TPD · 32 MW · ISO-NE' },
+  { key: 'semass', label: 'Reworld SEMASS', kwh: 486, grid: 0.637, annual: 1088000, steamLb: 0, note: '3200 TPD · 78 MW · ISO-NE' },
+  { key: 'stanislaus', label: 'Reworld Stanislaus', kwh: 548, grid: 0.637, annual: 272000, steamLb: 0, note: '800 TPD · 22 MW · California' },
+  { key: 'tulsa', label: 'Reworld Tulsa', kwh: 298, grid: 0.637, annual: 382000, steamLb: 0, note: '1125 TPD · 16.8 MW · Oklahoma · also sells steam' },
+  { key: 'union', label: 'Reworld Union', kwh: 582, grid: 0.637, annual: 490000, steamLb: 0, note: '1440 TPD · 42 MW · PJM-NJ' },
+  { key: 'burnaby', label: 'Reworld Burnaby', kwh: 563, grid: 0.10, annual: 289000, steamLb: 0, note: '850 TPD · 24 MW · BC Hydro — clean grid, low marginal displacement' },
+  { key: 'durhamyork', label: 'Reworld Durham York', kwh: 705, grid: 0.13, annual: 164000, steamLb: 0, note: '481 TPD · 17 MW · Ontario — clean grid, low marginal displacement' },
+  { key: 'custom', label: 'Custom / other facility', kwh: 550, grid: 0.637, annual: 900000, steamLb: 0, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
 ];
 function facilityKwh() { var v = state.facilityKwhPerTon; return (v != null && !isNaN(v)) ? v : FACTORS.energyPerTon; }
 function kwhPerTon(btu) { return facilityKwh() * btu / BASELINE_BTU; }
 
 // Steam credit: steam-selling plants (Indianapolis, etc.) deliver district
 // steam that displaces natural gas a heating boiler would otherwise burn.
-var STEAM_BTU_PER_LB = 1000;   // useful delivered heat per lb of steam
+// Parameters per Reworld's LCA Eq. 21 (dH 1.10 mmBTU/klb = 1,100 BTU/lb, boiler
+// efficiency 0.80, natural-gas EF 53.02 kg CO2/mmBTU). MSW national 0.43 klb/ton
+// -> 0.03 short ton CO2e/ton, matching Reworld Table 29.
+var STEAM_BTU_PER_LB = 1100;   // useful delivered heat per lb of steam (dH)
 var BOILER_EFF = 0.80;         // efficiency of the displaced gas boiler
-var GAS_KG_PER_MMBTU = 53;     // natural-gas combustion emission factor
+var GAS_KG_PER_MMBTU = 53.02;  // natural-gas combustion emission factor
 function facilitySteamLb() { var v = state.facilitySteamLb; return (v != null && !isNaN(v)) ? v : 0; }
-// t CO2e avoided per ton of waste from district steam displacing gas heat.
-function steamCreditPerTon() { return facilitySteamLb() * STEAM_BTU_PER_LB / 1e6 / BOILER_EFF * GAS_KG_PER_MMBTU / 1000; }
+// short tons CO2e avoided per ton of waste from district steam displacing gas heat.
+function steamCreditPerTon() { return facilitySteamLb() * STEAM_BTU_PER_LB / 1e6 / BOILER_EFF * GAS_KG_PER_MMBTU / KG_PER_SHORT_TON; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v9';
+var STORAGE_KEY = 'reworld-sustainability-report-v10';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -595,12 +654,13 @@ function defaultState() {
       facility: '', serviceType: '', wasteProfile: '', priorYtdTons: 0
     },
     rows: [ emptyRow() ],
-    ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
+    ghgMode: 'blended',   // 'blended' = MSW 2.4/0.65 for all; 'stream' = per-stream
+    gwp: '20',            // GWP timeframe: '20' (Reworld default, =2.4) or '100' (=0.65)
     facility: 'hempstead',        // selected facility
     facilityKwhPerTon: 550,       // net kWh recovered per ton of MSW (facility-specific)
     facilitySteamLb: 0,           // lb district steam sold per ton (steam plants)
     annualTons: 986000,   // facility annual throughput (mostly MSW) for context
-    gridKg: 0.30,         // grid carbon intensity (kg CO2e/kWh) for energy credit
+    gridKg: 0.637,        // grid carbon intensity (kg CO2e/kWh) — Reworld LCA national non-baseload
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
     streamGhg: {},        // per-stream NET tCO2e/ton overrides
     streamLf: {},         // per-stream landfill-methane-avoided overrides
@@ -652,13 +712,15 @@ function calc() {
     if (streamMode) { ghg += t * ghgFor(s); metal += t * metalFor(s); }
     streamTons[s.key] = (streamTons[s.key] || 0) + t;
   });
-  if (!streamMode) { ghg = periodTons * FACTORS.ghgPerTon; metal = periodTons * FACTORS.metalPerTon; }
+  // Blended basis = Reworld's flat verified national net GHG factor (2.4 at
+  // 20-yr / 0.65 at 100-yr GWP), which already bakes in national steam/metals.
+  if (!streamMode) { ghg = periodTons * mswNetFactor(); metal = periodTons * FACTORS.metalPerTon; }
   // District-steam credit is facility-wide (not per stream); include it in the
   // stream-mode GHG so the headline metric matches the GHG-analysis panel.
   if (streamMode) ghg += periodTons * steamCreditPerTon();
 
   var blended = periodTons > 0 ? energy / periodTons : FACTORS.energyPerTon;
-  var blendedGhg = periodTons > 0 ? ghg / periodTons : FACTORS.ghgPerTon;
+  var blendedGhg = periodTons > 0 ? ghg / periodTons : mswNetFactor();
   var blendedMetal = periodTons > 0 ? metal / periodTons : FACTORS.metalPerTon;
 
   var priorYtd = num(state.meta.priorYtdTons);
@@ -694,29 +756,40 @@ function calc() {
   };
 }
 
-// Greenhouse-gas vs landfill breakdown for the current period's mix.
+// Greenhouse-gas vs landfill breakdown for the current period's mix, decomposed
+// exactly per Reworld's verified LCA (Tables 35/36/39). GWP-aware (20-yr / 100-yr).
 function ghgBreakdown() {
-  var methaneAvoided = 0, stackCO2 = 0, energyAvoided = 0, metalAvoided = 0, tons = 0;
+  var methaneAvoided = 0, stackCO2 = 0, energyAvoided = 0, metalAvoided = 0,
+      bioBalance = 0, tons = 0;
   var perStream = {};
   var g = gridTPerKwh();
+  var chScale = ch4Scale();
   state.rows.forEach(function (r) {
     var t = num(r.tons); if (t <= 0) return;
     var s = streamFor(r.wasteType);
     var incin = altFor(s) === 'incinerate';
-    // vs incineration: no landfill methane, and stack CO2 is a wash (both burn).
-    var ma = incin ? 0 : t * lfFor(s);
-    var sc = incin ? 0 : t * combFor(s);
-    var ea = t * kwhPerTon(btuFor(s)) * g, mm = t * metalFor(s) * METAL_CREDIT_T_PER_LB;
-    methaneAvoided += ma; stackCO2 += sc; energyAvoided += ea; metalAvoided += mm; tons += t;
+    var bp = bioProxy(s);
+    // vs incineration: no landfill methane, stack CO2 is a wash (both burn), and
+    // there is no landfill biogenic-carbon storage to account for.
+    var ma = incin ? 0 : t * lfFor(s) * chScale;                 // landfill methane avoided
+    var sc = incin ? 0 : t * combFor(s);                         // fossil stack CO2
+    var bb = incin ? 0 : t * BIO_BALANCE_MSW * bp;               // extra biogenic CO2 from combustion
+    var lfg = incin ? 0 : t * LFG_ELEC_CREDIT_MSW * bp;          // landfill's lost LFG electricity credit
+    var ea = t * kwhPerTon(btuFor(s)) * g - lfg;                 // net grid electricity displaced
+    var mm = t * metalFor(s) * METAL_CREDIT_T_PER_LB;            // metals recycled
+    methaneAvoided += ma; stackCO2 += sc; bioBalance += bb;
+    energyAvoided += ea; metalAvoided += mm; tons += t;
     var ps = perStream[s.key] || (perStream[s.key] = { label: s.label, tons: 0, net: 0, alt: altFor(s) });
-    ps.tons += t; ps.net += (ma - sc + ea + mm);
+    ps.tons += t; ps.net += (ma - bb - sc + ea + mm);
   });
   var steamAvoided = tons * steamCreditPerTon();               // district steam displacing gas heat
   return {
-    tons: tons, methaneAvoided: methaneAvoided, stackCO2: stackCO2,
+    tons: tons, methaneAvoided: methaneAvoided, stackCO2: stackCO2, bioBalance: bioBalance,
     energyAvoided: energyAvoided, metalAvoided: metalAvoided, steamAvoided: steamAvoided,
-    avoided: methaneAvoided + energyAvoided + metalAvoided + steamAvoided,   // total reductions (positive)
-    net: methaneAvoided - stackCO2 + energyAvoided + metalAvoided + steamAvoided, perStream: perStream
+    // total gross reductions (the positive credits, before the CO2 debits)
+    avoided: methaneAvoided + energyAvoided + metalAvoided + steamAvoided,
+    net: methaneAvoided - bioBalance - stackCO2 + energyAvoided + metalAvoided + steamAvoided,
+    perStream: perStream
   };
 }
 
@@ -724,15 +797,18 @@ function ghgBreakdown() {
 function ghgNarrative(bd) {
   if (bd.tons <= 0) return 'Enter deliveries or tonnage above to generate the greenhouse-gas analysis.';
   var out = [];
-  // Lead with the reduction (the positive story).
-  out.push('Across ' + fmt2(bd.tons) + ' tons, recovering this waste at Reworld avoids ' + fmt(bd.avoided) +
-    ' tons of CO₂e — that is the greenhouse-gas reduction this material delivers. It comes from three places: ' +
+  var gwpTxt = (state.gwp === '100' ? '100-year' : '20-year') + ' GWP';
+  // Lead with the NET reduction (Reworld's verified basis), then break it down.
+  out.push('Across ' + fmt2(bd.tons) + ' tons, recovering this waste at Reworld delivers a ' +
+    (bd.net >= 0 ? 'net greenhouse-gas reduction of ' + fmt(bd.net) : 'net greenhouse-gas figure of ' + fmt(bd.net)) +
+    ' tons CO₂e (' + gwpTxt + ') versus landfill. The credits: ' +
     fmt(bd.methaneAvoided) + ' t of landfill methane kept out of the atmosphere, ' + fmt(bd.energyAvoided) +
-    ' t from the fossil grid electricity the recovered energy displaces, and ' + fmt(bd.metalAvoided) +
-    ' t from metal recovered for recycling.');
-  // The honest offset + net.
-  out.push('Combustion does release ' + fmt(bd.stackCO2) + ' t of fossil CO₂ at the stack — higher-BTU waste burns hotter and emits more — but netting that against the avoided emissions still leaves a ' +
-    (bd.net >= 0 ? 'net reduction of ' + fmt(bd.net) + ' tons CO₂e' : 'small net figure of ' + fmt(bd.net) + ' tons CO₂e') + ' versus the alternative.');
+    ' t from the fossil grid electricity the recovered energy displaces' + (bd.steamAvoided > 0.5 ? ', ' + fmt(bd.steamAvoided) + ' t from district steam displacing gas heat' : '') +
+    ', and ' + fmt(bd.metalAvoided) + ' t from metal recovered for recycling.');
+  // The honest offsets, per Reworld's LCA decomposition.
+  out.push('Against those credits, combustion releases ' + fmt(bd.stackCO2) + ' t of fossil CO₂ at the stack — higher-BTU, fossil-derived waste burns hotter and emits more' +
+    (bd.bioBalance > 0.5 ? ', plus ' + fmt(bd.bioBalance) + ' t of biogenic CO₂ that a landfill would have partly stored (carbon-cycle CO₂, not fossil)' : '') +
+    '. This follows Reworld’s verified LCA method, where average MSW nets ' + fmt2(mswNetFactor()) + ' t CO₂e/ton (' + gwpTxt + ').');
   // Counterfactual explanation for incineration streams.
   var incin = Object.keys(bd.perStream).map(function (k) { return bd.perStream[k]; }).filter(function (s) { return s.alt === 'incinerate'; });
   if (incin.length) {
@@ -884,16 +960,25 @@ function renderLandfillCompare(c) {
   var tons = c.periodTons;
   if (tons <= 0) { tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="4">Enter tonnage to see the comparison.</td></tr>'; if (narr) narr.textContent = ''; return; }
 
-  // Compute purely vs landfill (ignore the incineration counterfactual here).
-  // Use per-stream metal (not the mode-dependent headline) so this panel is
-  // internally consistent and matches the GHG analysis regardless of toggle.
-  var methane = 0, stack = 0, metalLbs = 0;
-  state.rows.forEach(function (r) { var t = num(r.tons); if (t <= 0) return; var s = streamFor(r.wasteType); methane += t * lfFor(s); stack += t * combFor(s); metalLbs += t * metalFor(s); });
-  var energyCredit = c.energy * gridTPerKwh();
+  // Compute purely vs landfill (ignore the incineration counterfactual here),
+  // decomposed per Reworld's verified LCA and GWP-aware. Per-stream (not the
+  // mode-dependent headline) so this panel matches the GHG analysis panel.
+  var chScale = ch4Scale();
+  var methane = 0, stack = 0, metalLbs = 0, bioBal = 0, lfgCr = 0;
+  state.rows.forEach(function (r) {
+    var t = num(r.tons); if (t <= 0) return; var s = streamFor(r.wasteType);
+    var bp = bioProxy(s);
+    methane += t * lfFor(s) * chScale;
+    stack   += t * combFor(s);
+    metalLbs += t * metalFor(s);
+    bioBal  += t * BIO_BALANCE_MSW * bp;
+    lfgCr   += t * LFG_ELEC_CREDIT_MSW * bp;
+  });
+  var energyCredit = c.energy * gridTPerKwh() - lfgCr;                 // net grid electricity
   var metalCredit = metalLbs * METAL_CREDIT_T_PER_LB;
   var steamCredit = tons * steamCreditPerTon();
   var steamLbTotal = tons * facilitySteamLb();
-  var netGhg = methane + energyCredit + metalCredit + steamCredit - stack;   // avoided vs landfill
+  var netGhg = methane - bioBal - stack + energyCredit + metalCredit + steamCredit;   // avoided vs landfill
   var ashTons = tons * VOL_ASH_FRACTION;
   var volReduction = Math.round((1 - VOL_ASH_FRACTION) * 100);
 
@@ -902,6 +987,7 @@ function renderLandfillCompare(c) {
     ['Fossil CO₂ at the stack', '0', fmt(stack) + ' t CO₂e', fmt(-stack) + ' t CO₂e (WTE emits this)', false],
     ['Grid electricity displaced', '0', fmt(energyCredit) + ' t CO₂e', fmt(energyCredit) + ' t CO₂e avoided', energyCredit > 0.5]
   ];
+  if (bioBal > 0.5) rows.push(['Biogenic CO₂ balance vs landfill', '0', fmt(bioBal) + ' t CO₂e', fmt(-bioBal) + ' t CO₂e (carbon-cycle)', false]);
   if (steamCredit > 0.5) rows.push(['District steam displacing gas heat', '0', fmt(steamCredit) + ' t CO₂e', fmt(steamCredit) + ' t CO₂e avoided', true]);
   rows = rows.concat([
     ['Greenhouse gas — NET', fmt(methane) + ' t emitted', (netGhg >= 0 ? '−' : '+') + fmt(Math.abs(netGhg)) + ' t net', fmt(netGhg) + ' t CO₂e ' + (netGhg >= 0 ? 'avoided' : 'net cost'), netGhg >= 0, true],
@@ -954,8 +1040,8 @@ function renderPitContext(c) {
   // simpler + correct: pit avg BTU = (period energy-equiv BTU + rest MSW BTU) / annual tons
   pitBtu = annual > 0 ? ((periodTons * avgFactor * BASELINE_BTU) + Math.max(annual - periodTons, 0) * BASELINE_BTU) / annual : BASELINE_BTU;
   var shareTons = annual > 0 ? periodTons / annual : 0;
-  var facilityAnnualGhg = annual * FACTORS.ghgPerTon;           // MSW-rate reference
-  var shareGhg = facilityAnnualGhg > 0 ? bd.avoided / facilityAnnualGhg : 0;
+  var facilityAnnualGhg = annual * mswNetFactor();             // MSW-rate reference (GWP-aware)
+  var shareGhg = facilityAnnualGhg > 0 ? bd.net / facilityAnnualGhg : 0;
 
   var wasteBtu = avgFactor * BASELINE_BTU;                      // avg heating value of this waste
   var pctStr = function (v) { var pc = v * 100; if (pc <= 0) return '0%'; if (pc < 0.1) return '<0.1%'; return (Math.round(pc * 10) / 10) + '%'; };
@@ -964,7 +1050,7 @@ function renderPitContext(c) {
   set('pitFactor', fmt2(avgFactor) + '×');
   set('pitWasteBtu', fmt(wasteBtu));
   set('pitPitBtu', fmt(pitBtu));
-  set('pitGhgAvoided', fmt(bd.avoided));
+  set('pitGhgAvoided', fmt(bd.net));
 
   var narr = document.getElementById('pitNarrative');
   if (narr) {
@@ -973,7 +1059,7 @@ function renderPitContext(c) {
       ' BTU/lb) do the energy work of ' + fmt(mswEquiv) + ' tons of MSW — a ' + fmt2(avgFactor) +
       '× displacement. Blended into the pit, where the facility burns about ' + fmt(annual) +
       ' tons/year mostly MSW at ' + fmt(BASELINE_BTU) + ' BTU/lb, this material is ' + pctStr(shareTons) +
-      ' of the annual tonnage but delivers ' + fmt(bd.avoided) + ' tons CO₂e avoided (' + pctStr(shareGhg) +
+      ' of the annual tonnage but delivers ' + fmt(bd.net) + ' tons CO₂e avoided (' + pctStr(shareGhg) +
       ' of the facility’s annual GHG avoidance). The value of each stream is its heating value relative to the MSW it joins: the higher the BTU, the more MSW-equivalent energy — and displaced fossil power — it provides.';
   }
 
@@ -1004,7 +1090,12 @@ function renderPitContext(c) {
 function renderGhgPanel() {
   var bd = ghgBreakdown();
   var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
-  set('ghgAvoidedVal', fmt(bd.avoided));
+  // Headline = NET avoided (matches Reworld's verified 2.4/ton and the top metric
+  // card). Gross reductions and CO2 debits are shown on the reconciliation line.
+  set('ghgAvoidedVal', fmt(bd.net));
+  var av = document.getElementById('ghgAvoidedVal'); if (av) av.className = 'ghg-net-val ' + (bd.net >= 0 ? 'pos' : 'neg');
+  set('ghgGross', fmt(bd.avoided));
+  set('ghgDebits', fmt(bd.stackCO2 + bd.bioBalance));
   set('ghgMethane', fmt(bd.methaneAvoided));
   set('ghgEnergy', fmt(bd.energyAvoided));
   set('ghgMetalCr', fmt(bd.metalAvoided));
@@ -1012,6 +1103,9 @@ function renderGhgPanel() {
   var steamItem = document.getElementById('ghgSteamItem');
   if (steamItem) steamItem.style.display = (bd.steamAvoided > 0.5) ? '' : 'none';
   set('ghgStack', fmt(bd.stackCO2));
+  set('ghgBio', fmt(bd.bioBalance || 0));
+  var bioItem = document.getElementById('ghgBioItem');
+  if (bioItem) bioItem.style.display = (bd.bioBalance > 0.5) ? '' : 'none';
   var nv = document.getElementById('ghgNetVal');
   if (nv) { nv.textContent = fmt(bd.net); nv.className = 'ghg-netval ' + (bd.net >= 0 ? 'pos' : 'neg'); }
   var narr = document.getElementById('ghgNarrative'); if (narr) narr.textContent = ghgNarrative(bd);
@@ -1055,7 +1149,7 @@ function ytdHeadLabel(year) { return year + ' YTD'; }
 function buildMetrics(c) {
   return [
     { name: 'Renewable energy generated',        period: c.energy,  ytd: c.ytdEnergy,  unit: 'kWh',      basis: 'Tons × ' + fmt(c.blended) + ' kWh/ton (by heating value)' },
-    { name: 'Greenhouse gas emissions avoided',  period: c.ghg,     ytd: c.ytdGhg,     unit: 'tons CO₂e', basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedGhg) + ' t CO₂e/ton (by stream)') : 'Tons × 2.4 t CO₂e/ton' },
+    { name: 'Greenhouse gas emissions avoided',  period: c.ghg,     ytd: c.ytdGhg,     unit: 'tons CO₂e', basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedGhg) + ' t CO₂e/ton (by stream, ' + state.gwp + '-yr GWP)') : ('Tons × ' + fmt2(mswNetFactor()) + ' t CO₂e/ton (Reworld LCA, ' + state.gwp + '-yr GWP)') },
     { name: 'Metals recovered for recycling',    period: c.metal,   ytd: c.ytdMetal,   unit: 'lbs',      basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedMetal) + ' lbs/ton (by stream)') : 'Tons × 50 lbs/ton' },
     { name: 'Homes powered for one month',       period: c.homes,   ytd: c.ytdHomes,   unit: 'homes',    basis: 'kWh ÷ 893 kWh/home-month' },
     { name: 'Coal not needed',                   period: c.coal,    ytd: c.ytdCoal,    unit: 'tons',     basis: 'kWh ÷ 1,881 kWh/ton coal' },
@@ -1915,6 +2009,14 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'),
   r.addEventListener('change', function () { if (r.checked) { state.ghgMode = r.value; applyGhgMode(); render(); saveState(); } });
 });
 
+// GWP timeframe toggle (20-yr = Reworld default / 2.4; 100-yr = 0.65).
+function applyGwpMode() {
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="gwp"]'), function (r) { r.checked = (r.value === state.gwp); });
+}
+Array.prototype.forEach.call(document.querySelectorAll('input[name="gwp"]'), function (r) {
+  r.addEventListener('change', function () { if (r.checked) { state.gwp = r.value; render(); saveState(); } });
+});
+
 // Facility selector + its editable knobs (energy rate, grid factor, annual).
 (function () {
   var sel = document.getElementById('facilitySel');
@@ -1948,8 +2050,10 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'),
 })();
 
 // Initial paint.
+if (state.gwp !== '20' && state.gwp !== '100') state.gwp = '20';   // back-compat default
 buildStreamsTable();
 applyGhgMode();
+applyGwpMode();
 renderMeta();
 renderRows();
 render();
