@@ -653,6 +653,9 @@ function calc() {
     streamTons[s.key] = (streamTons[s.key] || 0) + t;
   });
   if (!streamMode) { ghg = periodTons * FACTORS.ghgPerTon; metal = periodTons * FACTORS.metalPerTon; }
+  // District-steam credit is facility-wide (not per stream); include it in the
+  // stream-mode GHG so the headline metric matches the GHG-analysis panel.
+  if (streamMode) ghg += periodTons * steamCreditPerTon();
 
   var blended = periodTons > 0 ? energy / periodTons : FACTORS.energyPerTon;
   var blendedGhg = periodTons > 0 ? ghg / periodTons : FACTORS.ghgPerTon;
@@ -882,10 +885,12 @@ function renderLandfillCompare(c) {
   if (tons <= 0) { tb.innerHTML = '<tr><td style="padding-left:16px;color:#5B5B78;" colspan="4">Enter tonnage to see the comparison.</td></tr>'; if (narr) narr.textContent = ''; return; }
 
   // Compute purely vs landfill (ignore the incineration counterfactual here).
-  var methane = 0, stack = 0;
-  state.rows.forEach(function (r) { var t = num(r.tons); if (t <= 0) return; var s = streamFor(r.wasteType); methane += t * lfFor(s); stack += t * combFor(s); });
+  // Use per-stream metal (not the mode-dependent headline) so this panel is
+  // internally consistent and matches the GHG analysis regardless of toggle.
+  var methane = 0, stack = 0, metalLbs = 0;
+  state.rows.forEach(function (r) { var t = num(r.tons); if (t <= 0) return; var s = streamFor(r.wasteType); methane += t * lfFor(s); stack += t * combFor(s); metalLbs += t * metalFor(s); });
   var energyCredit = c.energy * gridTPerKwh();
-  var metalCredit = c.metal * METAL_CREDIT_T_PER_LB;
+  var metalCredit = metalLbs * METAL_CREDIT_T_PER_LB;
   var steamCredit = tons * steamCreditPerTon();
   var steamLbTotal = tons * facilitySteamLb();
   var netGhg = methane + energyCredit + metalCredit + steamCredit - stack;   // avoided vs landfill
@@ -905,7 +910,7 @@ function renderLandfillCompare(c) {
   if (steamLbTotal > 0) rows.push(['District steam delivered', '0', fmt(steamLbTotal) + ' lbs', fmt(steamLbTotal) + ' lbs steam', true]);
   rows = rows.concat([
     ['Homes powered (1 month)', '0', fmt(c.homes), fmt(c.homes) + ' homes', c.homes > 0],
-    ['Metal recovered for recycling', '0 lbs (buried)', fmt(c.metal) + ' lbs', fmt(c.metal) + ' lbs recovered', c.metal > 0],
+    ['Metal recovered for recycling', '0 lbs (buried)', fmt(metalLbs) + ' lbs', fmt(metalLbs) + ' lbs recovered', metalLbs > 0],
     ['Landfill volume consumed', fmt2(tons) + ' tons, permanently', '≈' + fmt2(ashTons) + ' tons (ash only)', '≈' + volReduction + '% less landfill volume', true],
     ['Groundwater / leachate risk', 'Ongoing for decades', 'None', 'Risk eliminated', true],
     ['Permanence', 'Buried — waste remains', 'Destroyed — final', 'No long-term liability', true]
