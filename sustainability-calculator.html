@@ -359,6 +359,7 @@
         <div class="ghg-item hero"><span class="ghg-plus">+</span> <span id="ghgMethane">0</span><small>landfill methane avoided</small></div>
         <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgEnergy">0</span><small>grid electricity displaced</small></div>
         <div class="ghg-item"><span class="ghg-plus">+</span> <span id="ghgMetalCr">0</span><small>metal recycled credit</small></div>
+        <div class="ghg-item" id="ghgSteamItem" style="display:none;"><span class="ghg-plus">+</span> <span id="ghgSteam">0</span><small>district steam displacing gas heat</small></div>
         <div class="ghg-item"><span class="ghg-minus">−</span> <span id="ghgStack">0</span><small>stack CO₂ (vs-landfill streams only)</small></div>
       </div>
     </div>
@@ -539,18 +540,47 @@ function metalFor(stream) {
 // Reworld Hempstead's verified 550 by each plant's turbine MW ÷ boiler TPD.
 // Grid = approximate EPA eGRID regional carbon intensity (editable estimate).
 var FACILITIES = [
-  { key: 'hempstead',    label: 'Reworld Hempstead — Westbury, NY',       kwh: 550, grid: 0.30, annual: 986000, note: '3 boilers · 2,900 TPD · 80 MW turbine · roller-grate mass burn (1989) · NY Long Island grid · ferrous/non-ferrous · 550 kWh/ton is Reworld-verified.' },
-  { key: 'haverhill',    label: 'Reworld Haverhill — Haverhill, MA',       kwh: 545, grid: 0.25, annual: 561000, note: '2 boilers · 1,650 TPD · 45 MW turbine · Martin mass burn (1989) · ISO-New England grid · kWh/ton scaled from Hempstead.' },
-  { key: 'huntington',   label: 'Reworld Huntington — East Northport, NY', kwh: 640, grid: 0.30, annual: 255000, note: '750 TPD · 24 MW turbine · mass burn · NY Long Island grid · most efficient (kWh/ton scaled from Hempstead).' },
-  { key: 'babylon',      label: 'Reworld Babylon — West Babylon, NY',      kwh: 450, grid: 0.30, annual: 255000, note: '750 TPD · 17 MW turbine · mass burn · NY Long Island grid · ferrous only · kWh/ton scaled from Hempstead.' },
-  { key: 'bristol',      label: 'Reworld Bristol — Bristol, CT',           kwh: 490, grid: 0.25, annual: 221000, note: '2 boilers · 650 TPD · 16 MW turbine · Martin mass burn (1988) · ISO-New England grid · kWh/ton scaled from Hempstead.' },
-  { key: 'indianapolis', label: 'Reworld Indianapolis — Indianapolis, IN', kwh: 53,  grid: 0.45, annual: 803000, note: '3 boilers · 2,362 TPD · 6.25 MW turbine · Martin mass burn (1988) · STEAM-DOMINANT: supplies ~50% of downtown Indianapolis steam loop (Citizens Thermal). The 53 kWh/ton electric UNDERSTATES this plant — add steam credit.' },
-  { key: 'custom',       label: 'Custom / other facility',                 kwh: 550, grid: 0.40, annual: 900000, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
+  { key: 'hempstead', label: 'Reworld Hempstead', kwh: 550, grid: 0.30, annual: 986000, steamLb: 0, note: '2900 TPD · 80 MW · NY Long Island grid · ferrous/non-ferrous · 550 kWh/ton Reworld-verified' },
+  { key: 'haverhill', label: 'Reworld Haverhill', kwh: 544, grid: 0.25, annual: 561000, steamLb: 0, note: '1650 TPD · 45 MW · ISO-NE grid' },
+  { key: 'huntington', label: 'Reworld Huntington', kwh: 638, grid: 0.30, annual: 255000, steamLb: 0, note: '750 TPD · 24 MW · NY Long Island grid · most efficient' },
+  { key: 'babylon', label: 'Reworld Babylon', kwh: 452, grid: 0.30, annual: 255000, steamLb: 0, note: '750 TPD · 17 MW · NY Long Island grid · ferrous only' },
+  { key: 'bristol', label: 'Reworld Bristol', kwh: 491, grid: 0.25, annual: 221000, steamLb: 0, note: '650 TPD · 16 MW · ISO-NE grid' },
+  { key: 'indianapolis', label: 'Reworld Indianapolis', kwh: 53, grid: 0.45, annual: 803000, steamLb: 4500, note: '2362 TPD · 6.25 MW · Indiana coal grid · STEAM-DOMINANT · 4,500 lb steam/ton to Citizens Thermal' },
+  { key: 'niagara', label: 'Reworld Niagara', kwh: 459, grid: 0.20, annual: 738000, steamLb: 0, note: '2170 TPD · 50 MW · upstate NY grid · also sells steam' },
+  { key: 'alexandria', label: 'Reworld Alexandria', kwh: 450, grid: 0.28, annual: 332000, steamLb: 0, note: '975 TPD · 22 MW · PJM-VA grid' },
+  { key: 'camden', label: 'Reworld Camden', kwh: 498, grid: 0.28, annual: 408000, steamLb: 0, note: '1200 TPD · 30 MW · PJM-NJ grid' },
+  { key: 'delawarevalley', label: 'Reworld Delaware Valley', kwh: 498, grid: 0.30, annual: 1224000, steamLb: 0, note: '3600 TPD · 90 MW · PJM-PA grid' },
+  { key: 'essex', label: 'Reworld Essex', kwh: 576, grid: 0.28, annual: 777000, steamLb: 0, note: '2286 TPD · 66 MW · PJM-NJ grid' },
+  { key: 'fairfax', label: 'Reworld Fairfax', kwh: 618, grid: 0.28, annual: 1020000, steamLb: 0, note: '3000 TPD · 93 MW · PJM-VA grid' },
+  { key: 'hillsborough', label: 'Reworld Hillsborough', kwh: 510, grid: 0.40, annual: 612000, steamLb: 0, note: '1800 TPD · 46 MW · Florida grid' },
+  { key: 'honolulu', label: 'Reworld Honolulu', kwh: 598, grid: 0.60, annual: 1020000, steamLb: 0, note: '3000 TPD · 90 MW · Hawaii grid · oil-heavy grid' },
+  { key: 'huntsville', label: 'Reworld Huntsville', kwh: 433, grid: 0.40, annual: 235000, steamLb: 0, note: '690 TPD · 15 MW · Alabama grid' },
+  { key: 'lake', label: 'Reworld Lake', kwh: 566, grid: 0.40, annual: 180000, steamLb: 0, note: '528 TPD · 15 MW · Florida grid' },
+  { key: 'macarthur', label: 'Reworld MacArthur', kwh: 492, grid: 0.30, annual: 165000, steamLb: 0, note: '486 TPD · 12 MW · NY Long Island grid' },
+  { key: 'marion', label: 'Reworld Marion', kwh: 471, grid: 0.30, annual: 187000, steamLb: 0, note: '550 TPD · 13 MW · Oregon grid' },
+  { key: 'montgomery', label: 'Reworld Montgomery', kwh: 698, grid: 0.30, annual: 612000, steamLb: 0, note: '1800 TPD · 63 MW · PJM-MD grid' },
+  { key: 'plymouth', label: 'Reworld Plymouth', kwh: 525, grid: 0.25, annual: 413000, steamLb: 0, note: '1216 TPD · 32 MW · ISO-NE grid' },
+  { key: 'semass', label: 'Reworld SEMASS', kwh: 486, grid: 0.25, annual: 1088000, steamLb: 0, note: '3200 TPD · 78 MW · ISO-NE grid' },
+  { key: 'stanislaus', label: 'Reworld Stanislaus', kwh: 548, grid: 0.21, annual: 272000, steamLb: 0, note: '800 TPD · 22 MW · California grid' },
+  { key: 'tulsa', label: 'Reworld Tulsa', kwh: 298, grid: 0.40, annual: 382000, steamLb: 0, note: '1125 TPD · 16.8 MW · Oklahoma grid · also sells steam' },
+  { key: 'union', label: 'Reworld Union', kwh: 582, grid: 0.28, annual: 490000, steamLb: 0, note: '1440 TPD · 42 MW · PJM-NJ grid' },
+  { key: 'burnaby', label: 'Reworld Burnaby', kwh: 563, grid: 0.02, annual: 289000, steamLb: 0, note: '850 TPD · 24 MW · BC Hydro grid' },
+  { key: 'durhamyork', label: 'Reworld Durham York', kwh: 705, grid: 0.03, annual: 164000, steamLb: 0, note: '481 TPD · 17 MW · Ontario grid' },
+  { key: 'custom', label: 'Custom / other facility', kwh: 550, grid: 0.40, annual: 900000, steamLb: 0, note: 'Enter this facility’s own net kWh/ton and grid carbon intensity.' }
 ];
 function facilityKwh() { var v = state.facilityKwhPerTon; return (v != null && !isNaN(v)) ? v : FACTORS.energyPerTon; }
 function kwhPerTon(btu) { return facilityKwh() * btu / BASELINE_BTU; }
 
-var STORAGE_KEY = 'reworld-sustainability-report-v8';
+// Steam credit: steam-selling plants (Indianapolis, etc.) deliver district
+// steam that displaces natural gas a heating boiler would otherwise burn.
+var STEAM_BTU_PER_LB = 1000;   // useful delivered heat per lb of steam
+var BOILER_EFF = 0.80;         // efficiency of the displaced gas boiler
+var GAS_KG_PER_MMBTU = 53;     // natural-gas combustion emission factor
+function facilitySteamLb() { var v = state.facilitySteamLb; return (v != null && !isNaN(v)) ? v : 0; }
+// t CO2e avoided per ton of waste from district steam displacing gas heat.
+function steamCreditPerTon() { return facilitySteamLb() * STEAM_BTU_PER_LB / 1e6 / BOILER_EFF * GAS_KG_PER_MMBTU / 1000; }
+
+var STORAGE_KEY = 'reworld-sustainability-report-v9';
 
 // A blank delivery row with every column present.
 function emptyRow() {
@@ -568,6 +598,7 @@ function defaultState() {
     ghgMode: 'blended',   // 'blended' = MSW 2.4/50 for all; 'stream' = per-stream
     facility: 'hempstead',        // selected facility
     facilityKwhPerTon: 550,       // net kWh recovered per ton of MSW (facility-specific)
+    facilitySteamLb: 0,           // lb district steam sold per ton (steam plants)
     annualTons: 986000,   // facility annual throughput (mostly MSW) for context
     gridKg: 0.30,         // grid carbon intensity (kg CO2e/kWh) for energy credit
     streamBtu: {},        // per-stream BTU/lb overrides (key -> value)
@@ -677,11 +708,12 @@ function ghgBreakdown() {
     var ps = perStream[s.key] || (perStream[s.key] = { label: s.label, tons: 0, net: 0, alt: altFor(s) });
     ps.tons += t; ps.net += (ma - sc + ea + mm);
   });
+  var steamAvoided = tons * steamCreditPerTon();               // district steam displacing gas heat
   return {
     tons: tons, methaneAvoided: methaneAvoided, stackCO2: stackCO2,
-    energyAvoided: energyAvoided, metalAvoided: metalAvoided,
-    avoided: methaneAvoided + energyAvoided + metalAvoided,     // total reductions (positive)
-    net: methaneAvoided - stackCO2 + energyAvoided + metalAvoided, perStream: perStream
+    energyAvoided: energyAvoided, metalAvoided: metalAvoided, steamAvoided: steamAvoided,
+    avoided: methaneAvoided + energyAvoided + metalAvoided + steamAvoided,   // total reductions (positive)
+    net: methaneAvoided - stackCO2 + energyAvoided + metalAvoided + steamAvoided, perStream: perStream
   };
 }
 
@@ -854,22 +886,30 @@ function renderLandfillCompare(c) {
   state.rows.forEach(function (r) { var t = num(r.tons); if (t <= 0) return; var s = streamFor(r.wasteType); methane += t * lfFor(s); stack += t * combFor(s); });
   var energyCredit = c.energy * gridTPerKwh();
   var metalCredit = c.metal * METAL_CREDIT_T_PER_LB;
-  var netGhg = methane + energyCredit + metalCredit - stack;   // avoided vs landfill
+  var steamCredit = tons * steamCreditPerTon();
+  var steamLbTotal = tons * facilitySteamLb();
+  var netGhg = methane + energyCredit + metalCredit + steamCredit - stack;   // avoided vs landfill
   var ashTons = tons * VOL_ASH_FRACTION;
   var volReduction = Math.round((1 - VOL_ASH_FRACTION) * 100);
 
   var rows = [
     ['Landfill methane emitted', fmt(methane) + ' t CO₂e', '0', fmt(methane) + ' t CO₂e prevented', methane > 0.5],
     ['Fossil CO₂ at the stack', '0', fmt(stack) + ' t CO₂e', fmt(-stack) + ' t CO₂e (WTE emits this)', false],
-    ['Grid electricity displaced', '0', fmt(energyCredit) + ' t CO₂e', fmt(energyCredit) + ' t CO₂e avoided', energyCredit > 0.5],
+    ['Grid electricity displaced', '0', fmt(energyCredit) + ' t CO₂e', fmt(energyCredit) + ' t CO₂e avoided', energyCredit > 0.5]
+  ];
+  if (steamCredit > 0.5) rows.push(['District steam displacing gas heat', '0', fmt(steamCredit) + ' t CO₂e', fmt(steamCredit) + ' t CO₂e avoided', true]);
+  rows = rows.concat([
     ['Greenhouse gas — NET', fmt(methane) + ' t emitted', (netGhg >= 0 ? '−' : '+') + fmt(Math.abs(netGhg)) + ' t net', fmt(netGhg) + ' t CO₂e ' + (netGhg >= 0 ? 'avoided' : 'net cost'), netGhg >= 0, true],
-    ['Renewable energy generated', '~0 kWh', fmt(c.energy) + ' kWh', fmt(c.energy) + ' kWh generated', c.energy > 0],
+    ['Renewable energy generated', '~0 kWh', fmt(c.energy) + ' kWh', fmt(c.energy) + ' kWh generated', c.energy > 0]
+  ]);
+  if (steamLbTotal > 0) rows.push(['District steam delivered', '0', fmt(steamLbTotal) + ' lbs', fmt(steamLbTotal) + ' lbs steam', true]);
+  rows = rows.concat([
     ['Homes powered (1 month)', '0', fmt(c.homes), fmt(c.homes) + ' homes', c.homes > 0],
     ['Metal recovered for recycling', '0 lbs (buried)', fmt(c.metal) + ' lbs', fmt(c.metal) + ' lbs recovered', c.metal > 0],
     ['Landfill volume consumed', fmt2(tons) + ' tons, permanently', '≈' + fmt2(ashTons) + ' tons (ash only)', '≈' + volReduction + '% less landfill volume', true],
     ['Groundwater / leachate risk', 'Ongoing for decades', 'None', 'Risk eliminated', true],
     ['Permanence', 'Buried — waste remains', 'Destroyed — final', 'No long-term liability', true]
-  ];
+  ]);
   tb.innerHTML = '';
   rows.forEach(function (r) {
     var strong = r[5];
@@ -963,6 +1003,9 @@ function renderGhgPanel() {
   set('ghgMethane', fmt(bd.methaneAvoided));
   set('ghgEnergy', fmt(bd.energyAvoided));
   set('ghgMetalCr', fmt(bd.metalAvoided));
+  set('ghgSteam', fmt(bd.steamAvoided || 0));
+  var steamItem = document.getElementById('ghgSteamItem');
+  if (steamItem) steamItem.style.display = (bd.steamAvoided > 0.5) ? '' : 'none';
   set('ghgStack', fmt(bd.stackCO2));
   var nv = document.getElementById('ghgNetVal');
   if (nv) { nv.textContent = fmt(bd.net); nv.className = 'ghg-netval ' + (bd.net >= 0 ? 'pos' : 'neg'); }
@@ -1891,7 +1934,7 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="ghgmode"]'),
   sel.addEventListener('change', function () {
     var f = FACILITIES.filter(function (x) { return x.key === sel.value; })[0];
     state.facility = sel.value;
-    if (f && f.key !== 'custom') { state.facilityKwhPerTon = f.kwh; state.gridKg = f.grid; state.annualTons = f.annual; }
+    if (f && f.key !== 'custom') { state.facilityKwhPerTon = f.kwh; state.gridKg = f.grid; state.annualTons = f.annual; state.facilitySteamLb = f.steamLb || 0; }
     syncInputs(); render(); saveState();
   });
   kwh.addEventListener('input', function () { var v = parseFloat(kwh.value); state.facilityKwhPerTon = isNaN(v) ? 550 : v; state.facility = 'custom'; sel.value = 'custom'; render(); saveState(); });
