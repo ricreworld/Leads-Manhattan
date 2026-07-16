@@ -1264,6 +1264,10 @@ document.getElementById('btn-reset').addEventListener('click', function () {
   document.getElementById('period-picker').style.display = 'none';
   document.getElementById('dz-status').textContent = '';
   document.getElementById('dz-status').className = 'dz-status';
+  // Re-sync every toggle to the fresh defaults so the radios can't display a
+  // stale basis (e.g. stream/100-yr) while the math uses blended/20-yr.
+  applyGhgMode(); applyGwpMode();
+  if (window.syncFacilityUI) syncFacilityUI();
   renderMeta(); renderRows(); onChange();
 });
 
@@ -2038,6 +2042,7 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="gwp"]'), fun
     var f = FACILITIES.filter(function (x) { return x.key === state.facility; })[0];
     if (prof) prof.textContent = f ? f.note : '';
   }
+  window.syncFacilityUI = syncInputs;   // used by the reset button to re-sync
   syncInputs();
 
   sel.addEventListener('change', function () {
