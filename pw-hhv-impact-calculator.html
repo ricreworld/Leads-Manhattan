@@ -108,13 +108,40 @@
     .notes { grid-template-columns:1fr; }
     .wrap { padding:24px 16px 60px; }
   }
+  /* ---- print report (hidden on screen; the ONLY thing that prints) ---- */
+  #print-report { display:none; }
+  #print-report .pr-head { display:flex; justify-content:space-between; align-items:baseline; border-bottom:3px solid #2A1DBF; padding-bottom:8px; margin-bottom:4px; }
+  #print-report .pr-brand { font-family:'Poppins',sans-serif; font-weight:700; font-size:20px; color:#2A1DBF; }
+  #print-report .pr-brand sup { font-size:9px; }
+  #print-report .pr-title { font-family:'Poppins',sans-serif; font-weight:600; font-size:13px; color:#15152B; text-align:right; }
+  #print-report .pr-unofficial { font-family:'IBM Plex Mono',monospace; font-size:7.5px; font-weight:700; letter-spacing:.08em; color:#8a5a00; background:#FFF4E5; border:1px solid #F0C070; border-radius:4px; padding:2px 7px; text-align:right; margin-top:3px; display:inline-block; float:right; }
+  #print-report .pr-sub { font-size:9.5px; color:#5B5B78; margin:4px 0 14px; }
+  #print-report .pr-lab { font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#159C8D; margin:16px 0 6px; }
+  #print-report table.pr-t { width:100%; border-collapse:collapse; font-size:9.5px; }
+  #print-report table.pr-t th { font-family:'IBM Plex Mono',monospace; font-size:7.5px; letter-spacing:.05em; text-transform:uppercase; color:#5B5B78; text-align:right; padding:4px 7px; border-bottom:1.5px solid #15152B; }
+  #print-report table.pr-t th:first-child, #print-report table.pr-t td:first-child { text-align:left; }
+  #print-report table.pr-t th.l, #print-report table.pr-t td.l { text-align:left; }
+  #print-report table.pr-t td { padding:4px 7px; border-bottom:0.75px solid #E3E4F0; text-align:right; }
+  #print-report table.pr-t tr.tot td { border-top:1.5px solid #15152B; border-bottom:none; font-weight:700; }
+  #print-report .pos { color:#159C8D; font-weight:700; } #print-report .negv { color:#C2185B; font-weight:700; }
+  #print-report .pr-fac { border:1px solid #E3E4F0; border-radius:8px; padding:10px 13px; margin-bottom:10px; break-inside:avoid; }
+  #print-report .pr-fac h3 { font-family:'Poppins',sans-serif; font-size:12px; margin:0; }
+  #print-report .pr-fac .prof { font-size:8.5px; color:#5B5B78; margin:1px 0 7px; }
+  #print-report .pr-math { font-size:9.5px; margin:7px 0; color:#15152B; line-height:1.55; }
+  #print-report .pr-net { display:inline-block; background:#E9FBF7; border:1px solid #22D9C4; border-radius:6px; padding:4px 10px; font-size:10.5px; font-weight:700; margin:2px 8px 2px 0; }
+  #print-report .pr-net small { font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:#5B5B78; display:block; font-weight:600; }
+  #print-report .pr-bi { font-size:8.5px; color:#5B5B78; margin-top:6px; line-height:1.5; }
+  #print-report .pr-bi b { color:#15152B; }
+  #print-report .pr-warn { font-size:8.5px; color:#8a5a00; background:#FFF4E5; border:1px solid #F0C070; border-radius:5px; padding:4px 8px; margin-top:6px; }
+  #print-report .pr-foot { font-size:8px; color:#5B5B78; margin-top:14px; border-top:1px solid #E3E4F0; padding-top:8px; line-height:1.55; }
+
   @media print {
-    @page { size: landscape; }
+    @page { size: portrait; margin: 0.55in 0.5in; }
     body { background:#fff; }
-    .toolbar, .btn-remove, .add-stream, .no-print { display:none !important; }
     .wrap { max-width:100%; padding:0; }
-    input, textarea { border:none !important; }
-    .facility { break-inside:avoid; }
+    /* the interactive app disappears; the report is the printed artifact */
+    .wrap > *:not(#print-report) { display:none !important; }
+    #print-report { display:block !important; }
   }
 </style>
 </head>
@@ -168,6 +195,10 @@
   <p class="note">
     <b>How it works.</b> Monthly MSW throughput = MSW TPD × processing days. The facility's HHV capacity is held at that baseline (MSW tons × MSW BTU/lb). Each profiled-waste stream adds PW tons = PW TPD × delivery days, contributing PW tons × PW BTU/lb of heat; an equal amount of heat is removed from MSW, so displaced MSW tons = (PW heat added) ÷ MSW BTU/lb. Net revenue impact = Σ(PW tons × PW price) − (displaced MSW tons × MSW price). Figures are monthly unless noted; annual = ×12. Defaults are drawn from the facility HHV-impact spreadsheets and should be confirmed against current pricing, tonnage, and measured heating values.
   </p>
+
+  <!-- Print-only report: what Print / Save-as-PDF actually outputs. Rebuilt on
+       every refresh() so it always mirrors the current inputs. -->
+  <div id="print-report"></div>
 
 </div>
 
@@ -481,6 +512,81 @@ function refresh() {
   document.getElementById('totDisp').textContent = tons(totDisp);
   var tm = document.getElementById('totMonthly'); tm.textContent = money(totMonthly); tm.className = 'num ' + (totMonthly >= 0 ? 'pos' : 'neg');
   var ta = document.getElementById('totAnnual'); ta.textContent = money(totAnnual); ta.className = 'num ' + (totAnnual >= 0 ? 'pos' : 'neg');
+
+  buildPrintReport();
+}
+
+// The clean, report-style document that Print / Save-as-PDF outputs (the
+// interactive form is hidden in print). Rebuilt whenever anything changes.
+function buildPrintReport() {
+  var host = document.getElementById('print-report');
+  if (!host) return;
+  var esc = escapeHtml;
+  var procDays = num(state.processingDays), delivDays = num(state.deliveryDays);
+  var h = [];
+
+  h.push('<div class="pr-head"><div class="pr-brand">Reworld<sup>&trade;</sup></div>' +
+    '<div><div class="pr-title">Profiled Waste — HHV &amp; Revenue Impact Analysis</div>' +
+    '<div class="pr-unofficial">UNOFFICIAL — INTERNAL WORKING DRAFT · NOT FOR EXTERNAL DISTRIBUTION</div></div></div>');
+  h.push('<div class="pr-sub">Internal deal-economics analysis. Assumptions: ' + procDays +
+    ' MSW processing days &amp; ' + delivDays + ' profiled-waste delivery days per month. ' +
+    'Boiler heat input (HHV) is held at each facility’s MSW baseline, so higher-BTU profiled waste displaces MSW on a heat basis; ' +
+    'net impact = profiled-waste revenue − displaced MSW revenue.</div>');
+
+  // ---- executive summary ----
+  var rows = state.facilities.map(function (f) { return { f: f, c: computeFacility(f) }; });
+  rows.sort(function (a, b) { return b.c.netMonthly - a.c.netMonthly; });
+  var tPw = 0, tRev = 0, tDisp = 0, tLoss = 0, tNet = 0;
+  h.push('<div class="pr-lab">Executive Summary — Net Revenue Impact by Facility</div>');
+  h.push('<table class="pr-t"><thead><tr><th>Facility</th><th class="l">Profiled stream(s)</th><th>PW tons/mo</th><th>PW revenue/mo</th><th>MSW displaced (t)</th><th>MSW revenue impact</th><th>Net / month</th><th>Net / year</th></tr></thead><tbody>');
+  rows.forEach(function (x) {
+    var f = x.f, c = x.c;
+    tPw += c.pwTons; tRev += c.pwRevenue; tDisp += c.displaced; tLoss += c.mswImpact; tNet += c.netMonthly;
+    var streams = (f.streams || []).map(function (s) { return s.name || 'PW'; }).join(', ');
+    h.push('<tr><td><b>' + esc(f.name || 'Facility') + '</b></td><td class="l">' + esc(streams) + '</td>' +
+      '<td>' + tons(c.pwTons) + '</td><td>' + money(c.pwRevenue) + '</td><td>' + tons(c.displaced) + '</td>' +
+      '<td class="negv">' + money(c.mswImpact) + '</td>' +
+      '<td class="' + (c.netMonthly >= 0 ? 'pos' : 'negv') + '">' + money(c.netMonthly) + '</td>' +
+      '<td class="' + (c.netAnnual >= 0 ? 'pos' : 'negv') + '">' + money(c.netAnnual) + '</td></tr>');
+  });
+  h.push('<tr class="tot"><td>Total — all facilities</td><td class="l"></td><td>' + tons(tPw) + '</td><td>' + money(tRev) + '</td>' +
+    '<td>' + tons(tDisp) + '</td><td class="negv">' + money(tLoss) + '</td>' +
+    '<td class="' + (tNet >= 0 ? 'pos' : 'negv') + '">' + money(tNet) + '</td>' +
+    '<td class="' + (tNet >= 0 ? 'pos' : 'negv') + '">' + money(tNet * 12) + '</td></tr>');
+  h.push('</tbody></table>');
+
+  // ---- facility detail ----
+  h.push('<div class="pr-lab" style="margin-top:18px;">Facility Detail</div>');
+  rows.forEach(function (x) {
+    var f = x.f, c = x.c;
+    h.push('<div class="pr-fac">');
+    h.push('<h3>' + esc(f.name || 'Facility') + '</h3>');
+    if (f.profile) h.push('<div class="prof">' + esc(f.profile) + '</div>');
+    h.push('<table class="pr-t"><thead><tr><th class="l">Stream</th><th>HHV (BTU/lb)</th><th>Price ($/ton)</th><th>TPD</th><th>Tons / mo</th><th>Revenue / mo</th></tr></thead><tbody>');
+    h.push('<tr><td class="l">MSW baseline</td><td>' + big(num(f.msw.hhv)) + '</td><td>$' + num(f.msw.price) + '</td><td>' + big(num(f.msw.tpd)) + '</td><td>' + tons(c.mswTons) + '</td><td>—</td></tr>');
+    (f.streams || []).forEach(function (s) {
+      var t = num(s.tpd) * delivDays;
+      h.push('<tr><td class="l">' + esc(s.name || 'PW') + '</td><td>' + big(num(s.hhv)) + '</td><td>$' + num(s.price) + '</td><td>' + big(num(s.tpd)) + '</td><td>' + tons(t) + '</td><td>' + money(t * num(s.price)) + '</td></tr>');
+    });
+    h.push('</tbody></table>');
+    h.push('<div class="pr-math">' + tons(c.pwTons) + ' profiled tons add ' + big(c.pwHHV * 2000 / 1e6) +
+      ' MMBTU of heat → displaces <b>' + tons(c.displaced) + ' tons of MSW</b> at $' + num(f.msw.price) +
+      '/ton (' + money(c.mswImpact) + '). Profiled-waste revenue ' + money(c.pwRevenue) + '.</div>');
+    h.push('<span class="pr-net"><small>Net monthly impact</small>' + money(c.netMonthly) + '</span>' +
+      '<span class="pr-net"><small>Net annual impact</small>' + money(c.netAnnual) + '</span>');
+    var pwTpdDay = (f.streams || []).reduce(function (s2, x2) { return s2 + num(x2.tpd); }, 0);
+    if (c.newMswTons < 0) h.push('<div class="pr-warn">⚠ Proposed profiled waste exceeds this facility’s HHV (steam) capacity.</div>');
+    else if (num(f.capMaxTpd) > 0 && pwTpdDay > num(f.capMaxTpd)) h.push('<div class="pr-warn">⚠ PW volume exceeds the facility special-waste limit of ' + tons(f.capMaxTpd) + ' TPD.</div>');
+    var bi = [];
+    if (f.benefits) bi.push('<b>Benefits:</b> ' + esc(f.benefits));
+    if (f.issues) bi.push('<b>Watch-outs:</b> ' + esc(f.issues));
+    if (bi.length) h.push('<div class="pr-bi">' + bi.join(' &nbsp;·&nbsp; ') + '</div>');
+    h.push('</div>');
+  });
+
+  h.push('<div class="pr-foot"><b>UNOFFICIAL — internal working draft; figures require confirmation before use in any commitment.</b> <b>Method.</b> Monthly MSW tons = TPD × ' + procDays + ' processing days; heat capacity is held at that baseline (MSW tons × MSW BTU/lb). Each profiled stream adds PW TPD × ' + delivDays + ' delivery days tons and PW tons × PW BTU/lb of heat; displaced MSW tons = PW heat ÷ MSW BTU/lb. Net = Σ(PW tons × PW price) − (displaced tons × MSW price); annual = ×12. Defaults from the facility HHV-impact spreadsheets and Reworld BTU Calculator reference; confirm current pricing, tonnage and measured HHV before committing a deal. Generated by the offline Reworld PW HHV &amp; Revenue Impact Calculator.</div>');
+
+  host.innerHTML = h.join('');
 }
 
 function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
