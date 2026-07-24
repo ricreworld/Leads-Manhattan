@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reworld PW HHV &amp; Revenue Impact Calculator — How It Works</title>
+<style>
+  :root {
+    --indigo:#2A1DBF; --teal:#22D9C4; --tealdark:#159C8D;
+    --ink:#15152B; --ink2:#5B5B78; --line:#E3E4F0;
+    --good:#159C8D; --bad:#C2185B; --panel:#F7F8FC; --goodbg:#E9FBF7;
+    --amber:#8a5a00; --amberbg:#FFF4E5; --amberline:#F0C070;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#fff; line-height:1.5; }
+  .page { max-width:920px; margin:0 auto; padding:36px 28px 60px; }
+  h1 { font-size:25px; letter-spacing:-.01em; }
+  h1 .tm { color:var(--indigo); }
+  .sub { color:var(--ink2); font-size:13.5px; margin:6px 0 0; max-width:72ch; }
+  .lab { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--tealdark); font-weight:700; margin:32px 0 10px; }
+  .lab.first { margin-top:24px; }
+  .rule { height:3px; background:linear-gradient(90deg,var(--indigo),var(--teal)); border-radius:2px; margin-top:14px; }
+
+  .why { border:1.5px solid var(--line); border-radius:10px; background:var(--panel); padding:15px 17px; font-size:12.5px; line-height:1.6; }
+  .why b { color:var(--indigo); }
+
+  /* flow */
+  .flow { display:grid; grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1.1fr; align-items:stretch; }
+  .fbox { border:1.5px solid var(--line); border-radius:9px; padding:11px 12px; background:#fff; }
+  .fbox b { font-size:12px; display:block; }
+  .fbox small { font-size:10.8px; color:var(--ink2); display:block; margin-top:3px; line-height:1.45; }
+  .fbox .formula { font-family:ui-monospace,Menlo,monospace; font-size:10.5px; font-weight:700; color:var(--indigo); display:block; margin-top:6px; background:#F6F5FE; border-radius:5px; padding:4px 7px; }
+  .fbox.res { border-color:#BDEDE4; background:var(--goodbg); }
+  .farrow { display:flex; align-items:center; justify-content:center; color:var(--ink2); font-size:18px; }
+
+  .steps { counter-reset:s; display:grid; gap:9px; }
+  .step { display:flex; gap:12px; align-items:flex-start; border:1.5px solid var(--line); border-radius:9px; padding:11px 13px; }
+  .step::before { counter-increment:s; content:counter(s); flex:0 0 26px; height:26px; border-radius:50%; background:var(--indigo); color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .step b { font-size:12.5px; display:block; }
+  .step small { font-size:11.5px; color:var(--ink2); line-height:1.5; display:block; }
+  .step .eqn { font-family:ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; color:var(--indigo); display:block; margin-top:4px; }
+
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { font-family:ui-monospace,Menlo,monospace; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink2); text-align:left; padding:7px 10px; border-bottom:2px solid var(--ink); }
+  th.r, td.r { text-align:right; }
+  td { padding:6.5px 10px; border-bottom:1px solid var(--line); }
+  td .pos { color:var(--good); font-weight:700; } td .neg { color:var(--bad); font-weight:700; }
+  tr.hero td { background:#F6F5FE; font-weight:700; }
+  .note { font-size:11px; color:var(--ink2); margin-top:8px; line-height:1.55; max-width:82ch; }
+
+  .worked { border:1.5px solid var(--line); border-radius:10px; padding:15px 17px; background:var(--panel); font-size:12.5px; }
+  .worked .ln { display:flex; justify-content:space-between; gap:14px; padding:5px 0; border-bottom:1px dashed var(--line); }
+  .worked .ln:last-child { border-bottom:none; }
+  .worked .ln b.money { font-family:ui-monospace,Menlo,monospace; }
+  .worked .ln.net { border-top:2px solid var(--ink); margin-top:4px; padding-top:9px; font-size:14px; }
+  .worked .ln.net b.money { color:var(--good); font-size:16px; }
+
+  .prov { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .prov > div { border-radius:9px; padding:13px 15px; font-size:11.5px; line-height:1.6; }
+  .prov .v { background:var(--goodbg); border:1.5px solid #BDEDE4; }
+  .prov .m { background:var(--amberbg); border:1.5px solid var(--amberline); color:var(--amber); }
+  .prov b { display:block; font-size:12px; margin-bottom:5px; }
+  .prov ul { margin:0 0 0 16px; } .prov li { margin:2px 0; }
+
+  .foot { margin-top:32px; padding-top:14px; border-top:1.5px solid var(--line); font-size:10.5px; color:var(--ink2); line-height:1.6; }
+
+  @media (max-width:760px){ .flow{grid-template-columns:1fr;} .farrow{transform:rotate(90deg);} .prov{grid-template-columns:1fr;} }
+  @media print { .page{padding:0;max-width:none;} .step,.fbox,.worked,.prov>div{break-inside:avoid;} .lab{margin-top:22px;} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Reworld<span class="tm">™</span> Profiled Waste HHV &amp; Revenue Impact Calculator — How It Works</h1>
+  <p class="sub">An internal decision tool (single offline HTML file — no internet, no install). It answers one question for any facility: <b>is a profiled-waste deal worth it once you account for the MSW it displaces from the boiler?</b> High-BTU profiled waste pays premium tip fees, but it also burns hot — every ton of it pushes ordinary MSW out of the pit. This tool nets the two against each other, per facility, per stream.</p>
+  <div style="font-family:ui-monospace,Menlo,monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:#8a5a00;background:#FFF4E5;border:1.5px solid #F0C070;border-radius:6px;padding:6px 11px;text-align:center;margin:12px 0 0;">UNOFFICIAL — INTERNAL WORKING DRAFT · NOT FOR EXTERNAL DISTRIBUTION</div>
+  <div class="rule"></div>
+
+  <div class="lab first">1 · The core idea — heat is the constraint, not tons</div>
+  <div class="why">A boiler is permitted and engineered around <b>heat input (HHV)</b>, not tonnage. If MSW burns at ~5,500 BTU/lb and a profiled waste stream burns at 10,400 BTU/lb, each profiled ton consumes the thermal room of ~1.9 MSW tons. The revenue question is therefore never "what does the profiled ton pay?" — it's <b>"what does it pay minus the MSW revenue it squeezes out?"</b> That displacement math is what this calculator automates.</div>
+
+  <div class="lab">2 · The logic, left to right</div>
+  <div class="flow">
+    <div class="fbox"><b>Baseline</b><small>Facility's monthly MSW throughput and heat budget.</small><span class="formula">MSW tons = TPD × 30 days<br>Heat cap = tons × MSW BTU/lb</span></div>
+    <div class="farrow">➜</div>
+    <div class="fbox"><b>Add profiled waste</b><small>Each stream delivers PW tons and injects heat.</small><span class="formula">PW tons = TPD × 22 days<br>PW heat = tons × PW BTU/lb</span></div>
+    <div class="farrow">➜</div>
+    <div class="fbox"><b>Displacement</b><small>Heat budget is fixed — MSW gives way.</small><span class="formula">Displaced MSW =<br>PW heat ÷ MSW BTU/lb</span></div>
+    <div class="farrow">➜</div>
+    <div class="fbox res"><b>Net revenue impact</b><small>Premium fees in, lost MSW fees out. Monthly, and ×12 annually.</small><span class="formula">Net = Σ(PW tons × PW $/ton)<br>− (displaced × MSW $/ton)</span></div>
+  </div>
+
+  <div class="lab">3 · Worked example — Haverhill, default assumptions</div>
+  <div class="worked">
+    <div class="ln"><span>TMW: 50 TPD × 22 delivery days = <b>1,100 tons</b> at 7,250 BTU/lb, $160/ton</span><b class="money" style="color:var(--good);">+$176,000</b></div>
+    <div class="ln"><span>Heat added (1,100 t × 7,250) displaces <b>1,450 tons</b> of 5,500-BTU MSW at $42/ton</span><b class="money" style="color:var(--bad);">−$60,900</b></div>
+    <div class="ln net"><span><b>Net monthly impact</b> &nbsp;·&nbsp; ×12 = <b>$1,381,200 / year</b></span><b class="money">+$115,100</b></div>
+  </div>
+  <p class="note">The stream is still strongly worth taking — but roughly a third of the headline tip-fee revenue is given back through displaced MSW. That giveback is invisible without this calculation, and it's the difference between pricing a deal right and overestimating it.</p>
+
+  <div class="lab">4 · What to expect — the five pre-loaded facilities (defaults from the HHV-impact spreadsheets)</div>
+  <table>
+    <thead><tr><th>Facility</th><th>Stream</th><th class="r">PW tons/mo</th><th class="r">PW revenue</th><th class="r">MSW displaced</th><th class="r">MSW revenue lost</th><th class="r">Net / month</th><th class="r">Net / year</th></tr></thead>
+    <tbody>
+      <tr><td>Haverhill</td><td>TMW · $160</td><td class="r">1,100</td><td class="r">$176,000</td><td class="r">1,450 t</td><td class="r"><span class="neg">−$60,900</span></td><td class="r"><span class="pos">$115,100</span></td><td class="r">$1,381,200</td></tr>
+      <tr class="hero"><td>Hempstead</td><td>Pharma · $600</td><td class="r">220</td><td class="r">$132,000</td><td class="r">361 t</td><td class="r"><span class="neg">−$27,060</span></td><td class="r"><span class="pos">$104,940</span></td><td class="r">$1,259,280</td></tr>
+      <tr><td>Indianapolis</td><td>TMW · $100</td><td class="r">1,100</td><td class="r">$110,000</td><td class="r">1,700 t</td><td class="r"><span class="neg">−$71,400</span></td><td class="r"><span class="pos">$38,600</span></td><td class="r">$463,200</td></tr>
+      <tr><td>Babylon</td><td>PW · $169</td><td class="r">1,100</td><td class="r">$185,900</td><td class="r">2,080 t</td><td class="r"><span class="neg">−$153,920</span></td><td class="r"><span class="pos">$31,980</span></td><td class="r">$383,760</td></tr>
+      <tr><td>Bristol</td><td>TMW · $150</td><td class="r">550</td><td class="r">$82,500</td><td class="r">725 t</td><td class="r"><span class="neg">−$56,550</span></td><td class="r"><span class="pos">$25,950</span></td><td class="r">$311,400</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><b>The pattern to notice:</b> Hempstead moves only 220 tons but nearly matches Haverhill's net — because pharmaceutical waste pays $600/ton against a $75 MSW price. Babylon books the largest gross revenue in this set yet nets among the least, because its very high-BTU stream (10,400 BTU/lb) displaces 1.9 tons of MSW for every ton accepted. <b>Price-per-BTU beats price-per-ton</b> — that is the insight the tool makes visible in seconds.</p>
+
+  <div class="lab">5 · How to use it</div>
+  <div class="steps">
+    <div class="step"><div><b>Open the file in any browser.</b><small>Fully offline; all entries auto-save on the device. Global assumptions (30 processing days, 22 delivery days) are editable at the top.</small></div></div>
+    <div class="step"><div><b>Pick a facility card — or add one.</b><small>Five plants are pre-loaded with specs, MSW price/HHV/TPD, benefits and watch-outs from the facility HHV spreadsheets. Every value is editable.</small></div></div>
+    <div class="step"><div><b>Add the profiled-waste stream being negotiated.</b><small>Choose from the built-in stream library (pharma, TMW, RMW, plastics… with reference BTU values) or type your own HHV, price and TPD.</small></div></div>
+    <div class="step"><div><b>Read the verdict.</b><small>Each card shows PW revenue, displaced MSW tons, lost MSW revenue, and the net monthly/annual impact — recalculated live as you negotiate price or volume. Capacity guardrails flag when PW tonnage exceeds the facility's stated headroom.</small></div></div>
+    <div class="step"><div><b>Export.</b><small>Print / Save-as-PDF for the deal file, or Save-as-Excel.</small></div></div>
+  </div>
+
+  <div class="lab">6 · Data provenance</div>
+  <div class="prov">
+    <div class="v"><b>✓ From Reworld source documents</b>
+      <ul>
+        <li>Facility specs (TPD, MW, grate type, in-service dates) — capability sheets &amp; audit packs</li>
+        <li>Default stream HHVs — Reworld BTU Calculator reference values</li>
+        <li>Default prices/volumes — the facility HHV-impact spreadsheets (Haverhill, Indianapolis, Babylon analyses)</li>
+        <li>The displacement method itself mirrors those spreadsheets' logic — this tool just makes it interactive</li>
+      </ul>
+    </div>
+    <div class="m"><b>⚠ Confirm before committing a deal</b>
+      <ul>
+        <li>Current MSW gate price and contract obligations (town-tons-first clauses)</li>
+        <li>Measured HHV of the actual customer material (lab or bomb-calorimeter data beats library values)</li>
+        <li>Delivery cadence and permit constraints (e.g. NYSDEC Part 364 at Hempstead)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    Companion tools: <b>pw-hhv-impact-calculator.html</b> (this tool — internal deal economics) and <b>Reworld-Verified-Impact-Report.html</b> (customer-facing sustainability report, built on Reworld's third-party-verified LCA). Together they answer both halves of every profiled-waste conversation: <i>is it worth it for us</i>, and <i>what is the environmental story for the customer</i>.
+  </div>
+
+</div>
+</body>
+</html>
