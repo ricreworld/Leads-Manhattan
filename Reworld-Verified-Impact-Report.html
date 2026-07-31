@@ -222,6 +222,28 @@
     <span id="pp-detail" class="pp-detail"></span>
   </div>
 
+  <div class="section-label no-print">Projection Builder — Prospect With No Deliveries Yet</div>
+  <div class="no-print" id="projbuilder" style="border:1.5px dashed #9DB8F0;background:#F7FAFF;border-radius:8px;padding:14px 16px;margin:0 0 24px;">
+    <div style="font-size:11.5px;color:#5B5B78;line-height:1.5;margin-bottom:10px;">No spreadsheet? Describe the expected volume and the builder generates the delivery rows for a projected month, switches the report to <b>Sample / Projection</b>, and everything below fills in. Add each stream separately; edit any generated row after.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:10px;color:#5B5B78;text-transform:uppercase;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace;">Waste stream
+        <select id="pb-stream" style="font-family:'Inter',sans-serif;font-size:12.5px;padding:7px 9px;border:1px solid #E3E4F0;border-radius:6px;min-width:210px;"></select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:10px;color:#5B5B78;text-transform:uppercase;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace;">Tons / month
+        <input type="number" id="pb-tons" step="1" min="0" placeholder="3000" style="font-size:12.5px;padding:7px 9px;border:1px solid #E3E4F0;border-radius:6px;width:110px;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:10px;color:#5B5B78;text-transform:uppercase;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace;">Loads / month
+        <input type="number" id="pb-loads" step="1" min="1" placeholder="12" style="font-size:12.5px;padding:7px 9px;border:1px solid #E3E4F0;border-radius:6px;width:100px;">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:10px;color:#5B5B78;text-transform:uppercase;letter-spacing:.04em;font-family:'IBM Plex Mono',monospace;">Projected month
+        <input type="month" id="pb-month" style="font-size:12.5px;padding:6px 9px;border:1px solid #E3E4F0;border-radius:6px;">
+      </label>
+      <button id="pb-add" style="font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:#fff;background:#2A1DBF;border:none;border-radius:6px;padding:9px 16px;cursor:pointer;">Add stream to projection</button>
+      <button id="pb-clear" style="font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:#5B5B78;background:#fff;border:1px solid #E3E4F0;border-radius:6px;padding:9px 14px;cursor:pointer;">Clear deliveries</button>
+    </div>
+    <div id="pb-status" style="font-size:11px;color:#159C8D;font-weight:600;margin-top:8px;"></div>
+  </div>
+
   <div class="section-label">Account Details</div>
   <div class="account-grid">
     <label>
@@ -2054,6 +2076,74 @@ function applyReportType() {
 Array.prototype.forEach.call(document.querySelectorAll('input[name="rtype"]'), function (r) {
   r.addEventListener('change', function () { if (r.checked) { state.reportType = r.value; applyReportType(); render(); saveState(); } });
 });
+
+// Projection Builder: generate delivery rows for a prospect with no shipments
+// yet. Each click adds one stream's projected loads for the chosen month and
+// flips the report to Sample/Projection mode.
+(function () {
+  var sel = document.getElementById('pb-stream');
+  var tonsIn = document.getElementById('pb-tons');
+  var loadsIn = document.getElementById('pb-loads');
+  var monthIn = document.getElementById('pb-month');
+  var addBtn = document.getElementById('pb-add');
+  var clearBtn = document.getElementById('pb-clear');
+  var status = document.getElementById('pb-status');
+  if (!sel || !addBtn) return;
+
+  STREAMS.forEach(function (s) {
+    var o = document.createElement('option');
+    o.value = s.key; o.textContent = s.label + ' (' + s.btu.toLocaleString('en-US') + ' BTU/lb)';
+    sel.appendChild(o);
+  });
+  sel.value = 'msw';
+
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  addBtn.addEventListener('click', function () {
+    var tons = num(tonsIn.value);
+    if (tons <= 0) { status.style.color = '#e0245e'; status.textContent = 'Enter tons per month first.'; return; }
+    var loads = Math.max(1, Math.min(31, Math.round(num(loadsIn.value)) || 12));
+    var stream = STREAMS.filter(function (s) { return s.key === sel.value; })[0] || DEFAULT_STREAM;
+    var ym = (monthIn.value || '').split('-');
+    var year = ym[0] || '2026', mon = parseInt(ym[1], 10) || 1;
+    var mm = String(mon).padStart(2, '0');
+    var periodLabel = MONTHS[mon - 1] + ' ' + year;
+
+    // Spread loads across the month; keep the total exactly equal to tons/month.
+    var per = Math.round(tons / loads * 100) / 100;
+    var newRows = [];
+    for (var i = 0; i < loads; i++) {
+      var day = 1 + Math.round(i * 27 / Math.max(loads - 1, 1));
+      var t = (i === loads - 1) ? Math.round((tons - per * (loads - 1)) * 100) / 100 : per;
+      newRows.push({
+        date: year + '-' + mm + '-' + String(day).padStart(2, '0'),
+        tons: t,
+        generator: state.meta.generator || '',
+        origin: state.meta.serviceLocation || '',
+        facility: state.meta.facility || '',
+        profile: state.meta.wasteProfile || '',
+        wasteType: stream.label
+      });
+    }
+    // Replace the single blank starter row; append after that.
+    var blank = state.rows.length === 1 && num(state.rows[0].tons) === 0 && !(state.rows[0].wasteType || '').trim();
+    state.rows = blank ? newRows : state.rows.concat(newRows);
+    if (!(state.meta.period || '').trim() || blank) state.meta.period = periodLabel;
+    state.reportType = 'sample';
+    applyReportType();
+    renderMeta(); renderRows(); render(); saveState();
+    status.style.color = '#159C8D';
+    status.textContent = '✓ Added ' + tons.toLocaleString('en-US') + ' tons of ' + stream.label + ' as ' + loads +
+      ' projected loads in ' + periodLabel + '. Report is now in Sample / Projection mode.';
+  });
+
+  clearBtn.addEventListener('click', function () {
+    state.rows = [emptyRow()];
+    renderRows(); render(); saveState();
+    status.style.color = '#5B5B78';
+    status.textContent = 'Deliveries cleared.';
+  });
+})();
 
 // Facility selector + its editable knobs (energy rate, grid factor, annual).
 (function () {
