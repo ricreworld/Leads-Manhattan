@@ -531,6 +531,7 @@ var STREAMS = [
   { key: 'textiles',   label: 'Textiles',                     btu: 6850,  lf: 1.10, comb: 0.90, metal: 5,  kw: [/textile|fabric|cloth|apparel|garment/] },
   { key: 'food',       label: 'Food / Organics',              btu: 2600,  lf: 4.60, comb: 0.00, metal: 5,  kw: [/food|organic|beverage|kitchen|produce|compost/] },
   { key: 'sludge',     label: 'Sludge / Biosolids',           btu: 3500,  lf: 3.00, comb: 0.00, metal: 2,  kw: [/sludge|biosolid|slurry/] },
+  { key: 'soilreg',    label: 'Soil — regulated destruction (invasives / APHIS)', btu: 500, lf: 0.00, comb: 0.10, metal: 0, kw: [/knotweed|invasive|rhizome|regulated plant|aphis/] },
   { key: 'soil',       label: 'Soil (contaminated / impacted)', btu: 500, lf: 0.00, comb: 0.10, metal: 0,  kw: [/soil|\bdirt\b|impacted media|contaminated media/] },
   { key: 'cd',         label: 'Construction & Demolition',    btu: 4000,  lf: 0.25, comb: 0.20, metal: 15, kw: [/construction|c&d|c and d|debris|demolition/] },
   { key: 'industrial', label: 'Industrial (non-haz)',         btu: 6000,  lf: 0.70, comb: 0.60, metal: 30, kw: [/industrial|manufactur|production|process waste/] },
@@ -564,7 +565,7 @@ function mswNetFactor() { return isGwp100() ? 0.65 : 2.4; }
 //                   adds the energy + metal recovery credit (net positive).
 // Reworld's profiled/regulated waste (pharma, medical, product destruction) is
 // typically the 'incinerate' case. Editable per stream.
-var ALT_DEFAULT = { pharma: 'incinerate', hba: 'incinerate', tmw: 'incinerate', rmw: 'incinerate', solvents: 'incinerate' };
+var ALT_DEFAULT = { pharma: 'incinerate', hba: 'incinerate', tmw: 'incinerate', rmw: 'incinerate', solvents: 'incinerate', soilreg: 'incinerate' };
 function altFor(s) {
   var o = state.streamAlt && state.streamAlt[s.key];
   if (o === 'landfill' || o === 'incinerate') return o;
