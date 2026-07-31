@@ -177,8 +177,8 @@
       <span style="width:4px;height:4px;opacity:.5;"></span>
     </div>
   </div>
-  <!-- Unofficial banner: shows on screen AND in every printed report. Remove
-       this one element once the tool is formally approved for customer use. -->
+  <!-- Report-status banner: shows on screen AND in every printed report. Text
+       switches with the report-type toggle below (actuals vs sample/projection). -->
   <div id="unofficial-banner" style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;color:#8a5a00;background:#FFF4E5;border:1.5px solid #F0C070;border-radius:6px;padding:7px 12px;text-align:center;margin:0 0 14px;">UNOFFICIAL — WORKING PROTOTYPE · PENDING INTERNAL REVIEW · NOT FOR EXTERNAL DISTRIBUTION</div>
   <h1>Sustainability Impact Report — Calculator</h1>
   <div class="subtitle">Enter deliveries and account details below — every impact figure recalculates live.</div>
@@ -188,6 +188,12 @@
     <button id="btn-excel">Save as Excel</button>
     <button id="btn-reset">Reset all fields</button>
     <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
+  </div>
+
+  <div class="ghg-toggle no-print" style="margin:0 0 16px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Report type:</span>
+    <label><input type="radio" name="rtype" value="actual"> Actuals — delivery records (internal draft banner)</label>
+    <label><input type="radio" name="rtype" value="sample"> Sample / Projection — estimated volumes for a prospect (customer-safe SAMPLE banner, figures labeled projected)</label>
   </div>
 
   <p style="font-size:10.5px;line-height:1.6;color:#1a6b5c;background:#E9FBF7;border:1px solid #22D9C4;border-radius:6px;padding:9px 13px;margin:0 0 20px;">✓ <b>Greenhouse-gas figures are built on Reworld's verified Lifecycle Assessment</b> (Sept 2024, ISO 14040/44 + ISO 14067, third-party verified by WAP Sustainability). Average MSW reproduces Reworld's certified net factor — <b>2.4 t CO₂e/ton (20-yr GWP)</b> or 0.65 (100-yr) — decomposed into the LCA's own source terms. Individual non-MSW streams are <b>scaled from that verified anchor</b> using the LCA's sensitivity levers (biogenic content, fossil-carbon content, heating value, metals); they are transparent model estimates, editable per facility, not separately verified per-stream LCAs.</p>
@@ -313,7 +319,7 @@
       <div><div class="ytd-num" id="ytdMetal">0</div><div class="ytd-cap">lbs metal recycled</div></div>
       <div><div class="ytd-num" id="ytdHomes">0</div><div class="ytd-cap">homes powered 1 mo.</div></div>
     </div>
-    <div class="ytd-foot">Cumulative <span id="ytdYear">2026</span> deliveries · <span id="ytdTonsFoot">0</span> tons processed · 100% diverted from landfill</div>
+    <div class="ytd-foot"><span id="ytdFootLead">Cumulative</span> <span id="ytdYear">2026</span> deliveries · <span id="ytdTonsFoot">0</span> tons <span id="ytdFootVerb">processed</span> · 100% diverted from landfill</div>
   </div>
 
   <div class="section-label teal" style="margin:26px 0 10px;">Impact Summary</div>
@@ -661,6 +667,7 @@ function defaultState() {
     rows: [ emptyRow() ],
     ghgMode: 'blended',   // 'blended' = MSW 2.4/0.65 for all; 'stream' = per-stream
     gwp: '20',            // GWP timeframe: '20' (Reworld default, =2.4) or '100' (=0.65)
+    reportType: 'actual', // 'actual' = delivery records; 'sample' = projected volumes for a prospect
     facility: 'hempstead',        // selected facility
     facilityKwhPerTon: 550,       // net kWh recovered per ton of MSW (facility-specific)
     facilitySteamLb: 0,           // lb district steam sold per ton (steam plants)
@@ -946,6 +953,8 @@ function render() {
   var yearMatch = (state.meta.period || '').match(/(20\d{2})/);
   var year = yearMatch ? yearMatch[1] : '2026';
   set('ytdYear', year);
+  set('ytdFootLead', isSample() ? 'Projected' : 'Cumulative');
+  set('ytdFootVerb', isSample() ? 'estimated (pre-shipment projection)' : 'processed');
 
   renderSummary(c, year);
   refreshStreams(c);
@@ -1143,11 +1152,13 @@ function renderGhgPanel() {
 }
 
 // Column labels for the summary table (and Excel export).
+function isSample() { return state.reportType === 'sample'; }
 function periodHeadLabel() {
   var p = (state.meta.period || '').trim();
-  return p ? p : 'This Period';
+  p = p ? p : 'This Period';
+  return isSample() ? p + ' (Projected)' : p;
 }
-function ytdHeadLabel(year) { return year + ' YTD'; }
+function ytdHeadLabel(year) { return year + ' YTD' + (isSample() ? ' (Proj.)' : ''); }
 
 // One descriptor per impact metric — the single source of truth for both the
 // on-screen summary table and the Excel export.
@@ -1269,7 +1280,7 @@ document.getElementById('btn-reset').addEventListener('click', function () {
   document.getElementById('dz-status').className = 'dz-status';
   // Re-sync every toggle to the fresh defaults so the radios can't display a
   // stale basis (e.g. stream/100-yr) while the math uses blended/20-yr.
-  applyGhgMode(); applyGwpMode();
+  applyGhgMode(); applyGwpMode(); applyReportType();
   if (window.syncFacilityUI) syncFacilityUI();
   renderMeta(); renderRows(); onChange();
 });
@@ -1302,7 +1313,8 @@ function exportExcel() {
 
   var h = [];
   h.push('<table border="1">');
-  h.push('<tr><td colspan="5" style="font-weight:bold;font-size:16px;">Reworld — Sustainability Impact Report</td></tr>');
+  h.push('<tr><td colspan="5" style="font-weight:bold;font-size:16px;">Reworld — Sustainability Impact Report' + (isSample() ? ' — SAMPLE (PROJECTED VOLUMES)' : '') + '</td></tr>');
+  if (isSample()) h.push('<tr><td colspan="5" style="color:#8a5a00;">Sample report: projected volumes for illustration, not delivery records. Figures will be replaced by actuals once shipments begin.</td></tr>');
   h.push('<tr></tr>');
 
   // Account details
@@ -2026,6 +2038,23 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="gwp"]'), fun
   r.addEventListener('change', function () { if (r.checked) { state.gwp = r.value; render(); saveState(); } });
 });
 
+// Report type toggle: actuals (internal draft) vs sample/projection (customer-safe).
+function applyReportType() {
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="rtype"]'), function (r) { r.checked = (r.value === (state.reportType || 'actual')); });
+  var b = document.getElementById('unofficial-banner');
+  if (!b) return;
+  if (isSample()) {
+    b.textContent = 'SAMPLE REPORT — PROJECTED VOLUMES FOR ILLUSTRATION · NOT DELIVERY RECORDS · FIGURES WILL BE REPLACED BY ACTUALS ONCE SHIPMENTS BEGIN';
+    b.style.color = '#1a3f8f'; b.style.background = '#EDF3FF'; b.style.borderColor = '#9DB8F0';
+  } else {
+    b.textContent = 'UNOFFICIAL — WORKING PROTOTYPE · PENDING INTERNAL REVIEW · NOT FOR EXTERNAL DISTRIBUTION';
+    b.style.color = '#8a5a00'; b.style.background = '#FFF4E5'; b.style.borderColor = '#F0C070';
+  }
+}
+Array.prototype.forEach.call(document.querySelectorAll('input[name="rtype"]'), function (r) {
+  r.addEventListener('change', function () { if (r.checked) { state.reportType = r.value; applyReportType(); render(); saveState(); } });
+});
+
 // Facility selector + its editable knobs (energy rate, grid factor, annual).
 (function () {
   var sel = document.getElementById('facilitySel');
@@ -2061,9 +2090,11 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name="gwp"]'), fun
 
 // Initial paint.
 if (state.gwp !== '20' && state.gwp !== '100') state.gwp = '20';   // back-compat default
+if (state.reportType !== 'actual' && state.reportType !== 'sample') state.reportType = 'actual';
 buildStreamsTable();
 applyGhgMode();
 applyGwpMode();
+applyReportType();
 renderMeta();
 renderRows();
 render();
