@@ -73,6 +73,10 @@ button.p{background:var(--in);color:#fff;border:none}
 <h2>Ancillary Charges</h2>
 <table class="ref"><tbody id="ab"></tbody></table>
 
+<h2>MPF — Material Processing Facility</h2>
+<table class="ref"><tbody id="mb"></tbody></table>
+<div class="bar" style="margin-top:8px"><button onclick="S.mpf.push(['','']);save();render()">+ Add MPF line</button></div>
+
 </div><script>
 var K='reworld-quote-builder-v1';
 var FAC=['Hempstead','Babylon','Huntington','Bristol','Haverhill','Niagara','Essex','Union','Camden','Delaware Valley','Plymouth','SEMASS','Alexandria','Fairfax','Indianapolis','Other'];
@@ -82,7 +86,8 @@ var S=load();
 function load(){try{var s=JSON.parse(localStorage.getItem(K));if(s&&s.rows)return s}catch(e){}
   return {qnum:'',qdate:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),c:['','','',''],
     p:['Ricardo Salce, Solutions Sales Manager','NYC, Long Island · C 917.215.0002','rsalce@reworldwaste.com · www.reworldwaste.com'],
-    rows:[{d:'',p:'Pending',f:'Hempstead',v:'',pr:''}],ref:REF.map(r=>r.slice()),anc:ANC.map(r=>r.slice())};}
+    rows:[{d:'',p:'Pending',f:'Hempstead',v:'',pr:''}],ref:REF.map(r=>r.slice()),anc:ANC.map(r=>r.slice()),
+    mpf:[['[MPF service / material description]','$[___]']]};}
 function save(){localStorage.setItem(K,JSON.stringify(S))}
 function inp(v,cb,ph){var i=document.createElement('input');i.value=v||'';if(ph)i.placeholder=ph;i.oninput=function(){cb(i.value);save()};return i}
 function render(){
@@ -104,6 +109,9 @@ function render(){
   });
   var rb=document.getElementById('rb');rb.innerHTML='';
   S.ref.forEach(function(r){var tr=document.createElement('tr');var a=document.createElement('td');a.appendChild(inp(r[0],v=>r[0]=v));var b=document.createElement('td');b.style.textAlign='right';var bi=inp(r[1],v=>r[1]=v);bi.style.textAlign='right';bi.style.fontWeight='700';b.appendChild(bi);tr.appendChild(a);tr.appendChild(b);rb.appendChild(tr)});
+  if(!S.mpf)S.mpf=[['','']];
+  var mb=document.getElementById('mb');mb.innerHTML='';
+  S.mpf.forEach(function(r){var tr=document.createElement('tr');var a=document.createElement('td');a.appendChild(inp(r[0],v=>r[0]=v));var b2=document.createElement('td');b2.style.textAlign='right';var bi=inp(r[1],v=>r[1]=v);bi.style.textAlign='right';bi.style.fontWeight='700';b2.appendChild(bi);tr.appendChild(a);tr.appendChild(b2);mb.appendChild(tr)});
   var ab=document.getElementById('ab');ab.innerHTML='';
   S.anc.forEach(function(r){var tr=document.createElement('tr');var a=document.createElement('td');a.appendChild(inp(r[0],v=>r[0]=v));var b=document.createElement('td');b.style.textAlign='right';var bi=inp(r[1],v=>r[1]=v);bi.style.textAlign='right';bi.style.fontWeight='700';b.appendChild(bi);tr.appendChild(a);tr.appendChild(b);ab.appendChild(tr)});
 }
