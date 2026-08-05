@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reworld — Quote Builder</title>
+<style>
+:root{--in:#2A1DBF;--teal:#22D9C4;--ink:#15152B;--ink2:#5B5B78;--line:#E3E4F0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.45;font-size:13px}
+.wrap{max-width:860px;margin:0 auto;padding:34px 26px}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--in);padding-bottom:12px;margin-bottom:18px}
+.logo{font-size:30px;font-weight:800;color:var(--in);letter-spacing:-.02em}.logo i{color:var(--teal);font-style:normal}
+.logo small{display:block;font-size:9.5px;letter-spacing:.22em;color:var(--ink2);font-weight:600;margin-top:2px}
+.qt{text-align:right}.qt h1{font-size:19px;color:var(--in)}.qt div{font-size:11px;color:var(--ink2);margin-top:3px}
+.qt input{border:none;border-bottom:1px dashed var(--line);font-weight:700;width:80px;font-size:11px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-bottom:20px}
+.lab{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#159C8D;font-weight:700;margin-bottom:6px}
+.cols input{display:block;width:100%;border:none;border-bottom:1px solid var(--line);padding:4px 1px;font-size:12.5px;margin-bottom:4px}
+.cols input:first-of-type{font-weight:700}
+.pb{font-size:12.5px}.pb b{display:block}
+h2{font-size:15px;color:var(--in);border-bottom:2px solid var(--teal);padding-bottom:5px;margin:20px 0 10px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--in);color:#fff;font-size:10.5px;text-align:left;padding:7px 9px}
+th.r{text-align:right}
+td{border-bottom:1px solid var(--line);padding:5px 6px;vertical-align:middle}
+td input,td select{width:100%;border:none;font-size:12.5px;padding:3px;background:transparent}
+td.r input{text-align:right}
+.ref td{padding:7px 9px}.ref td:last-child{text-align:right;font-weight:700}
+.ref th{background:#F1F1F8;color:var(--ink)}
+.note{background:#E9FBF7;border:1px solid var(--teal);border-radius:6px;padding:9px 12px;font-size:11.5px;margin-top:10px}
+.bar{display:flex;gap:8px;margin-bottom:18px}
+button{font-size:12.5px;font-weight:600;border-radius:6px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:#fff}
+button.p{background:var(--in);color:#fff;border:none}
+.x{color:#C2185B;background:none;border:none;font-weight:700;cursor:pointer}
+@media print{.bar,.x,th:last-child,td:last-child.xcell{display:none!important}.wrap{padding:0;max-width:none}input,select{border:none!important;-webkit-appearance:none;appearance:none}}
+</style></head><body><div class="wrap">
+
+<div class="bar no-print">
+  <button class="p" onclick="window.print()">Print / Save as PDF</button>
+  <button onclick="addRow()">+ Add stream</button>
+  <button onclick="if(confirm('Clear quote?')){localStorage.removeItem(K);location.reload()}">Reset</button>
+  <span style="font-size:10.5px;color:var(--ink2);align-self:center">Auto-saves on this device. Every field editable.</span>
+</div>
+
+<div class="hd">
+  <div class="logo">reworld<i>.</i><small>SUSTAINABLE WASTE SOLUTIONS</small></div>
+  <div class="qt"><h1>Service Quotation</h1>
+    <div>Quote #: <input id="qnum" placeholder="[___]"> · Date: <input id="qdate" style="width:110px"></div>
+    <div>Valid 30 days from date of issue</div></div>
+</div>
+
+<div class="cols">
+  <div><div class="lab">Prepared for</div>
+    <input id="c1" placeholder="Customer legal entity name">
+    <input id="c2" placeholder="Contact name, title">
+    <input id="c3" placeholder="Address">
+    <input id="c4" placeholder="Email / phone"></div>
+  <div><div class="lab">Prepared by</div>
+    <div class="pb"><b>Ricardo Salce, Solutions Sales Manager</b>
+    NYC, Long Island · C 917.215.0002<br>rsalce@reworldwaste.com · www.reworldwaste.com</div></div>
+</div>
+
+<h2>Waste Stream &amp; Service Detail</h2>
+<table id="st"><thead><tr>
+  <th style="width:31%">Waste stream description</th><th style="width:12%">Profile #</th>
+  <th style="width:17%">Facility</th><th style="width:22%">Est. volume</th>
+  <th class="r" style="width:12%">Price / ton</th><th style="width:4%"></th>
+</tr></thead><tbody id="sb"></tbody></table>
+<div class="note">Pricing is exclusive of the EIS fee (<b>22.6%</b> of disposal charges) and applies to new clients and/or new waste streams. Transportation, if provided by Reworld, is quoted separately and carries fuel surcharge and tolls.</div>
+
+<h2>2026 TTF List Pricing — East Region, Group 2 (Reference)</h2>
+<table class="ref"><thead><tr><th>Business unit</th><th class="r">List price / ton</th></tr></thead><tbody id="rb"></tbody></table>
+
+<h2>Ancillary Charges</h2>
+<table class="ref"><tbody id="ab"></tbody></table>
+
+</div><script>
+var K='reworld-quote-builder-v1';
+var FAC=['Hempstead','Babylon','Huntington','Bristol','Haverhill','Niagara','Essex','Union','Camden','Delaware Valley','Plymouth','SEMASS','Alexandria','Fairfax','Indianapolis','Other'];
+var REF=[['OTC Pharmaceutical','$420'],['Confidential / Secure Destruction Materials','$595'],['Consumer, Health and Beauty','$310'],['Consumer Packaged Food Product','$205'],['Process and Production Waste','$310'],['Manufacturing Industrial Debris (compactors)','$165'],['Zero Waste to Landfill / NMW (compactors)','$150'],['International / APHIS Waste','$330']];
+var ANC=[['Flat minimum load charge','$1,000 per delivery ($375 compactors/rolloffs)'],['Pit Witness + Fee','$85'],['Load Verification Procedure (per load)','$340'],['Special Handling (per hour, per person)','$95'],['EIS fee','22.6% of disposal charges']];
+var S=load();
+function load(){try{var s=JSON.parse(localStorage.getItem(K));if(s&&s.rows)return s}catch(e){}
+  return {qnum:'',qdate:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),c:['','','',''],
+    rows:[{d:'',p:'Pending',f:'Hempstead',v:'',pr:''}],ref:REF.map(r=>r.slice()),anc:ANC.map(r=>r.slice())};}
+function save(){localStorage.setItem(K,JSON.stringify(S))}
+function inp(v,cb,ph){var i=document.createElement('input');i.value=v||'';if(ph)i.placeholder=ph;i.oninput=function(){cb(i.value);save()};return i}
+function render(){
+  var q=document.getElementById('qnum');q.value=S.qnum;q.oninput=function(){S.qnum=q.value;save()};
+  var d=document.getElementById('qdate');d.value=S.qdate;d.oninput=function(){S.qdate=d.value;save()};
+  ['c1','c2','c3','c4'].forEach(function(id,i){var e=document.getElementById(id);e.value=S.c[i];e.oninput=function(){S.c[i]=e.value;save()}});
+  var sb=document.getElementById('sb');sb.innerHTML='';
+  S.rows.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    var t1=document.createElement('td');t1.appendChild(inp(r.d,v=>r.d=v,'[Waste stream description]'));
+    var t2=document.createElement('td');t2.appendChild(inp(r.p,v=>r.p=v,'#'));
+    var t3=document.createElement('td');var s=document.createElement('select');FAC.forEach(f=>{var o=document.createElement('option');o.textContent=f;s.appendChild(o)});s.value=r.f||'Hempstead';s.onchange=function(){r.f=s.value;save()};t3.appendChild(s);
+    var t4=document.createElement('td');t4.appendChild(inp(r.v,v=>r.v=v,'[Tons / drums, frequency]'));
+    var t5=document.createElement('td');t5.className='r';t5.appendChild(inp(r.pr,v=>r.pr=v,'$[___]'));
+    var t6=document.createElement('td');t6.className='xcell';var x=document.createElement('button');x.className='x';x.textContent='✕';x.onclick=function(){S.rows.splice(i,1);save();render()};if(S.rows.length>1)t6.appendChild(x);
+    [t1,t2,t3,t4,t5,t6].forEach(t=>tr.appendChild(t));sb.appendChild(tr);
+  });
+  var rb=document.getElementById('rb');rb.innerHTML='';
+  S.ref.forEach(function(r){var tr=document.createElement('tr');var a=document.createElement('td');a.appendChild(inp(r[0],v=>r[0]=v));var b=document.createElement('td');b.style.textAlign='right';var bi=inp(r[1],v=>r[1]=v);bi.style.textAlign='right';bi.style.fontWeight='700';b.appendChild(bi);tr.appendChild(a);tr.appendChild(b);rb.appendChild(tr)});
+  var ab=document.getElementById('ab');ab.innerHTML='';
+  S.anc.forEach(function(r){var tr=document.createElement('tr');var a=document.createElement('td');a.appendChild(inp(r[0],v=>r[0]=v));var b=document.createElement('td');b.style.textAlign='right';var bi=inp(r[1],v=>r[1]=v);bi.style.textAlign='right';bi.style.fontWeight='700';b.appendChild(bi);tr.appendChild(a);tr.appendChild(b);ab.appendChild(tr)});
+}
+function addRow(){S.rows.push({d:'',p:'',f:'Hempstead',v:'',pr:''});save();render()}
+render();
+</script></body></html>
