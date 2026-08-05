@@ -54,8 +54,9 @@ button.p{background:var(--in);color:#fff;border:none}
     <input id="c3" placeholder="Address">
     <input id="c4" placeholder="Email / phone"></div>
   <div><div class="lab">Prepared by</div>
-    <div class="pb"><b>Ricardo Salce, Solutions Sales Manager</b>
-    NYC, Long Island · C 917.215.0002<br>rsalce@reworldwaste.com · www.reworldwaste.com</div></div>
+    <input id="p1" placeholder="Name, title">
+    <input id="p2" placeholder="Territory · cell">
+    <input id="p3" placeholder="Email · reworldwaste.com"></div>
 </div>
 
 <h2>Waste Stream &amp; Service Detail</h2>
@@ -80,6 +81,7 @@ var ANC=[['Flat minimum load charge','$1,000 per delivery ($375 compactors/rollo
 var S=load();
 function load(){try{var s=JSON.parse(localStorage.getItem(K));if(s&&s.rows)return s}catch(e){}
   return {qnum:'',qdate:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),c:['','','',''],
+    p:['Ricardo Salce, Solutions Sales Manager','NYC, Long Island · C 917.215.0002','rsalce@reworldwaste.com · www.reworldwaste.com'],
     rows:[{d:'',p:'Pending',f:'Hempstead',v:'',pr:''}],ref:REF.map(r=>r.slice()),anc:ANC.map(r=>r.slice())};}
 function save(){localStorage.setItem(K,JSON.stringify(S))}
 function inp(v,cb,ph){var i=document.createElement('input');i.value=v||'';if(ph)i.placeholder=ph;i.oninput=function(){cb(i.value);save()};return i}
@@ -87,6 +89,8 @@ function render(){
   var q=document.getElementById('qnum');q.value=S.qnum;q.oninput=function(){S.qnum=q.value;save()};
   var d=document.getElementById('qdate');d.value=S.qdate;d.oninput=function(){S.qdate=d.value;save()};
   ['c1','c2','c3','c4'].forEach(function(id,i){var e=document.getElementById(id);e.value=S.c[i];e.oninput=function(){S.c[i]=e.value;save()}});
+  if(!S.p)S.p=['','',''];
+  ['p1','p2','p3'].forEach(function(id,i){var e=document.getElementById(id);e.value=S.p[i];e.oninput=function(){S.p[i]=e.value;save()}});
   var sb=document.getElementById('sb');sb.innerHTML='';
   S.rows.forEach(function(r,i){
     var tr=document.createElement('tr');
