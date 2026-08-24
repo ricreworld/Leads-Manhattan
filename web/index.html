@@ -187,7 +187,9 @@
     <button class="primary" id="btn-print">Print / Save as PDF</button>
     <button id="btn-excel">Save as Excel</button>
     <button id="btn-reset">Reset all fields</button>
-    <span style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
+    <button id="btn-undo" style="display:none;background:#FFF4E5;border-color:#F0C070;color:#8a5a00;">↩ Undo reset</button>
+    <button id="btn-email">Copy cover email</button>
+    <span id="toolbar-status" style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
   </div>
 
   <div class="ghg-toggle no-print" style="margin:0 0 16px;">
@@ -379,6 +381,13 @@
     </div>
   </div>
 
+  <!-- Mode advisor: blended basis applies MSW's factors to everything, which
+       misstates GHG/metals when the load is mostly non-MSW. -->
+  <div id="modeAdvisor" class="no-print" style="display:none;font-size:11.5px;color:#8a5a00;background:#FFF4E5;border:1.5px solid #F0C070;border-radius:6px;padding:9px 13px;margin:0 0 14px;">
+    ⚠ Most of this tonnage is <b>not MSW</b>, but the report is on the <b>Blended</b> basis, which applies MSW's 2.4 t CO₂e and 50 lbs metal to every ton. For this mix the stream-specific basis is the accurate one.
+    <button id="modeAdvisorBtn" style="font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:#fff;background:#2A1DBF;border:none;border-radius:5px;padding:5px 11px;margin-left:8px;cursor:pointer;">Switch to stream-specific</button>
+  </div>
+
   <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
   <div class="ghg-toggle no-print" style="margin-bottom:12px;">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GWP timeframe (per Reworld LCA):</span>
@@ -424,6 +433,7 @@
         <div class="ghg-item"><span id="s3FossilYtd">0</span><small>tons CO₂e fossil, year to date</small></div>
       </div>
     </div>
+    <div id="s3StreamLine" style="display:none;font-size:11px;color:#15152B;background:#F6F5FE;border:1px solid #C9C4F2;border-radius:6px;padding:7px 11px;margin:10px 0 0;">Stream-weighted modeled estimate for this mix: <b><span id="s3StreamVal">0</span> tons CO₂e fossil caused</b> (<span id="s3StreamMt">0</span> MT), built from each stream's own fossil stack CO₂ plus trace gases. This is a model estimate; the fleet-average figure above is the citable factor.</div>
     <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:10px 0 0;">Basis: fleet-average factors from Reworld's verified LCA (Sept 2024) built on 2021–2023 stack data reported to EPA under the mandatory GHG Reporting Program — fossil <b>0.41 t CO₂e per ton processed</b> (CO₂ + trace CH₄/N₂O, <b>100-yr GWP</b> regardless of the timeframe toggle above, per GHG Protocol) and biogenic <b>0.604 t CO₂ per ton</b>, reported outside the scopes as carbon-cycle CO₂. Avoided emissions are reported separately from Scope 3 and are never netted against it. For a stream-specific or letterhead factor, contact Reworld's sustainability team.</p>
   </div>
 
@@ -492,7 +502,7 @@
       <tr><td style="padding-left:16px;">Fuel oil electricity content</td><td style="text-align:right;">13.108</td><td style="padding-right:16px;">kWh / gallon</td></tr>
     </tbody>
   </table>
-  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula. <b>Factor set v11 · Reworld LCA Sept 2024 · eGRID 2022 · BTU Calculator reference</b> — cite this line to trace any figure on this report to its factor basis.</p>
+  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula. All tonnage figures are US short tons (2,000 lb), the same basis as the LCA; metric tons (MT) are shown only where explicitly converted. <b>Factor set v11 · Reworld LCA Sept 2024 · eGRID 2022 · BTU Calculator reference</b> — cite this line to trace any figure on this report to its factor basis.</p>
 
 </div>
 
@@ -952,10 +962,23 @@ function renderRows() {
     tdTons.appendChild(tonsInput);
     tr.appendChild(tdTons);
 
-    // Remove
+    // Duplicate + Remove
     var tdDel = document.createElement('td');
     tdDel.style.textAlign = 'right';
     tdDel.style.paddingRight = '16px';
+    tdDel.style.whiteSpace = 'nowrap';
+    var dup = document.createElement('button');
+    dup.className = 'btn-remove';
+    dup.textContent = '⧉';
+    dup.title = 'Duplicate this delivery (same generator, profile, waste type)';
+    dup.style.color = '#2A1DBF';
+    dup.style.marginRight = '4px';
+    dup.addEventListener('click', function () {
+      var copy = JSON.parse(JSON.stringify(state.rows[i]));
+      state.rows.splice(i + 1, 0, copy);
+      renderRows(); onChange();
+    });
+    tdDel.appendChild(dup);
     var del = document.createElement('button');
     del.className = 'btn-remove';
     del.textContent = '✕';
@@ -1015,6 +1038,8 @@ function render() {
   refreshStreams(c);
   renderGhgPanel();
   renderScope3(c);
+  renderModeAdvisor(c);
+  updateDocTitle();
   renderDestruction();
   renderPitContext(c);
   renderLandfillCompare(c);
@@ -1036,6 +1061,36 @@ function renderScope3(c) {
   set('s3Bio', fmt(b));
   set('s3BioMt', fmt(b * SHORT_TO_METRIC));
   set('s3FossilYtd', fmt(c.ytdTons * S3_FOSSIL_T_PER_TON));
+  // Stream-weighted modeled caused-fossil (per-stream stack CO2 + trace gases),
+  // shown only in stream mode. MSW reproduces ~0.41, so the two lines agree
+  // for ordinary loads and diverge honestly for soil-heavy or plastic-heavy mixes.
+  var S3_TRACE = 0.0039;   // CH4 + N2O at 100-yr GWP (LCA Tables 24/26)
+  var line = document.getElementById('s3StreamLine');
+  if (line) {
+    if (c.streamMode && c.periodTons > 0) {
+      var sw = 0;
+      state.rows.forEach(function (r2) { var t2 = num(r2.tons); if (t2 > 0) sw += t2 * (combFor(streamFor(r2.wasteType)) + S3_TRACE); });
+      set('s3StreamVal', fmt(sw));
+      set('s3StreamMt', fmt(sw * SHORT_TO_METRIC));
+      line.style.display = '';
+    } else line.style.display = 'none';
+  }
+}
+
+// Blended-basis advisor: warn when most tonnage is non-MSW, where MSW's flat
+// 2.4 / 50 lbs factors misstate the report. One click switches basis.
+function renderModeAdvisor(c) {
+  var el2 = document.getElementById('modeAdvisor');
+  if (!el2) return;
+  var nonMsw = c.periodTons - ((c.streamTons && c.streamTons.msw) || 0);
+  el2.style.display = (!c.streamMode && c.periodTons > 0 && nonMsw / c.periodTons > 0.5) ? '' : 'none';
+}
+
+// PDF filename follows the report: "Reworld Impact Report — Generator — Period".
+function updateDocTitle() {
+  var g = (state.meta.generator || '').trim(), p2 = (state.meta.period || '').trim();
+  document.title = g ? ('Reworld Impact Report — ' + g + (p2 ? ' — ' + p2 : '')).slice(0, 120)
+                     : 'Reworld — Verified Impact Report';
 }
 
 // Assured Destruction panel: appears only when the mix contains streams whose
@@ -1376,6 +1431,9 @@ document.getElementById('btn-add').addEventListener('click', function () {
 
 document.getElementById('btn-reset').addEventListener('click', function () {
   if (!confirm('Clear all account details and deliveries?')) return;
+  // Keep a one-shot snapshot so an accidental reset is recoverable.
+  try { localStorage.setItem(STORAGE_KEY + '-undo', JSON.stringify(state)); } catch (e) {}
+  var ub = document.getElementById('btn-undo'); if (ub) ub.style.display = '';
   state = defaultState();
   document.getElementById('period-picker').style.display = 'none';
   document.getElementById('dz-status').textContent = '';
@@ -1389,6 +1447,48 @@ document.getElementById('btn-reset').addEventListener('click', function () {
 
 document.getElementById('btn-print').addEventListener('click', function () {
   window.print();
+});
+
+// Undo an accidental reset from the one-shot snapshot.
+document.getElementById('btn-undo').addEventListener('click', function () {
+  try {
+    var snap = localStorage.getItem(STORAGE_KEY + '-undo');
+    if (!snap) return;
+    state = JSON.parse(snap);
+    localStorage.removeItem(STORAGE_KEY + '-undo');
+    this.style.display = 'none';
+    applyGhgMode(); applyGwpMode(); applyReportType();
+    if (window.syncFacilityUI) syncFacilityUI();
+    renderMeta(); renderRows(); render(); saveState();
+  } catch (e) {}
+});
+
+// One-click cover email: report summary on the clipboard, ready to paste.
+document.getElementById('btn-email').addEventListener('click', function () {
+  var c = calc();
+  var g = (state.meta.generator || 'your account').trim();
+  var p = (state.meta.period || 'this period').trim();
+  var proj = isSample();
+  var txt = 'Attached is the ' + p + (proj ? ' projected' : '') + ' sustainability impact report for ' + g + '.\n\n' +
+    fmt2(c.periodTons) + ' tons ' + (proj ? 'projected' : 'processed') + ' · ' + fmt(c.energy) + ' kWh of renewable energy · ' +
+    fmt(c.ghg) + ' tons of CO2e avoided · ' + fmt(c.metal) + ' lbs of metal recovered · 100% diverted from landfill.' +
+    (proj ? '\n\nVolumes are pre-shipment projections and will be replaced by actuals once deliveries begin.' : '') +
+    '\n\nHappy to walk through the numbers whenever useful.\n';
+  var done = function () {
+    var s = document.getElementById('toolbar-status');
+    if (s) { s.textContent = '✓ Cover email copied — paste into Outlook.'; setTimeout(function () { s.textContent = 'Entries auto-save on this device.'; }, 4000); }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt); done(); });
+  else { fallbackCopy(txt); done(); }
+  function fallbackCopy(t) {
+    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
+    ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta);
+  }
+});
+
+// Mode-advisor one-click basis switch.
+document.getElementById('modeAdvisorBtn').addEventListener('click', function () {
+  state.ghgMode = 'stream'; applyGhgMode(); render(); saveState();
 });
 
 /* --- Excel export ------------------------------------------------------------
@@ -2071,9 +2171,14 @@ function applyImport(result, fileName) {
 
   var pickerShown = document.getElementById('period-picker').style.display !== 'none';
   var genName = state.meta.generator || (result.generatorInfo && result.generatorInfo.value) || '';
-  var msg = '✓ Loaded ' + state.allRows.length + ' deliver' + (state.allRows.length === 1 ? 'y' : 'ies');
+  // Tie-out receipt: loads and tons imported, and what the current view shows,
+  // so the report can be reconciled against the source file at a glance.
+  var allTons = state.allRows.reduce(function (s2, r2) { return s2 + num(r2.tons); }, 0);
+  var shownTons = state.rows.reduce(function (s2, r2) { return s2 + num(r2.tons); }, 0);
+  var msg = '✓ Loaded ' + state.allRows.length + ' deliver' + (state.allRows.length === 1 ? 'y' : 'ies') +
+    ' totaling ' + fmt2(allTons) + ' tons';
   if (genName) msg += ' for ' + genName;
-  msg += ' from ' + fileName + '. Showing ' + state.meta.period + '.';
+  msg += ' from ' + fileName + '. Showing ' + state.meta.period + ' (' + fmt2(shownTons) + ' tons). Non-tonnage lines in the file are ignored automatically.';
   if (pickerShown) msg += ' Use the “Report on” menu to switch between full year, year-to-date, or a quarter.';
   if (result.generatorInfo && result.generatorInfo.distinct > 1) {
     msg += ' Note: ' + result.generatorInfo.distinct + ' different generator names were found — using the most common. Split the file by company for separate reports.';
