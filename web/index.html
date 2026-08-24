@@ -411,6 +411,22 @@
     <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:10px 0 0;">Method: <b>Reworld's verified LCA</b> (Sept 2024, ISO 14040/44 + 14067, WAP-verified). Average MSW reproduces the certified net factor of <b>2.4 t CO₂e/ton (20-yr GWP)</b> / 0.65 (100-yr), decomposed into Reworld's own source terms (Tables 35/36/39): landfill methane avoided, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity, steam, and metals. Other streams are <b>scaled from that verified MSW anchor</b> using the LCA's sensitivity levers (biogenic/methane-generation content, fossil-carbon content, heating value, metal content) — model estimates, not separately verified per-stream LCAs. GHG is a comparison vs landfill: a high-BTU fossil stream can be net-negative on GHG alone while still delivering energy, volume and diversion benefits; Reworld's verified band across all streams is −1.7 to −3.0 t CO₂e/ton (20-yr).</p>
   </div>
 
+  <div class="section-label teal" style="margin:26px 0 10px;">Generator Scope 3 Reference — Emissions Caused (GHG Protocol Category 5)</div>
+  <div class="ghg-panel">
+    <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The figures above show emissions <b>avoided</b>. For the generator's own GHG inventory, Scope 3 Category 5 (waste generated in operations) requires the emissions <b>caused</b> by treating this waste. Both come from the same verified LCA.</div>
+    <div class="ghg-headline">
+      <div class="ghg-net">
+        <div class="ghg-net-val" id="s3Fossil" style="color:#15152B;">0</div>
+        <div class="ghg-net-cap">tons CO₂e <b>fossil emissions caused</b> this period (<span id="s3FossilMt">0</span> metric tons) — the Scope 3 Cat 5 figure</div>
+      </div>
+      <div class="ghg-flow">
+        <div class="ghg-item"><span id="s3BioWrap"><span id="s3Bio">0</span></span><small>tons biogenic CO₂ (<span id="s3BioMt">0</span> MT) — reported separately, outside the scopes</small></div>
+        <div class="ghg-item"><span id="s3FossilYtd">0</span><small>tons CO₂e fossil, year to date</small></div>
+      </div>
+    </div>
+    <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:10px 0 0;">Basis: fleet-average factors from Reworld's verified LCA (Sept 2024) built on 2021–2023 stack data reported to EPA under the mandatory GHG Reporting Program — fossil <b>0.41 t CO₂e per ton processed</b> (CO₂ + trace CH₄/N₂O, <b>100-yr GWP</b> regardless of the timeframe toggle above, per GHG Protocol) and biogenic <b>0.604 t CO₂ per ton</b>, reported outside the scopes as carbon-cycle CO₂. Avoided emissions are reported separately from Scope 3 and are never netted against it. For a stream-specific or letterhead factor, contact Reworld's sustainability team.</p>
+  </div>
+
   <div class="section-label teal" id="destLabel" style="margin:26px 0 10px;display:none;">Assured Destruction &amp; Compliance</div>
   <div class="ghg-panel" id="destPanel" style="display:none;">
     <div class="ghg-headline">
@@ -476,7 +492,7 @@
       <tr><td style="padding-left:16px;">Fuel oil electricity content</td><td style="text-align:right;">13.108</td><td style="padding-right:16px;">kWh / gallon</td></tr>
     </tbody>
   </table>
-  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula.</p>
+  <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula. <b>Factor set v11 · Reworld LCA Sept 2024 · eGRID 2022 · BTU Calculator reference</b> — cite this line to trace any figure on this report to its factor basis.</p>
 
 </div>
 
@@ -998,9 +1014,28 @@ function render() {
   renderSummary(c, year);
   refreshStreams(c);
   renderGhgPanel();
+  renderScope3(c);
   renderDestruction();
   renderPitContext(c);
   renderLandfillCompare(c);
+}
+
+// Generator Scope 3 (GHG Protocol Category 5) reference — emissions CAUSED by
+// treatment, from the verified LCA's fleet-average factors. Always 100-yr GWP
+// per GHG Protocol, independent of the display toggle. Short-ton basis; the
+// metric conversion is shown alongside.
+var S3_FOSSIL_T_PER_TON = 0.41;    // fossil CO2 + trace CH4/N2O (LCA Tables 22/24/26)
+var S3_BIO_T_PER_TON = 0.604;      // biogenic CO2, reported outside the scopes (Table 22)
+var SHORT_TO_METRIC = 0.90719;
+function renderScope3(c) {
+  var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  var f = c.periodTons * S3_FOSSIL_T_PER_TON;
+  set('s3Fossil', fmt(f));
+  set('s3FossilMt', fmt(f * SHORT_TO_METRIC));
+  var b = c.periodTons * S3_BIO_T_PER_TON;
+  set('s3Bio', fmt(b));
+  set('s3BioMt', fmt(b * SHORT_TO_METRIC));
+  set('s3FossilYtd', fmt(c.ytdTons * S3_FOSSIL_T_PER_TON));
 }
 
 // Assured Destruction panel: appears only when the mix contains streams whose
@@ -1234,7 +1269,9 @@ function buildMetrics(c) {
     { name: 'Metals recovered for recycling',    period: c.metal,   ytd: c.ytdMetal,   unit: 'lbs',      basis: c.streamMode ? ('Tons × ' + fmt2(c.blendedMetal) + ' lbs/ton (by stream)') : 'Tons × 50 lbs/ton' },
     { name: 'Homes powered for one month',       period: c.homes,   ytd: c.ytdHomes,   unit: 'homes',    basis: 'kWh ÷ 893 kWh/home-month' },
     { name: 'Coal not needed',                   period: c.coal,    ytd: c.ytdCoal,    unit: 'tons',     basis: 'kWh ÷ 1,881 kWh/ton coal' },
-    { name: 'Fuel oil not needed',               period: c.fuelOil, ytd: c.ytdFuelOil, unit: 'gallons',  basis: 'kWh ÷ 13.108 kWh/gallon' }
+    { name: 'Fuel oil not needed',               period: c.fuelOil, ytd: c.ytdFuelOil, unit: 'gallons',  basis: 'kWh ÷ 13.108 kWh/gallon' },
+    { name: 'Scope 3 Cat 5 — fossil emissions caused', period: c.periodTons * S3_FOSSIL_T_PER_TON, ytd: c.ytdTons * S3_FOSSIL_T_PER_TON, unit: 'tons CO₂e', basis: 'Tons × 0.41 (LCA fleet avg, 100-yr GWP)' },
+    { name: 'Biogenic CO₂ — reported outside the scopes', period: c.periodTons * S3_BIO_T_PER_TON, ytd: c.ytdTons * S3_BIO_T_PER_TON, unit: 'tons CO₂', basis: 'Tons × 0.604 (carbon-cycle CO₂)' }
   ];
 }
 
