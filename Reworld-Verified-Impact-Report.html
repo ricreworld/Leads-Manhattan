@@ -152,10 +152,68 @@
     .wrap { padding:24px 16px 60px; }
   }
 
+  /* ---------- 10-feature pass: nav, guide, tiles, ledger, modes ---------- */
+  .stickynav { position:sticky; top:0; z-index:60; display:flex; gap:2px; flex-wrap:wrap; background:rgba(255,255,255,.96); backdrop-filter:blur(4px); border-bottom:2px solid #E3E4F0; padding:7px 4px; margin:0 0 14px; }
+  .stickynav a { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:#5B5B78; text-decoration:none; padding:4px 9px; border-radius:5px; font-weight:600; }
+  .stickynav a:hover { background:#F6F5FE; color:#2A1DBF; }
+  .guide { display:flex; gap:8px; flex-wrap:wrap; background:#F6F5FE; border:1.5px solid #C9C4F2; border-radius:8px; padding:9px 13px; margin:0 0 16px; align-items:center; }
+  .guide .g-step { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#5B5B78; }
+  .guide .g-n { width:20px; height:20px; border-radius:50%; background:#fff; border:2px solid #C9C4F2; color:#2A1DBF; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .guide .g-step.done .g-n { background:#159C8D; border-color:#159C8D; color:#fff; }
+  .guide .g-step.done { color:#159C8D; }
+  .guide .g-arrow { color:#C9C4F2; font-weight:800; }
+  .starthere { display:none; border:2px dashed #C9C4F2; border-radius:12px; background:linear-gradient(180deg,#F6F5FE,#fff); padding:28px 24px; text-align:center; margin:0 0 22px; }
+  .starthere h2 { font-family:'Poppins',sans-serif; font-size:19px; color:#15152B; margin:0 0 4px; }
+  .starthere p { font-size:12.5px; color:#5B5B78; margin:0 0 16px; }
+  .starthere .sh-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .starthere button { font-family:'Inter',sans-serif; font-size:14px; font-weight:700; border-radius:9px; padding:14px 22px; cursor:pointer; border:none; }
+  .starthere .sh-drop { background:#2A1DBF; color:#fff; }
+  .starthere .sh-proj { background:#fff; color:#2A1DBF; border:2px solid #2A1DBF; }
+  .starthere .sh-demo { background:#E9FBF7; color:#159C8D; border:2px solid #22D9C4; }
+  .tip { display:inline-flex; width:15px; height:15px; border-radius:50%; background:#E3E4F0; color:#5B5B78; font-size:10px; font-weight:700; align-items:center; justify-content:center; cursor:help; margin-left:4px; vertical-align:middle; font-family:'Inter',sans-serif; }
+  .tip:hover { background:#2A1DBF; color:#fff; }
+  .metric { position:relative; overflow:hidden; border-top:3px solid #2A1DBF; box-shadow:0 1px 3px rgba(21,21,43,.05); }
+  .metric-value { font-variant-numeric:tabular-nums; }
+  .ghg-toggle label { border:1.5px solid #E3E4F0; border-radius:999px; padding:5px 12px; cursor:pointer; }
+  .ghg-toggle label:has(input:checked) { background:#2A1DBF; color:#fff; border-color:#2A1DBF; }
+  .ghg-toggle label:has(input:checked) b { color:#fff; }
+  .ghg-toggle input[type=radio] { accent-color:#22D9C4; }
+  .ghg-item.hero, .ghg-item { border-left:3px solid #22D9C4; padding-left:9px; }
+  .trendwrap { border:1.5px solid #E3E4F0; border-radius:10px; padding:14px 16px; background:#fff; margin:0 0 20px; }
+  .trendbars { display:flex; gap:6px; align-items:flex-end; height:110px; margin-top:10px; }
+  .trendbars .tb { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:3px; min-width:26px; }
+  .trendbars .tb .bar { width:100%; background:linear-gradient(180deg,#2A1DBF,#5F54E8); border-radius:4px 4px 0 0; min-height:3px; }
+  .trendbars .tb small { font-family:'IBM Plex Mono',monospace; font-size:8px; color:#5B5B78; white-space:nowrap; }
+  .trendbars .tb .tv { font-family:'IBM Plex Mono',monospace; font-size:8.5px; font-weight:700; color:#2A1DBF; }
+  .present-exit { display:none; position:fixed; top:14px; right:14px; z-index:99; background:#15152B; color:#fff; border:none; border-radius:999px; padding:9px 16px; font-weight:700; font-size:12px; cursor:pointer; }
+  body.present .no-print, body.present .toolbar, body.present .stickynav, body.present .guide, body.present .starthere { display:none !important; }
+  body.present input, body.present select, body.present textarea { border:none !important; background:transparent !important; pointer-events:none; appearance:none; -webkit-appearance:none; }
+  body.present .btn-remove, body.present .btn-add { display:none !important; }
+  body.present .present-exit { display:block; }
+  .certoverlay { display:none; position:fixed; inset:0; z-index:100; background:#fff; overflow:auto; padding:40px 20px; }
+  body.certmode .certoverlay { display:block; }
+  .cert { max-width:760px; margin:0 auto; border:3px solid #2A1DBF; border-radius:14px; padding:44px 40px; text-align:center; background:linear-gradient(180deg,#fff, #F6F5FE); }
+  .cert .c-brand { font-family:'Poppins',sans-serif; font-weight:800; font-size:30px; color:#2A1DBF; }
+  .cert .c-title { font-family:'Poppins',sans-serif; font-size:21px; font-weight:700; color:#15152B; margin:16px 0 2px; }
+  .cert .c-sub { font-size:12px; color:#5B5B78; }
+  .cert .c-gen { font-family:'Poppins',sans-serif; font-size:25px; font-weight:700; color:#159C8D; margin:20px 0 4px; }
+  .cert .c-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:26px 0 18px; }
+  .cert .c-cell { border:1.5px solid #E3E4F0; border-radius:9px; padding:14px 8px; background:#fff; }
+  .cert .c-num { font-family:'Poppins',sans-serif; font-weight:800; font-size:23px; color:#2A1DBF; }
+  .cert .c-cap { font-size:9.5px; color:#5B5B78; text-transform:uppercase; letter-spacing:.05em; margin-top:3px; }
+  .cert .c-note { font-size:10px; color:#5B5B78; line-height:1.5; }
+  .cert-actions { text-align:center; margin:16px 0; }
+  .print-header { display:none; }
   @media print {
     @page { size: landscape; }
     body { background:#fff; }
-    .toolbar, .btn-add, .btn-remove, .no-print { display:none !important; }
+    .toolbar, .btn-add, .btn-remove, .no-print, .stickynav, .guide, .starthere, .tip, .present-exit { display:none !important; }
+    .print-header { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2.5px solid #2A1DBF; padding-bottom:6px; margin-bottom:12px; font-family:'Poppins',sans-serif; }
+    .print-header .ph-l { font-weight:800; font-size:16px; color:#2A1DBF; }
+    .print-header .ph-r { font-size:10.5px; color:#5B5B78; text-align:right; }
+    body.certmode .wrap { display:none !important; }
+    body.certmode .certoverlay { position:static; padding:0; }
+    body.certmode .cert-actions { display:none; }
     .wrap { max-width:100%; padding:0; }
     input { border:none !important; }
     .metric, .account-grid { break-inside:avoid; }
@@ -168,6 +226,7 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="print-header"><span class="ph-l">Sustainability Impact Report</span><span class="ph-r" id="phMeta">Reworld™</span></div>
 
   <div class="brand">
     <div class="brand-name">Reworld<sup>&trade;</sup></div>
@@ -189,11 +248,26 @@
     <button id="btn-reset">Reset all fields</button>
     <button id="btn-undo" style="display:none;background:#FFF4E5;border-color:#F0C070;color:#8a5a00;">↩ Undo reset</button>
     <button id="btn-email">Copy cover email</button>
+    <button id="btn-present">Presentation mode</button>
+    <button id="btn-cert">Year-end certificate</button>
+    <button id="btn-demo" style="background:#E9FBF7;border-color:#22D9C4;color:#159C8D;">Load example</button>
     <span id="toolbar-status" style="font-size:10.5px;color:#5B5B78;align-self:center;">Entries auto-save on this device.</span>
   </div>
 
+  <div class="guide no-print" id="guideStrip">
+    <div class="g-step" id="gs1"><span class="g-n">1</span> Pick your facility</div>
+    <span class="g-arrow">→</span>
+    <div class="g-step" id="gs2"><span class="g-n">2</span> Add tonnage — drop a file or build a projection</div>
+    <span class="g-arrow">→</span>
+    <div class="g-step" id="gs3"><span class="g-n">3</span> Print / Save as PDF</div>
+  </div>
+
+  <div class="stickynav no-print">
+    <a href="#nav-account">Account</a><a href="#nav-deliveries">Deliveries</a><a href="#nav-impact">Impact</a><a href="#nav-ghg">GHG</a><a href="#nav-scope3">Scope 3</a><a href="#nav-landfill">Landfill</a><a href="#nav-streams">Streams</a>
+  </div>
+
   <div class="ghg-toggle no-print" style="margin:0 0 16px;">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Report type:</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">Report type:</span><span class="tip" title="Actuals = real delivery records. Sample / Projection = estimated volumes for a prospect that has not shipped yet; the banner changes to a customer-safe SAMPLE stamp and every label says Projected.">i</span>
     <label><input type="radio" name="rtype" value="actual"> Actuals — delivery records (internal draft banner)</label>
     <label><input type="radio" name="rtype" value="sample"> Sample / Projection — estimated volumes for a prospect (customer-safe SAMPLE banner, figures labeled projected)</label>
   </div>
@@ -208,6 +282,16 @@
     <label class="fb-num"><span>Annual throughput (tons/yr)</span><input type="number" step="1000" id="annualTons"></label>
   </div>
   <div id="facilityProfile" style="font-size:11px;color:#5B5B78;margin:-4px 0 24px;line-height:1.5;"></div>
+
+  <div class="starthere no-print" id="startHere">
+    <h2>Build a customer impact report in two minutes</h2>
+    <p>Pick one of the three ways to begin. Everything below fills in automatically and recalculates live.</p>
+    <div class="sh-btns">
+      <button class="sh-drop" id="sh-drop">Drop your delivery file</button>
+      <button class="sh-proj" id="sh-proj">No file? Build a projection</button>
+      <button class="sh-demo" id="sh-demo">Just looking? Load an example</button>
+    </div>
+  </div>
 
   <div class="section-label no-print">Import a Report File</div>
   <div id="dropzone" class="dropzone no-print">
@@ -246,7 +330,7 @@
     <div id="pb-status" style="font-size:11px;color:#159C8D;font-weight:600;margin-top:8px;"></div>
   </div>
 
-  <div class="section-label">Account Details</div>
+  <div class="section-label" id="nav-account">Account Details</div>
   <div class="account-grid">
     <label>
       <span>Reporting Period</span>
@@ -279,7 +363,7 @@
   </div>
 
   <div class="table-head">
-    <div class="section-label" style="margin-bottom:0;">Waste Delivery Detail</div>
+    <div class="section-label" style="margin-bottom:0;" id="nav-deliveries">Waste Delivery Detail</div>
     <div style="display:flex;gap:8px;" class="no-print">
       <button class="btn-add" id="btn-paste">⧉ Paste rows</button>
       <button class="btn-add" id="btn-add">+ Add delivery</button>
@@ -310,7 +394,7 @@
   </table>
   </div>
 
-  <div class="section-label teal" style="margin:26px 0 10px;">Environmental Impact — This Period</div>
+  <div class="section-label teal" style="margin:26px 0 10px;" id="nav-impact">Environmental Impact — This Period</div>
 
   <div class="metrics-grid">
     <div class="metric">
@@ -360,6 +444,12 @@
     <tbody id="summaryBody"></tbody>
   </table>
 
+    <div class="trendwrap" id="trendPanel" style="display:none;">
+    <div class="section-label teal" style="margin:0 0 2px;">Monthly Trend — Energy Recovered</div>
+    <div style="font-size:11px;color:#5B5B78;">kWh generated per month across the loaded delivery history. Bars label thousands of kWh.</div>
+    <div class="trendbars" id="trendBars"></div>
+  </div>
+
   <div class="section-label teal" style="margin:26px 0 10px;">Facility &amp; Pit Context — Displacement Value</div>
   <div class="ghg-panel">
     <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The pit is mostly municipal solid waste (MSW) at ~5,000 BTU/lb. Higher-BTU waste does more work per ton: one ton at 11,000 BTU/lb delivers the energy of 2.2 tons of MSW. This shows each stream's <b>MSW-equivalent</b> displacement and how the loaded waste fits the facility's annual burn.</div>
@@ -388,9 +478,9 @@
     <button id="modeAdvisorBtn" style="font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:#fff;background:#2A1DBF;border:none;border-radius:5px;padding:5px 11px;margin-left:8px;cursor:pointer;">Switch to stream-specific</button>
   </div>
 
-  <div class="section-label teal" style="margin:26px 0 10px;">Greenhouse Gas Analysis — Reworld vs Landfill</div>
+  <div class="section-label teal" style="margin:26px 0 10px;" id="nav-ghg">Greenhouse Gas Analysis — Reworld vs Landfill</div>
   <div class="ghg-toggle no-print" style="margin-bottom:12px;">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GWP timeframe (per Reworld LCA):</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GWP timeframe (per Reworld LCA):</span><span class="tip" title="Global Warming Potential timeframe. Methane traps far more heat over 20 years than over 100, so the 20-year view (used by NY, NJ and WRI guidance for methane policy) shows a bigger benefit for keeping waste out of landfills. Both figures come from the verified LCA. Only the methane term changes.">i</span>
     <label><input type="radio" name="gwp" value="20"> 20-year — <b>net 2.4 t CO₂e / ton MSW</b> (Reworld default; NY/NJ/WRI basis)</label>
     <label><input type="radio" name="gwp" value="100"> 100-year — net 0.65 t CO₂e / ton MSW</label>
   </div>
@@ -420,7 +510,7 @@
     <p style="font-size:10.5px;line-height:1.6;color:#5B5B78;margin:10px 0 0;">Method: <b>Reworld's verified LCA</b> (Sept 2024, ISO 14040/44 + 14067, WAP-verified). Average MSW reproduces the certified net factor of <b>2.4 t CO₂e/ton (20-yr GWP)</b> / 0.65 (100-yr), decomposed into Reworld's own source terms (Tables 35/36/39): landfill methane avoided, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity, steam, and metals. Other streams are <b>scaled from that verified MSW anchor</b> using the LCA's sensitivity levers (biogenic/methane-generation content, fossil-carbon content, heating value, metal content) — model estimates, not separately verified per-stream LCAs. GHG is a comparison vs landfill: a high-BTU fossil stream can be net-negative on GHG alone while still delivering energy, volume and diversion benefits; Reworld's verified band across all streams is −1.7 to −3.0 t CO₂e/ton (20-yr).</p>
   </div>
 
-  <div class="section-label teal" style="margin:26px 0 10px;">Generator Scope 3 Reference — Emissions Caused (GHG Protocol Category 5)</div>
+  <div class="section-label teal" style="margin:26px 0 10px;" id="nav-scope3">Generator Scope 3 Reference — Emissions Caused (GHG Protocol Category 5)</div>
   <div class="ghg-panel">
     <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The figures above show emissions <b>avoided</b>. For the generator's own GHG inventory, Scope 3 Category 5 (waste generated in operations) requires the emissions <b>caused</b> by treating this waste. Both come from the same verified LCA.</div>
     <div class="ghg-headline">
@@ -453,7 +543,7 @@
     <div id="destStreams" class="ghg-narrative"></div>
   </div>
 
-  <div class="section-label teal" style="margin:26px 0 10px;">Landfill vs Reworld — The Full Picture</div>
+  <div class="section-label teal" style="margin:26px 0 10px;" id="nav-landfill">Landfill vs Reworld — The Full Picture</div>
   <div style="font-size:11.5px;color:#5B5B78;line-height:1.55;margin-bottom:12px;">The customer’s question — <i>“why not just landfill it?”</i> — answered across every environmental variable for this waste, not GHG alone. Higher-BTU waste emits more CO₂ at the stack (shown honestly), but recovers far more energy and diverts the material permanently.</div>
   <div class="ghg-panel">
     <div class="table-scroll">
@@ -465,11 +555,11 @@
     <div id="lfNarrative" class="ghg-narrative"></div>
   </div>
 
-  <div class="section-label teal" style="margin:26px 0 6px;">Waste Stream Factors</div>
+  <div class="section-label teal" style="margin:26px 0 6px;" id="nav-streams">Waste Stream Factors</div>
   <div style="font-size:11px;color:#5B5B78;margin-bottom:10px;line-height:1.5;">Each waste stream differs in three ways: how hot it burns (<b>BTU/lb</b> → energy), whether it avoids landfill methane (<b>t CO₂e/ton</b> → climate benefit), and how much metal it holds (<b>lbs/ton</b>). Baseline: MSW at <b>5,000 BTU/lb → 550 kWh/ton</b> (NYSDEC permit basis, Reworld Hempstead). Edit any value; streams in the loaded data are highlighted.</div>
 
   <div class="ghg-toggle no-print">
-    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GHG &amp; metals basis:</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5B5B78;">GHG &amp; metals basis:</span><span class="tip" title="Blended applies the verified fleet-average factors (2.4 t CO2e and 50 lbs metal per ton) to every ton, matching published Reworld reports. Stream-specific gives each waste type its own honest factors: food scores high (landfill methane avoided), plastics can score negative (fossil CO2, no methane avoided). Use stream-specific when the load is not ordinary MSW.">i</span>
     <label><input type="radio" name="ghgmode" value="blended"> Blended — Reworld verified net factor (2.4 / 0.65) &amp; 50 lbs per ton, applied to all tonnage</label>
     <label><input type="radio" name="ghgmode" value="stream"> Stream-specific — each stream scaled from the verified MSW anchor</label>
   </div>
@@ -504,6 +594,28 @@
   </table>
   <p class="factors-note">Based on Reworld's independently verified Lifecycle Assessment (Sept 2024), ISO 14040/14044/14067, third-party verified by WAP Sustainability Consulting. The greenhouse-gas engine reproduces the LCA's certified net factor for MSW — 2.4 t CO₂e/ton at 20-yr GWP, 0.65 at 100-yr — from its own source terms (landfill methane, fossil stack CO₂, biogenic-CO₂ balance, net grid electricity at eGRID national non-baseload 1,405 lb/MWh, steam, and ferrous + non-ferrous metals). Renewable energy scales with each stream's heating value (BTU/lb) relative to the 5,000 BTU/lb MSW baseline. Every impact figure above is a live formula. All tonnage figures are US short tons (2,000 lb), the same basis as the LCA; metric tons (MT) are shown only where explicitly converted. <b>Factor set v11 · Reworld LCA Sept 2024 · eGRID 2022 · BTU Calculator reference</b> — cite this line to trace any figure on this report to its factor basis.</p>
 
+</div>
+
+<button class="present-exit" id="presentExit">Exit presentation (Esc)</button>
+
+<div class="certoverlay" id="certOverlay">
+  <div class="cert-actions no-print">
+    <button class="primary" id="certPrint" style="font-family:Inter,sans-serif;font-weight:700;background:#2A1DBF;color:#fff;border:none;border-radius:7px;padding:10px 18px;cursor:pointer;">Print certificate</button>
+    <button id="certClose" style="font-family:Inter,sans-serif;font-weight:600;background:#fff;border:1px solid #E3E4F0;border-radius:7px;padding:10px 16px;cursor:pointer;margin-left:8px;">Close</button>
+  </div>
+  <div class="cert">
+    <div class="c-brand">Reworld<sup style="font-size:11px;">™</sup></div>
+    <div class="c-title">Sustainable Future Award</div>
+    <div class="c-sub">In recognition of measurable environmental impact achieved through waste-to-energy diversion in <span id="certYear">2026</span></div>
+    <div class="c-gen" id="certGen">Customer Name</div>
+    <div class="c-grid">
+      <div class="c-cell"><div class="c-num" id="certTons">0</div><div class="c-cap">Tons diverted from landfill</div></div>
+      <div class="c-cell"><div class="c-num" id="certMwh">0</div><div class="c-cap">MWh renewable energy</div></div>
+      <div class="c-cell"><div class="c-num" id="certBarrels">0</div><div class="c-cap">Barrels of oil saved</div></div>
+      <div class="c-cell"><div class="c-num" id="certHomes">0</div><div class="c-cap">Homes powered for a year</div></div>
+    </div>
+    <div class="c-note">Figures derive from delivered tonnage using Reworld&rsquo;s verified Lifecycle Assessment factors (Sept 2024) and U.S. EPA energy equivalencies. 100% of recognized tonnage was diverted from landfill.<span id="certSampleNote"></span></div>
+  </div>
 </div>
 
 <script>
@@ -1015,17 +1127,17 @@ function render() {
   set('ytdTons', fmt2(c.ytdTons));
   set('ytdTonsFoot', fmt2(c.ytdTons));
 
-  set('ghg', fmt(c.ghg));
-  set('energy', fmt(c.energy));
-  set('homes', fmt(c.homes));
-  set('coal', fmt(c.coal));
-  set('fuelOil', fmt(c.fuelOil));
-  set('metal', fmt(c.metal));
+  animateSet('ghg', c.ghg);
+  animateSet('energy', c.energy);
+  animateSet('homes', c.homes);
+  animateSet('coal', c.coal);
+  animateSet('fuelOil', c.fuelOil);
+  animateSet('metal', c.metal);
 
-  set('ytdGhg', fmt(c.ytdGhg));
-  set('ytdEnergy', fmt(c.ytdEnergy));
-  set('ytdMetal', fmt(c.ytdMetal));
-  set('ytdHomes', fmt(c.ytdHomes));
+  animateSet('ytdGhg', c.ytdGhg);
+  animateSet('ytdEnergy', c.ytdEnergy);
+  animateSet('ytdMetal', c.ytdMetal);
+  animateSet('ytdHomes', c.ytdHomes);
 
   // Pull the reporting year out of the period text if present, else keep 2026.
   var yearMatch = (state.meta.period || '').match(/(20\d{2})/);
@@ -1040,6 +1152,10 @@ function render() {
   renderScope3(c);
   renderModeAdvisor(c);
   updateDocTitle();
+  renderGuide(c);
+  renderStartHere(c);
+  renderTrend();
+  updatePrintHeader(c);
   renderDestruction();
   renderPitContext(c);
   renderLandfillCompare(c);
@@ -1446,6 +1562,8 @@ document.getElementById('btn-reset').addEventListener('click', function () {
 });
 
 document.getElementById('btn-print').addEventListener('click', function () {
+  try { sessionStorage.setItem('printedOnce', '1'); } catch (e) {}
+  renderGuide(calc());
   window.print();
 });
 
@@ -1490,6 +1608,140 @@ document.getElementById('btn-email').addEventListener('click', function () {
 document.getElementById('modeAdvisorBtn').addEventListener('click', function () {
   state.ghgMode = 'stream'; applyGhgMode(); render(); saveState();
 });
+
+/* ---------------- 10-feature pass: guide, demo, trend, modes --------------- */
+
+// Count-up animation for the headline numbers. Falls back to a plain set when
+// printing or in presentation mode. Values tracked per element id.
+var lastVals = {};
+function animateSet(id, val) {
+  var e = document.getElementById(id); if (!e) return;
+  var from = lastVals[id];
+  lastVals[id] = val;
+  if (from === undefined || from === val || document.body.classList.contains('present')) { e.textContent = fmt(val); return; }
+  var start = null, dur = 550;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min((ts - start) / dur, 1);
+    p = 1 - Math.pow(1 - p, 3);                       // ease-out
+    e.textContent = fmt(from + (val - from) * p);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Load a realistic, clearly-stamped example so a first-time viewer sees a
+// finished report instead of zeros.
+function loadExample() {
+  state = defaultState();
+  state.meta = { period: 'March 2026', generator: 'Example Manufacturing Co.',
+    serviceLocation: 'Melville, NY', facility: 'Reworld Hempstead',
+    serviceType: 'Assured Destruction · Waste-to-Energy', wasteProfile: 'EX-0001', priorYtdTons: 184 };
+  state.rows = [
+    { date: '2026-03-03', tons: 22.4, generator: 'Example Manufacturing Co.', origin: 'Melville, NY', facility: 'Hempstead', profile: 'EX-0001', wasteType: 'Consumer / Health & Beauty' },
+    { date: '2026-03-10', tons: 18.6, generator: 'Example Manufacturing Co.', origin: 'Melville, NY', facility: 'Hempstead', profile: 'EX-0001', wasteType: 'Consumer / Health & Beauty' },
+    { date: '2026-03-17', tons: 25.1, generator: 'Example Manufacturing Co.', origin: 'Melville, NY', facility: 'Hempstead', profile: 'EX-0002', wasteType: 'Municipal Solid Waste (MSW)' },
+    { date: '2026-03-24', tons: 20.8, generator: 'Example Manufacturing Co.', origin: 'Melville, NY', facility: 'Hempstead', profile: 'EX-0001', wasteType: 'Consumer / Health & Beauty' }
+  ];
+  state.reportType = 'sample'; state.ghgMode = 'stream';
+  applyGhgMode(); applyGwpMode(); applyReportType();
+  if (window.syncFacilityUI) syncFacilityUI();
+  renderMeta(); renderRows(); render(); saveState();
+  var st = document.getElementById('toolbar-status');
+  if (st) { st.textContent = '✓ Example loaded (stamped SAMPLE). Reset all fields to start fresh.'; setTimeout(function () { st.textContent = 'Entries auto-save on this device.'; }, 6000); }
+}
+document.getElementById('btn-demo').addEventListener('click', loadExample);
+
+// Start-here empty state: shown until any tonnage or account detail exists.
+function renderStartHere(c) {
+  var el2 = document.getElementById('startHere'); if (!el2) return;
+  var blank = c.periodTons === 0 && !(state.meta.generator || '').trim() && !(state.allRows && state.allRows.length);
+  el2.style.display = blank ? 'block' : 'none';
+}
+document.getElementById('sh-drop').addEventListener('click', function () {
+  var dz = document.getElementById('dropzone');
+  dz.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  dz.style.boxShadow = '0 0 0 3px #22D9C4'; setTimeout(function () { dz.style.boxShadow = ''; }, 1600);
+});
+document.getElementById('sh-proj').addEventListener('click', function () {
+  document.getElementById('projbuilder').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+document.getElementById('sh-demo').addEventListener('click', loadExample);
+
+// Guide strip: three steps tick green as the report comes together.
+function renderGuide(c) {
+  var s1 = document.getElementById('gs1'), s2 = document.getElementById('gs2'), s3 = document.getElementById('gs3');
+  if (!s1) return;
+  s1.classList.toggle('done', !!state.facility);
+  s2.classList.toggle('done', c.periodTons > 0);
+  var printed = false; try { printed = sessionStorage.getItem('printedOnce') === '1'; } catch (e) {}
+  s3.classList.toggle('done', printed && c.periodTons > 0);
+}
+
+// Monthly trend: energy by month across the loaded history (needs 2+ months).
+function renderTrend() {
+  var panel = document.getElementById('trendPanel'), bars = document.getElementById('trendBars');
+  if (!panel || !bars) return;
+  var src = (state.allRows && state.allRows.length) ? state.allRows : state.rows;
+  var byMonth = {}, order = [];
+  src.forEach(function (r) {
+    var t = num(r.tons); if (t <= 0 || !r.date) return;
+    var mkey = String(r.date).slice(0, 7);
+    if (!byMonth[mkey]) { byMonth[mkey] = 0; order.push(mkey); }
+    byMonth[mkey] += t * kwhPerTon(btuFor(streamFor(r.wasteType)));
+  });
+  order.sort();
+  if (order.length < 2) { panel.style.display = 'none'; return; }
+  order = order.slice(-12);
+  var max = Math.max.apply(null, order.map(function (k) { return byMonth[k]; }));
+  bars.innerHTML = '';
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  order.forEach(function (k) {
+    var v = byMonth[k];
+    var tb = document.createElement('div'); tb.className = 'tb';
+    var tv = document.createElement('span'); tv.className = 'tv'; tv.textContent = Math.round(v / 1000) + 'k';
+    var bar = document.createElement('div'); bar.className = 'bar'; bar.style.height = Math.max(4, Math.round(v / max * 78)) + 'px';
+    bar.title = k + ': ' + fmt(v) + ' kWh';
+    var lab = document.createElement('small'); lab.textContent = MN[parseInt(k.slice(5), 10) - 1] + ' ' + k.slice(2, 4);
+    tb.appendChild(tv); tb.appendChild(bar); tb.appendChild(lab);
+    bars.appendChild(tb);
+  });
+  panel.style.display = 'block';
+}
+
+// Presentation mode: hides every control, shows only the report. Esc exits.
+function setPresent(on) { document.body.classList.toggle('present', on); }
+document.getElementById('btn-present').addEventListener('click', function () { setPresent(true); window.scrollTo({ top: 0 }); });
+document.getElementById('presentExit').addEventListener('click', function () { setPresent(false); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') { setPresent(false); document.body.classList.remove('certmode'); }
+});
+
+// Year-end certificate: official award fields from cumulative tonnage.
+// Barrels = tons (550 kWh/ton / 13.108 kWh/gal = 41.96 gal, one 42-gal barrel).
+function openCert() {
+  var c = calc();
+  var year = ((state.meta.period || '').match(/(20\d{2})/) || [])[1] || String(new Date().getFullYear());
+  document.getElementById('certYear').textContent = year;
+  document.getElementById('certGen').textContent = (state.meta.generator || 'Customer name').trim() || 'Customer name';
+  document.getElementById('certTons').textContent = fmt(c.ytdTons);
+  document.getElementById('certMwh').textContent = fmt(c.ytdEnergy / 1000);
+  document.getElementById('certBarrels').textContent = fmt(c.ytdTons);
+  document.getElementById('certHomes').textContent = fmt(c.ytdHomes / 12);
+  document.getElementById('certSampleNote').textContent = isSample() ? ' SAMPLE — projected volumes for illustration, not delivery records.' : '';
+  document.body.classList.add('certmode');
+  window.scrollTo({ top: 0 });
+}
+document.getElementById('btn-cert').addEventListener('click', openCert);
+document.getElementById('certClose').addEventListener('click', function () { document.body.classList.remove('certmode'); });
+document.getElementById('certPrint').addEventListener('click', function () { window.print(); });
+
+// Print-header meta + step-3 tracking.
+function updatePrintHeader(c) {
+  var e = document.getElementById('phMeta'); if (!e) return;
+  var g = (state.meta.generator || '').trim();
+  e.textContent = (g ? g + ' · ' : '') + periodHeadLabel() + ' · Reworld™ Verified Impact Report';
+}
 
 /* --- Excel export ------------------------------------------------------------
    Builds a spreadsheet-friendly HTML document that Excel, Google Sheets and
