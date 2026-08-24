@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reworld Verified Impact Report — How It Works</title>
+<style>
+  :root {
+    --indigo:#2A1DBF; --teal:#22D9C4; --tealdark:#159C8D;
+    --ink:#15152B; --ink2:#5B5B78; --line:#E3E4F0;
+    --good:#159C8D; --bad:#C2185B; --panel:#F7F8FC; --amber:#8a5a00; --amberbg:#FFF4E5; --amberline:#F0C070;
+    --goodbg:#E9FBF7;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#fff; line-height:1.5; }
+  .page { max-width:920px; margin:0 auto; padding:36px 28px 60px; }
+  h1 { font-size:26px; letter-spacing:-.01em; }
+  h1 .tm { color:var(--indigo); }
+  .sub { color:var(--ink2); font-size:13.5px; margin:6px 0 0; max-width:70ch; }
+  .lab { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--tealdark); font-weight:700; margin:34px 0 10px; }
+  .lab.first { margin-top:26px; }
+  .rule { height:3px; background:linear-gradient(90deg,var(--indigo),var(--teal)); border-radius:2px; margin-top:14px; }
+
+  /* ---- pipeline ---- */
+  .pipe { display:grid; grid-template-columns:1fr 26px 1.15fr 26px 1fr; gap:0; align-items:stretch; }
+  .lane { display:flex; flex-direction:column; gap:10px; }
+  .lane-h { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; text-align:center; padding:7px 4px; border-radius:7px; color:#fff; }
+  .lane-h.in  { background:var(--indigo); }
+  .lane-h.en  { background:var(--ink); }
+  .lane-h.out { background:var(--tealdark); }
+  .box { border:1.5px solid var(--line); border-radius:9px; padding:10px 12px; background:#fff; }
+  .box b { font-size:12.5px; display:block; }
+  .box small { font-size:11px; color:var(--ink2); display:block; margin-top:2px; line-height:1.45; }
+  .box.in  { border-color:#C9C4F2; background:#F6F5FE; }
+  .box.en  { border-color:#CFCFDD; background:var(--panel); }
+  .box.out { border-color:#BDEDE4; background:var(--goodbg); }
+  .arrowcol { display:flex; align-items:center; justify-content:center; color:var(--ink2); font-size:20px; }
+  .chip { display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:10px; font-weight:700; border-radius:4px; padding:1px 6px; margin-right:4px; }
+  .chip.p { background:#DDF7F1; color:var(--tealdark); }
+  .chip.m { background:#FBE3ED; color:var(--bad); }
+
+  /* ---- equation ---- */
+  .eq { border:1.5px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--panel); }
+  .eq-row { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; }
+  .term { flex:1 1 128px; border-radius:8px; padding:9px 10px 8px; background:#fff; border:1.5px solid var(--line); min-width:120px; }
+  .term .sign { font-weight:900; font-size:15px; }
+  .term.plus  { border-color:#BDEDE4; } .term.plus .sign { color:var(--good); }
+  .term.minus { border-color:#F5C4D6; } .term.minus .sign { color:var(--bad); }
+  .term b { font-size:11.5px; display:block; line-height:1.3; }
+  .term small { font-size:10.5px; color:var(--ink2); display:block; margin-top:2px; line-height:1.35; }
+  .term .val { font-family:ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; color:var(--ink); margin-top:4px; display:block; }
+  .eq-net { margin-top:12px; padding-top:12px; border-top:1.5px dashed var(--line); font-size:13px; }
+  .eq-net b.num { color:var(--indigo); font-size:16px; }
+
+  /* ---- toggles ---- */
+  .tog3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .tog { border:1.5px solid var(--line); border-radius:9px; padding:12px 13px; }
+  .tog b { font-size:12.5px; }
+  .tog .opt { margin-top:7px; font-size:11.5px; padding:6px 9px; border-radius:6px; background:var(--panel); border:1px solid var(--line); }
+  .tog .opt.def { background:#F6F5FE; border-color:#C9C4F2; }
+  .tog .opt .tag { font-family:ui-monospace,Menlo,monospace; font-size:9px; font-weight:700; letter-spacing:.06em; color:var(--indigo); text-transform:uppercase; }
+  .tog .opt small { color:var(--ink2); display:block; font-size:10.5px; margin-top:1px; }
+
+  /* ---- table ---- */
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { font-family:ui-monospace,Menlo,monospace; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink2); text-align:left; padding:7px 10px; border-bottom:2px solid var(--ink); }
+  th.r, td.r { text-align:right; }
+  td { padding:6.5px 10px; border-bottom:1px solid var(--line); }
+  td .pos { color:var(--good); font-weight:700; } td .neg { color:var(--bad); font-weight:700; }
+  tr.hero td { background:#F6F5FE; font-weight:700; }
+  .note { font-size:11px; color:var(--ink2); margin-top:8px; line-height:1.55; max-width:80ch; }
+
+  /* ---- steps ---- */
+  .steps { counter-reset:s; display:grid; gap:9px; }
+  .step { display:flex; gap:12px; align-items:flex-start; border:1.5px solid var(--line); border-radius:9px; padding:11px 13px; }
+  .step::before { counter-increment:s; content:counter(s); flex:0 0 26px; height:26px; border-radius:50%; background:var(--indigo); color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .step b { font-size:12.5px; display:block; }
+  .step small { font-size:11.5px; color:var(--ink2); line-height:1.5; display:block; }
+
+  /* ---- provenance ---- */
+  .prov { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .prov > div { border-radius:9px; padding:13px 15px; font-size:11.5px; line-height:1.6; }
+  .prov .v { background:var(--goodbg); border:1.5px solid #BDEDE4; }
+  .prov .m { background:var(--amberbg); border:1.5px solid var(--amberline); color:var(--amber); }
+  .prov b { display:block; font-size:12px; margin-bottom:5px; }
+  .prov ul { margin:0 0 0 16px; }
+  .prov li { margin:2px 0; }
+
+  .foot { margin-top:34px; padding-top:14px; border-top:1.5px solid var(--line); font-size:10.5px; color:var(--ink2); line-height:1.6; }
+
+  @media (max-width:760px){ .pipe{grid-template-columns:1fr;} .arrowcol{transform:rotate(90deg); padding:2px 0;} .tog3,.prov{grid-template-columns:1fr;} }
+  @media print {
+    .page { padding:0; max-width:none; }
+    body { font-size:11px; }
+    .lab { margin-top:22px; }
+    .step, .box, .term, .tog, .eq, .prov > div { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Reworld<span class="tm">™</span> Verified Impact Report — How It Works</h1>
+  <p class="sub">A single offline HTML file — no internet, no install, nothing leaves the laptop. You enter (or drop in) a customer's waste deliveries; it produces a customer-ready sustainability impact report. Every greenhouse-gas figure is built on <b>Reworld's third-party-verified Lifecycle Assessment</b> (Sept 2024 · ISO 14040/44 + ISO 14067 · verified by WAP Sustainability Consulting).</p>
+  <div style="font-family:ui-monospace,Menlo,monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:#8a5a00;background:#FFF4E5;border:1.5px solid #F0C070;border-radius:6px;padding:6px 11px;text-align:center;margin:12px 0 0;">UNOFFICIAL — INTERNAL WORKING DRAFT · NOT FOR EXTERNAL DISTRIBUTION</div>
+  <div class="rule"></div>
+
+  <!-- ============================== PIPELINE ============================== -->
+  <div class="lab first">1 · The logic pipeline — inputs → engine → outputs</div>
+  <div class="pipe">
+    <div class="lane">
+      <div class="lane-h in">Inputs</div>
+      <div class="box in"><b>Facility selector</b><small>All 26 Reworld plants + custom. Sets net kWh/ton (Hempstead 550 verified), grid factor, steam lb/ton (Indianapolis 4,500), annual throughput.</small></div>
+      <div class="box in"><b>Waste deliveries</b><small>Typed by hand, or drag-and-drop a Reworld delivery <b>.xlsx / .csv</b> — generator, dates, profile #, waste type and tons auto-populate; period (month / quarter / YTD) auto-detected.</small></div>
+      <div class="box in"><b>Waste-type matching</b><small>Each row's "Waste Type" text is keyword-matched to one of 16 streams (pharma, plastics, RMW/TMW, paper, food, soil… default = MSW). Every factor is editable.</small></div>
+      <div class="box in"><b>Settings</b><small>GWP timeframe (20-yr / 100-yr) · GHG basis (blended / stream-specific) · per-stream counterfactual (landfill vs incineration).</small></div>
+    </div>
+    <div class="arrowcol">➜</div>
+    <div class="lane">
+      <div class="lane-h en">Calculation engine</div>
+      <div class="box en"><b>Energy path</b><small><b>kWh/ton = facility kWh × (BTU/lb ÷ 5,000)</b>. Hotter waste ⇒ more electricity. BTU defaults come from Reworld's own BTU Calculator reference (mixed plastic 10,250 · rubber 13,500 · food 2,600…).</small></div>
+      <div class="box en"><b>GHG path — Reworld LCA</b><small>Per ton, vs landfill:<br><span class="chip p">+</span>landfill methane avoided <span class="chip p">+</span>net grid electricity <span class="chip p">+</span>steam <span class="chip p">+</span>metals <span class="chip m">−</span>fossil stack CO₂ <span class="chip m">−</span>biogenic CO₂ balance. (Full equation in §2.)</small></div>
+      <div class="box en"><b>Counterfactual switch</b><small>Regulated waste (pharma, RMW/TMW, solvents) can't legally go to landfill — it's compared to <b>incineration without energy recovery</b>: stack CO₂ is a wash, so Reworld's energy + metal recovery is a pure net gain.</small></div>
+      <div class="box en"><b>Metals &amp; equivalencies</b><small>Metal credit 0.086 t CO₂e per 50 lbs (WARM v16 via LCA). Energy translated to homes powered (893 kWh/mo), coal (1,881 kWh/ton), fuel oil (13.108 kWh/gal).</small></div>
+    </div>
+    <div class="arrowcol">➜</div>
+    <div class="lane">
+      <div class="lane-h out">Outputs</div>
+      <div class="box out"><b>Headline report</b><small>Period + YTD: kWh generated · tons CO₂e avoided (net) · lbs metal recycled · homes / coal / fuel-oil equivalencies.</small></div>
+      <div class="box out"><b>GHG analysis panel</b><small>The net number, decomposed into the six LCA source terms, with a gross − debits = net reconciliation line and a plain-English narrative.</small></div>
+      <div class="box out"><b>"Why not landfill?" table</b><small>Side-by-side landfill vs Reworld on every variable: methane, stack CO₂, energy, metal, ~90% volume reduction, leachate risk, permanence.</small></div>
+      <div class="box out"><b>Pit displacement</b><small>MSW-equivalent tons: 1 ton at 11,000 BTU/lb does the energy work of 2.2 tons of MSW in the pit.</small></div>
+      <div class="box out"><b>Export</b><small>Print / Save-as-PDF (customer-ready) · Save-as-Excel. Entries auto-save on the device.</small></div>
+    </div>
+  </div>
+
+  <!-- ============================== EQUATION ============================== -->
+  <div class="lab">2 · The greenhouse-gas equation — Reworld's verified LCA, per ton of MSW (20-yr GWP)</div>
+  <div class="eq">
+    <div class="eq-row">
+      <div class="term plus"><span class="sign">+</span> <b>Landfill methane avoided</b><small>0.033 t CH₄ that a landfill would leak × GWP 82.5. The dominant term.</small><span class="val">+2.72</span></div>
+      <div class="term plus"><span class="sign">+</span> <b>Net grid electricity</b><small>477 kWh/ton displaces marginal fossil power (eGRID non-baseload), minus the LFG power a landfill would have made.</small><span class="val">+0.28</span></div>
+      <div class="term plus"><span class="sign">+</span> <b>District steam</b><small>Steam export displaces customers' natural-gas boilers (big at Indianapolis).</small><span class="val">+0.03</span></div>
+      <div class="term plus"><span class="sign">+</span> <b>Metals recycled</b><small>Ferrous + non-ferrous recovered post-combustion vs virgin mining (WARM v16).</small><span class="val">+0.09</span></div>
+      <div class="term minus"><span class="sign">−</span> <b>Fossil stack CO₂</b><small>The 40.3% fossil share of stack CO₂ (plastics etc.), counted honestly against us.</small><span class="val">−0.41</span></div>
+      <div class="term minus"><span class="sign">−</span> <b>Biogenic CO₂ balance</b><small>Carbon-cycle CO₂ released now that a landfill would have partly stored.</small><span class="val">−0.32</span></div>
+    </div>
+    <div class="eq-net">Net = <b class="num">2.4 t CO₂e avoided per ton of MSW</b> (20-yr GWP) &nbsp;·&nbsp; 0.65 at 100-yr GWP — <b>both are Reworld's certified published factors</b>, and the tool reproduces them exactly. Other streams re-weight these same six terms by their own biogenic content, fossil-carbon content, heating value and metal content.</div>
+  </div>
+
+  <!-- ============================== TOGGLES ============================== -->
+  <div class="lab">3 · The three decision toggles</div>
+  <div class="tog3">
+    <div class="tog"><b>GWP timeframe</b>
+      <div class="opt def"><span class="tag">Default</span> 20-year — net 2.4/ton<small>Methane-focused; the basis NY, NJ and WRI use. Reworld's headline number.</small></div>
+      <div class="opt">100-year — net 0.65/ton<small>Conservative long-horizon view. Only the methane term rescales.</small></div>
+    </div>
+    <div class="tog"><b>GHG basis</b>
+      <div class="opt def"><span class="tag">Default</span> Blended<small>Applies the flat verified 2.4 (or 0.65) to all tonnage — matches existing Reworld reports.</small></div>
+      <div class="opt">Stream-specific<small>Each stream scaled from the verified MSW anchor — shows honest per-stream differences.</small></div>
+    </div>
+    <div class="tog"><b>Counterfactual (per stream)</b>
+      <div class="opt def"><span class="tag">Auto</span> vs Landfill<small>For anything a customer could legally landfill: methane avoidance is the story.</small></div>
+      <div class="opt">vs Incineration<small>Pharma / RMW / TMW / solvents must burn anyway — Reworld's edge is recovering the energy.</small></div>
+    </div>
+  </div>
+
+  <!-- ============================== EXPECT ============================== -->
+  <div class="lab">4 · What to expect — per-stream results at Reworld Hempstead (550 kWh/ton · NY grid · 20-yr GWP)</div>
+  <table>
+    <thead><tr><th>Stream</th><th class="r">BTU/lb</th><th class="r">kWh/ton</th><th>Compared vs</th><th class="r">Net t CO₂e/ton</th><th>The story to tell</th></tr></thead>
+    <tbody>
+      <tr class="hero"><td>MSW (baseline)</td><td class="r">5,000</td><td class="r">550</td><td>Landfill</td><td class="r"><span class="pos">+2.27</span></td><td>The verified anchor (2.4 national; NY's cleaner grid nets slightly less)</td></tr>
+      <tr><td>Food / Organics</td><td class="r">2,600</td><td class="r">286</td><td>Landfill</td><td class="r"><span class="pos">+4.10</span></td><td>Biggest climate win — rots to methane in a landfill</td></tr>
+      <tr><td>Paper / Cardboard</td><td class="r">6,500</td><td class="r">715</td><td>Landfill</td><td class="r"><span class="pos">+3.44</span></td><td>High methane avoidance + solid energy</td></tr>
+      <tr><td>Sludge / Biosolids</td><td class="r">3,500</td><td class="r">385</td><td>Landfill</td><td class="r"><span class="pos">+2.76</span></td><td>Methane-driven benefit</td></tr>
+      <tr><td>Wood / Pallets</td><td class="r">6,000</td><td class="r">660</td><td>Landfill</td><td class="r"><span class="pos">+1.86</span></td><td>Moderate methane + good energy</td></tr>
+      <tr><td>Solvents / Oils</td><td class="r">16,900</td><td class="r">1,859</td><td>Incineration</td><td class="r"><span class="pos">+0.86</span></td><td>Must burn anyway — we alone recover 3.4× MSW's energy</td></tr>
+      <tr><td>TMW / RMW</td><td class="r">10,500–11,000</td><td class="r">1,155–1,210</td><td>Incineration</td><td class="r"><span class="pos">+0.57</span></td><td>Regulated destruction + ~2.2× MSW energy recovery</td></tr>
+      <tr><td>Pharmaceutical</td><td class="r">8,200</td><td class="r">902</td><td>Incineration</td><td class="r"><span class="pos">+0.43</span></td><td>Compliant destruction, energy recovered, brand protected</td></tr>
+      <tr><td>Textiles</td><td class="r">6,850</td><td class="r">754</td><td>Landfill</td><td class="r"><span class="pos">+0.40</span></td><td>Modest net positive</td></tr>
+      <tr><td>Soil (impacted)</td><td class="r">500</td><td class="r">55</td><td>Landfill</td><td class="r">≈ 0</td><td>GHG-neutral; value is treatment &amp; diversion</td></tr>
+      <tr><td>Rubber / Tires</td><td class="r">13,500</td><td class="r">1,485</td><td>Landfill</td><td class="r"><span class="neg">−1.68</span></td><td rowspan="2">Honestly GHG-negative vs landfill (fossil carbon, no methane avoided) — but 2–2.7× MSW's renewable energy, ~90% volume reduction, permanent destruction. The tool shows this candidly; credibility is the feature.</td></tr>
+      <tr><td>Plastics (mixed)</td><td class="r">10,250</td><td class="r">1,128</td><td>Landfill</td><td class="r"><span class="neg">−2.18</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note"><b>Reading this table:</b> greenhouse gas is a <i>comparison vs the alternative</i>, not an absolute. Biogenic streams (food, paper) score highest because landfilling them makes methane. Regulated streams are net-positive because incineration happens either way — only Reworld recovers the energy. Fossil streams (plastics, tires) are honestly GHG-negative vs landfill, and the report pairs that with the energy / volume / permanence benefits a landfill can never claim. Reworld's own verified all-stream band is <b>−1.7 to −3.0 t CO₂e/ton (20-yr)</b>.</p>
+
+  <!-- ============================== STEPS ============================== -->
+  <div class="lab">5 · How to use it — five steps, ~2 minutes</div>
+  <div class="steps">
+    <div class="step"><div><b>Open the HTML file in any browser.</b><small>Works fully offline — nothing is uploaded anywhere. Entries auto-save on the device.</small></div></div>
+    <div class="step"><div><b>Pick the facility.</b><small>Hempstead is the default. Selecting a plant sets its energy rate, grid factor and steam automatically — all remain editable.</small></div></div>
+    <div class="step"><div><b>Drop in the delivery spreadsheet (or type rows).</b><small>Drag a Reworld delivery .xlsx onto the page — generator, deliveries and the reporting period populate themselves. Pick month / quarter / YTD if prompted.</small></div></div>
+    <div class="step"><div><b>Choose the lens.</b><small>Leave <i>Blended + 20-yr</i> for the standard customer report (matches Reworld's published 2.4). Switch to <i>Stream-specific</i> when the customer ships non-MSW waste and you want the granular, defensible story.</small></div></div>
+    <div class="step"><div><b>Print / Save as PDF, or export Excel.</b><small>The print view is the customer-ready report. "Reset all fields" clears everything for the next account.</small></div></div>
+  </div>
+
+  <!-- ============================== PROVENANCE ============================== -->
+  <div class="lab">6 · What is verified vs. what is modeled — say this to customers</div>
+  <div class="prov">
+    <div class="v"><b>✓ Verified (Reworld's certified LCA)</b>
+      <ul>
+        <li>Net factor: <b>2.4 t CO₂e/ton MSW</b> (20-yr) / 0.65 (100-yr) — reproduced exactly</li>
+        <li>All six source terms (methane 2.72 · stack 0.41 · biogenic 0.32 · electricity 0.34 · steam 0.03 · metals 0.086)</li>
+        <li>eGRID non-baseload grid factors (US / NY / IN) — from the LCA itself</li>
+        <li>Hempstead 550 kWh/ton · Indianapolis 4,500 lb steam/ton</li>
+        <li>Stream BTU values — Reworld's own BTU Calculator reference</li>
+      </ul>
+    </div>
+    <div class="m"><b>⚠ Modeled (transparent, editable estimates)</b>
+      <ul>
+        <li>Per-stream GHG splits for non-MSW streams — scaled from the verified MSW anchor using the LCA's own sensitivity levers; <b>not separately certified per-stream LCAs</b></li>
+        <li>Other facilities' kWh/ton — scaled from nameplate MW ÷ TPD (fact sheets)</li>
+        <li>Every modeled value is visible and editable, so it can be replaced the moment official per-stream figures exist</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    Source of truth: <i>Lifecycle Assessment of the Climate Impacts of MSW Diverted from Landfill to Reworld™ TTF</i> (Sept 2024) — developed 2011, updated 8/25/2024, third-party verified by WAP Sustainability Consulting (ISO 14040 / 14044 / 14067). Verified net GHG factors: −2.4 t CO₂e/ton waste basis and −3.9 MT CO₂e/MWh electricity basis at 20-yr GWP (Table 39). The calculator is a self-contained file: <b>Reworld-Verified-Impact-Report.html</b>. Engine verified by a 76-check automated audit against the LCA's published tables.
+  </div>
+
+</div>
+</body>
+</html>
